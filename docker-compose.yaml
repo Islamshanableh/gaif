@@ -1,0 +1,15 @@
+services:
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8081:8080
+
+  api:
+    build:
+      context: .
+    container_name: api
+    hostname: api
+    ports:
+      - 3000:3000
+    restart: unless-stopped

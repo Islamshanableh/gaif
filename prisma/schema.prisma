@@ -1,0 +1,161 @@
+generator client {
+  provider          = "prisma-client-js"
+  previewFeatures   = ["fullTextSearch"]
+  max               = 5000
+  connectionTimeout = 0
+  replicas          = 1
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int         @id @default(autoincrement())
+  email     String      @unique @db.VarChar(320)
+  fullName  String?     @db.VarChar(320)
+  password  String?     @db.VarChar(255)
+  mobile    String?     @unique @db.VarChar(20)
+  status    UserStatus?
+  isActive  Boolean     @default(true)
+  isVerify  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt @db.Date
+}
+
+// model Section {
+//   id        Int      @id @default(autoincrement())
+//   title     String   @unique @db.VarChar(320)
+//   users     User[]
+//   ticket    Ticket[]
+//   order     Int?
+//   type      String?
+//   isPin     Boolean  @default(false)
+//   isActive  Boolean  @default(true)
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt @db.Date
+// }
+
+// model CheckList {
+//   id        Int      @id @default(autoincrement())
+//   title     String   @unique @db.VarChar(320)
+//   isActive  Boolean  @default(true)
+//   order     Int?
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt @db.Date
+// }
+
+// model Material {
+//   id        Int      @id @default(autoincrement())
+//   title     String   @unique @db.VarChar(320)
+//   order     Int?
+//   isActive  Boolean  @default(true)
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt @db.Date
+// }
+
+// model Merchant {
+//   id        Int      @id @default(autoincrement())
+//   title     String   @unique @db.VarChar(320)
+//   order     Int?
+//   isActive  Boolean  @default(true)
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt @db.Date
+// }
+
+// model Ticket {
+//   id         Int           @id @default(autoincrement())
+//   title      String
+//   fields     Json?
+//   media      Media[]
+//   comment    Comment[]
+//   historyLog HistoryLog[]
+//   status     TicketStatus? @default(PENDING)
+//   userId     Int?
+//   user       User?         @relation(fields: [userId], references: [id])
+//   sectionId  Int
+//   section    Section       @relation(fields: [sectionId], references: [id])
+//   subTickets SubTicket[]
+//   isActive   Boolean       @default(true)
+//   isArchived Boolean       @default(false)
+//   createdAt  DateTime      @default(now())
+//   updatedAt  DateTime      @updatedAt
+// }
+
+// model SubTicket {
+//   id         Int           @id @default(autoincrement())
+//   title      String
+//   fields     Json?
+//   media      Media[]
+//   comment    Comment[]
+//   historyLog HistoryLog[]
+//   status     TicketStatus? @default(PENDING)
+//   userId     Int?
+//   user       User?         @relation(fields: [userId], references: [id])
+//   ticketId   Int
+//   ticket     Ticket        @relation(fields: [ticketId], references: [id])
+//   isActive   Boolean       @default(true)
+//   isArchived Boolean       @default(false)
+//   createdAt  DateTime      @default(now())
+//   updatedAt  DateTime      @updatedAt
+// }
+
+// model Media {
+//   id          Int        @id @default(autoincrement())
+//   link        String?    @db.LongText
+//   ticketId    Int?
+//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
+//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
+//   subTicketId Int?
+//   isActive    Boolean    @default(true)
+//   isDeleted   Boolean    @default(false)
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+// }
+
+// model Comment {
+//   id          Int        @id @default(autoincrement())
+//   content     String     @db.LongText
+//   userId      Int
+//   user        User       @relation(fields: [userId], references: [id])
+//   ticketId    Int?
+//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
+//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
+//   subTicketId Int?
+//   isDeleted   Boolean    @default(false)
+//   isActive    Boolean    @default(true)
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+// }
+
+// model HistoryLog {
+//   id          Int        @id @default(autoincrement())
+//   differences Json?
+//   userId      Int
+//   user        User       @relation(fields: [userId], references: [id])
+//   ticketId    Int?
+//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
+//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
+//   subTicketId Int?
+//   isDeleted   Boolean    @default(false)
+//   isActive    Boolean    @default(true)
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+// }
+
+enum UserStatus {
+  APPROVED
+  PENDING
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum TicketStatus {
+  INPROGRESS
+  PENDING
+  DONE
+}

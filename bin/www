@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-fallthrough */
+/* eslint-disable no-inner-declarations */
+const debug = require("debug")("report-service:server");
+const http = require("http");
+const https = require("https");
+const fs = require("fs");
+
+const moment = require("moment");
+const cluster = require("cluster");
+const app = require("../app");
+const config = require("../config/config");
+
+if (cluster.isMaster) {
+  cluster.fork();
+
+  cluster.on("exit", function (worker, code, signal) {
+    console.log(`Worker ${worker.id} died..`);
+    cluster.fork();
+  });
+} else {
+  const { port } = config;
+  app.set("port", port);
+
+  const server = http.createServer(app);
+
+  server.listen(port, () => {
+    console.log(
+      "🚀 ~ ",
+      `${config.appName} is running on ${config.host}:${
+        config.port
+      } at : ${moment().format("YYYY-MM-DD HH:mm:ss.SSS")}`
+    );
+  });
+
+  function onError(error) {
+    if (error.syscall !== "listen") throw error;
+    const bind = typeof port === "string" ? `Pipe ${port}` : `Port ${port}`;
+
+    // handle specific listen errors with friendly messages
+    switch (error.code) {
+      case "EACCES":
+        console.error(`${bind} requires elevated privileges`);
+        process.exit(1);
+      case "EADDRINUSE":
+        console.error(`${bind} is already in use`);
+        process.exit(1);
+      case "HPE_INVALID_METHOD":
+        console.error(
+          `${error?.reason}  ~>,${JSON.stringify(error?.rawPacket)}`
+        );
+        process.exit(1);
+      default:
+        console.error(`error ================>`, error);
+        process.exit(1);
+    }
+  }
+
+  /**
+   * crons to be run as scheduled while server is listening
+   */
+
+  /**
+   * Event listener for HTTP server "listening" event.
+   */
+  function onListening() {
+    const addr = server.address();
+    const bind =
+      typeof addr === "string" ? `pipe ${addr}` : `port ${addr.port}`;
+    debug(`Listening on ${bind}`);
+  }
+
+  server.on("error", onError);
+  server.on("listening", onListening);
+}
