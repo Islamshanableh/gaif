@@ -1,280 +1,74 @@
+/* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const { PrismaClient } = require('@prisma/client');
-const axios = require('axios').default;
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 
-const subscriptions = [
-  {
-    price: 0,
-    type: 'TIER_1',
-    validForDays: 365,
-    numOfIdentifications: 5,
-    chargePerMonth: 0.0,
-    chargePerYear: 0.0,
-    planTranslations: [
-      {
-        title: 'Free',
-        description: 'Up to 20 identifications/month',
-
-        languageId: 1,
-        products: [],
-      },
-    ],
-  },
-  {
-    price: 6,
-    type: 'TIER_2',
-    validForDays: 30,
-    numOfIdentifications: 30,
-    chargePerMonth: 6.0,
-    chargePerYear: 72.0,
-    planTranslations: [
-      {
-        title: 'Silver',
-        description: 'Up to 30 identifications/month Advanced item information',
-
-        languageId: 1,
-        products: [
-          {
-            platform: 'ANDROID',
-            productId: 'silver_monthly_plan:silver-monthly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Silver_Plan_Monthly',
-          },
-          {
-            platform: 'ANDROID',
-            productId: 'silver_yearly_plan:silver-yearly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Silver_Plan_Yearly',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    price: 12,
-    type: 'TIER_3',
-    validForDays: 30,
-    numOfIdentifications: 50,
-    chargePerMonth: 12.0,
-    chargePerYear: 144.0,
-    planTranslations: [
-      {
-        title: 'Gold',
-        description:
-          'Up to 50 identifications/month Advanced item information Marketplace',
-
-        languageId: 1,
-        products: [
-          {
-            platform: 'ANDROID',
-            productId: 'gold_monthly_plan:gold-monthly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Gold_Monthly_Plan',
-          },
-          {
-            platform: 'ANDROID',
-            productId: 'gold_yearly_plan:gold-yearly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Gold_Yearly_Plan',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    price: 80,
-    type: 'TIER_4',
-    validForDays: 30,
-    numOfIdentifications: 1000,
-    chargePerMonth: 80.0,
-    chargePerYear: 960.0,
-    planTranslations: [
-      {
-        title: 'Premium',
-        description:
-          'Unlimited identifications, Advanced item information Marketplace',
-
-        languageId: 1,
-        products: [
-          {
-            platform: 'ANDROID',
-            productId: 'premium_monthly_plan:premium-monthly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Premium_Monthly_Plan',
-          },
-          {
-            platform: 'ANDROID',
-            productId: 'premium_yearly_plan:premium-yearly-plan',
-          },
-          {
-            platform: 'IOS',
-            productId: 'Premium_Yearly_Plan',
-          },
-        ],
-      },
-    ],
-  },
-];
-
-async function getCountries() {
-  try {
-    const countries = await axios.get('https://restcountries.com/v3.1/all');
-    return countries.data;
-  } catch (error) {
-    console.error(
-      'ERROR: while fetching countries from https://restcountries.com/v3.1/all',
-    );
-  }
-}
-
 async function main() {
-  console.log(`Start seeding ...`);
+  console.log('Starting to seed countries (with upsert)...');
 
-  const _countries = await getCountries();
+  // Read the JSON file
+  const jsonPath = path.join(__dirname, 'country.json');
+  const countriesData = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
-  // await prisma.subscriptionPlanTranslation.deleteMany({});
-  // await prisma.purchasedSubscriptionPlan.deleteMany({});
-  // await prisma.subscriptionPlan.deleteMany({});
+  // Counter for tracking progress
+  let createdCount = 0;
+  let updatedCount = 0;
+  let errorCount = 0;
 
-  const enLang = await prisma.language.upsert({
-    where: { name: 'English' },
-    update: {},
-    create: {
-      name: 'English',
-      code: 'en',
-      nativeName: 'English',
-      direction: 'LTR',
-    },
-  });
-
-  await prisma.language.upsert({
-    where: { name: 'Hebrew' },
-    update: {},
-    create: {
-      name: 'Hebrew',
-      code: 'he',
-      nativeName: 'Hebrew',
-      direction: 'RTL',
-    },
-  });
-
-  await prisma.language.upsert({
-    where: { code: 'ar' },
-    update: {},
-    create: {
-      name: 'Arabic',
-      code: 'ar',
-      nativeName: 'العربية',
-      direction: 'RTL',
-    },
-  });
-
-  _countries.push({
-    cca3: 'OTT',
-    cca2: 'OT',
-    ccn3: 'OT',
-    name: {
-      common: 'Palestine Under Ottoman Empire',
-    },
-  });
-
-  _countries.push({
-    cca3: 'BMP',
-    cca2: 'BP',
-    ccn3: 'BP',
-    name: {
-      common: 'Palestine Under British Mandate',
-    },
-  });
-
-  for await (const el of _countries)
-    await prisma.country.upsert({
-      where: { cca3: el.cca3 },
-      update: {
-        cca3: el.cca3,
-        cca2: el.cca2,
-        ccn3: el.ccn3,
-        translations: {
-          deleteMany: {},
-          create: {
-            name: el.name.common,
-            language: {
-              connect: {
-                id: enLang.id,
-              },
-            },
-          },
+  // Upsert each country (create if doesn't exist, update if exists)
+  for (const country of countriesData) {
+    try {
+      await prisma.country.upsert({
+        where: { cca3: country.alpha3 },
+        update: {
+          cca2: country.alpha2,
+          ccn3: country.numeric,
+          currencyCode: country.currency,
+          name: country.name,
+          phone: country.phone,
         },
-      },
-      create: {
-        cca3: el.cca3,
-        cca2: el.cca2,
-        ccn3: el.ccn3,
-        translations: {
-          create: {
-            name: el.name.common,
-            language: {
-              connect: {
-                id: enLang.id,
-              },
-            },
-          },
+        create: {
+          cca3: country.alpha3,
+          cca2: country.alpha2,
+          ccn3: country.numeric,
+          currencyCode: country.currency,
+          name: country.name,
+          phone: country.phone,
         },
-      },
-    });
+      });
 
-  for await (const sub of subscriptions) {
-    const {
-      price,
-      type,
-      validForDays,
-      numOfIdentifications,
-      chargePerMonth,
-      chargePerYear,
-      planTranslations,
-    } = sub;
-    await prisma.subscriptionPlan.create({
-      data: {
-        price,
-        type,
-        validForDays,
-        numOfIdentifications,
-        chargePerMonth,
-        chargePerYear,
-        planTranslations: {
-          create: planTranslations?.map(translation => {
-            const { products } = translation;
-            delete translation?.products;
-            return {
-              ...translation,
-              products: {
-                create: products,
-              },
-            };
-          }),
-        },
-      },
-    });
+      // Check if it was created or updated (this is a simplified check)
+      const existingCountry = await prisma.country.findUnique({
+        where: { cca3: country.alpha3 },
+      });
+
+      if (existingCountry) {
+        updatedCount++;
+        console.log(`↻ Updated: ${country.name}`);
+      } else {
+        createdCount++;
+        console.log(`✓ Created: ${country.name}`);
+      }
+    } catch (error) {
+      errorCount++;
+      console.error(`✗ Failed to upsert ${country.name}:`, error.message);
+    }
   }
 
-  console.log(`Seeding finished...`);
+  console.log('\n=================================');
+  console.log(`Seeding completed!`);
+  console.log(`Created: ${createdCount} countries`);
+  console.log(`Updated: ${updatedCount} countries`);
+  console.log(`Failed: ${errorCount} countries`);
+  console.log('=================================');
 }
 
 main()
   .catch(e => {
-    console.error(e);
+    console.error('Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

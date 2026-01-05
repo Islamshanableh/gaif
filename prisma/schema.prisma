@@ -17,11 +17,35 @@ model User {
   fullName  String?     @db.VarChar(320)
   password  String?     @db.VarChar(255)
   mobile    String?     @unique @db.VarChar(20)
+  role      UserRole?
   status    UserStatus?
   isActive  Boolean     @default(true)
   isVerify  Boolean     @default(true)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt @db.Date
+}
+
+model ParticipationType {
+  id                 Int      @id @default(autoincrement())
+  title              String   @unique @db.VarChar(320)
+  fees               Boolean
+  spouse             Boolean
+  petra              Boolean
+  petraSpouse        Boolean
+  accommodationAqaba Boolean
+  accommodationAmman Boolean
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt @db.Date
+}
+
+model Country {
+  cca3         String  @id @db.Char(3)
+  cca2         String  @unique @db.Char(2)
+  ccn3         String? @unique @db.Char(3)
+  currencyCode String?
+  name         String? @unique
+  phone        String?
 }
 
 // model Section {
@@ -150,7 +174,7 @@ enum UserStatus {
 }
 
 enum UserRole {
-  ADMIN
+  ADMINISTRATOR
   USER
 }
 

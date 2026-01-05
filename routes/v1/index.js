@@ -4,8 +4,9 @@ const router = express.Router();
 // const mockRoute = require('./mock.route');
 const authRoute = require('./auth.route');
 const userRoute = require('./user.route');
-const settingRoute = require('./setting.route');
+const participationTypeRoute = require('./participationType.route');
 const ticketRoute = require('./ticket.route');
+const settingRoute = require('./setting.route');
 
 const defaultRoutes = [
   {
@@ -17,12 +18,16 @@ const defaultRoutes = [
     route: userRoute,
   },
   {
-    path: '/setting',
-    route: settingRoute,
+    path: '/participation-type',
+    route: participationTypeRoute,
   },
   {
     path: '/ticket',
     route: ticketRoute,
+  },
+  {
+    path: '/setting',
+    route: settingRoute,
   },
 ];
 

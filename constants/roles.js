@@ -1,12 +1,12 @@
 const permissions = require('./route.permissions');
 
 module.exports = {
-  types: ['ADMIN', 'USER', 'WORKER', 'GUEST'],
-  ADMIN: {
+  types: ['ADMINISTRATOR', 'USER', 'WORKER', 'GUEST'],
+  ADMINISTRATOR: {
     rights: [
-      permissions.ADMIN.create,
-      permissions.ADMIN.update,
-      permissions.ADMIN.read,
+      permissions.ADMINISTRATOR.create,
+      permissions.ADMINISTRATOR.update,
+      permissions.ADMINISTRATOR.read,
     ],
   },
 };
