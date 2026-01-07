@@ -3,6 +3,7 @@
 const httpStatus = require('http-status');
 const { Prisma } = require('@prisma/client');
 const { prisma } = require('./prisma.service');
+const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
 exports.createCompany = async payload => {
@@ -55,6 +56,13 @@ exports.getCompanyList = async payload => {
     },
   });
 
+  result.map(item => {
+    if (item.logo) {
+      item.logo = `${config.cdnPrefix}/${item.logo}`;
+    }
+    return item;
+  });
+
   return result;
 };
 
@@ -64,6 +72,9 @@ exports.getCompanyById = async id => {
       id,
     },
   });
+  if (result.logo) {
+    result.logo = `${config.cdnPrefix}/${result.logo}`;
+  }
 
   return result;
 };

@@ -8,6 +8,7 @@ exports.createCompany = {
     expirationDate: Joi.date().required(),
     countryId: Joi.number().required(),
     participationId: Joi.number().required(),
+    logo: Joi.string().optional(),
   }),
 };
 
@@ -25,6 +26,7 @@ exports.updateCompany = {
     expirationDate: Joi.date(),
     countryId: Joi.number(),
     participationId: Joi.number(),
+    logo: Joi.string().optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

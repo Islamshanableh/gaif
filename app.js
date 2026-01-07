@@ -73,6 +73,8 @@ app.get('/', async (_req, res) => {
   }
 });
 
+app.use('/files', express.static('files'));
+
 app.use('/api/v1', routes);
 
 // send back a 404 error for any unknown api request

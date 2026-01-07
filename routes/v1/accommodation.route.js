@@ -2,6 +2,7 @@ const express = require('express');
 
 const validate = require('../../middlewares/validate');
 const { auth } = require('../../middlewares/auth');
+const parseFormData = require('../../middlewares/parseFormData');
 
 const { accommodationController } = require('../../controllers');
 
@@ -15,6 +16,7 @@ router
   .route('/')
   .post(
     auth(routePermissions.ADMINISTRATOR.create),
+    parseFormData(['hotelRooms', 'hotelImages']),
     validate(accommodationValidation.createAccommodation),
     accommodationController.createAccommodation,
   )
@@ -24,6 +26,7 @@ router
   )
   .put(
     auth(routePermissions.ADMINISTRATOR.update),
+    parseFormData(['hotelRooms', 'hotelImages']),
     validate(accommodationValidation.updateAccommodation),
     accommodationController.updateAccommodation,
   )

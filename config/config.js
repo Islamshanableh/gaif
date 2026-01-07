@@ -27,6 +27,7 @@ const envVarsSchema = Joi.object()
     AWS_REGION: Joi.string().required(),
     AWS_EXP_IN: Joi.number().required(),
     AWS_PREFIX: Joi.string().required(),
+    CDN_PREFIX: Joi.string().required(),
   })
   .unknown();
 
@@ -43,6 +44,7 @@ module.exports = {
   port: envVars.PORT,
   appName: envVars.APP_NAME,
   host: envVars.HOST,
+  cdnPrefix: envVars.CDN_PREFIX,
   jwt: {
     exp_in_min: envVars.JWT_ACCESS_EXP_MIN,
     reset_exp_in_min: envVars.JWT_RESET_EXP_MIN,

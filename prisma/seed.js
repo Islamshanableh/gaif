@@ -21,16 +21,8 @@ async function main() {
   // Upsert each country (create if doesn't exist, update if exists)
   for (const country of countriesData) {
     try {
-      await prisma.country.upsert({
-        where: { cca3: country.alpha3 },
-        update: {
-          cca2: country.alpha2,
-          ccn3: country.numeric,
-          currencyCode: country.currency,
-          name: country.name,
-          phone: country.phone,
-        },
-        create: {
+      await prisma.country.create({
+        data: {
           cca3: country.alpha3,
           cca2: country.alpha2,
           ccn3: country.numeric,

@@ -18,11 +18,12 @@ exports.createAccommodation = {
     hotelRooms: Joi.array().items({
       roomCategory: Joi.string().required(),
       roomCategoryInArabic: Joi.string().required(),
-      numberOfRooms: Joi.string().required(),
+      numberOfRooms: Joi.number().required(),
       single: Joi.number(),
       double: Joi.number(),
       available: Joi.number(),
     }),
+    hotelImages: Joi.array().items(Joi.string()).optional(),
   }),
 };
 
@@ -55,6 +56,7 @@ exports.updateAccommodation = {
       double: Joi.number(),
       available: Joi.number(),
     }),
+    hotelImages: Joi.array().items(Joi.string()).optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

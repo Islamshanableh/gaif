@@ -3,6 +3,7 @@ const Joi = require('joi');
 exports.createParticipationType = {
   body: Joi.object().keys({
     title: Joi.string().required(),
+    price: Joi.number().required(),
     fees: Joi.boolean().required(),
     spouse: Joi.boolean().required(),
     petra: Joi.boolean().required(),
@@ -21,6 +22,7 @@ exports.getById = {
 exports.updateParticipationType = {
   body: Joi.object().keys({
     title: Joi.string(),
+    price: Joi.number(),
     fees: Joi.boolean(),
     spouse: Joi.boolean(),
     petra: Joi.boolean(),
