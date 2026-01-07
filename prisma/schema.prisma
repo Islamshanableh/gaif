@@ -26,147 +26,94 @@ model User {
 }
 
 model ParticipationType {
-  id                 Int      @id @default(autoincrement())
-  title              String   @unique @db.VarChar(320)
+  id                 Int       @id @default(autoincrement())
+  title              String    @unique @db.VarChar(320)
+  price              Int?
   fees               Boolean
   spouse             Boolean
   petra              Boolean
   petraSpouse        Boolean
   accommodationAqaba Boolean
   accommodationAmman Boolean
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt @db.Date
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt @db.Date
+  companies          Company[]
 }
 
 model Country {
-  cca3         String  @id @db.Char(3)
-  cca2         String  @unique @db.Char(2)
-  ccn3         String? @unique @db.Char(3)
+  id           Int       @id @default(autoincrement())
+  cca3         String    @db.Char(3)
+  cca2         String    @unique @db.Char(2)
+  ccn3         String?   @unique @db.Char(3)
   currencyCode String?
-  name         String? @unique
+  name         String?   @unique
   phone        String?
+  companies    Company[]
 }
 
-// model Section {
-//   id        Int      @id @default(autoincrement())
-//   title     String   @unique @db.VarChar(320)
-//   users     User[]
-//   ticket    Ticket[]
-//   order     Int?
-//   type      String?
-//   isPin     Boolean  @default(false)
-//   isActive  Boolean  @default(true)
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt @db.Date
-// }
+model Company {
+  id              Int                @id @default(autoincrement())
+  name            String             @db.VarChar(320)
+  email           String?
+  logo            String?
+  entryDate       DateTime?
+  expirationDate  DateTime?
+  countryId       Int?
+  country         Country?           @relation(fields: [countryId], references: [id])
+  participationId Int?
+  participation   ParticipationType? @relation(fields: [participationId], references: [id])
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt @db.Date
+}
 
-// model CheckList {
-//   id        Int      @id @default(autoincrement())
-//   title     String   @unique @db.VarChar(320)
-//   isActive  Boolean  @default(true)
-//   order     Int?
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt @db.Date
-// }
+model Accommodation {
+  id             Int           @id @default(autoincrement())
+  hotelName      String        @db.VarChar(320)
+  urlTitle       String?
+  location       String?
+  stars          String?
+  hotelTax       String?
+  hotelService   String?
+  hotelOrder     Int?
+  hotelNameAr    String?
+  distance       String?
+  time           String?
+  timeInArabic   String?
+  entryDate      DateTime?
+  expirationDate DateTime?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt @db.Date
+  hotelRooms     HotelRoom[]
+  hotelImages    HotelImages[]
+}
 
-// model Material {
-//   id        Int      @id @default(autoincrement())
-//   title     String   @unique @db.VarChar(320)
-//   order     Int?
-//   isActive  Boolean  @default(true)
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt @db.Date
-// }
+model HotelRoom {
+  id                   Int            @id @default(autoincrement())
+  roomCategory         String         @db.VarChar(320)
+  roomCategoryInArabic String?
+  numberOfRooms        Int
+  single               Int
+  double               Int
+  available            Int
+  accommodationId      Int?
+  accommodation        Accommodation? @relation(fields: [accommodationId], references: [id])
+  isActive             Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt @db.Date
+}
 
-// model Merchant {
-//   id        Int      @id @default(autoincrement())
-//   title     String   @unique @db.VarChar(320)
-//   order     Int?
-//   isActive  Boolean  @default(true)
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt @db.Date
-// }
-
-// model Ticket {
-//   id         Int           @id @default(autoincrement())
-//   title      String
-//   fields     Json?
-//   media      Media[]
-//   comment    Comment[]
-//   historyLog HistoryLog[]
-//   status     TicketStatus? @default(PENDING)
-//   userId     Int?
-//   user       User?         @relation(fields: [userId], references: [id])
-//   sectionId  Int
-//   section    Section       @relation(fields: [sectionId], references: [id])
-//   subTickets SubTicket[]
-//   isActive   Boolean       @default(true)
-//   isArchived Boolean       @default(false)
-//   createdAt  DateTime      @default(now())
-//   updatedAt  DateTime      @updatedAt
-// }
-
-// model SubTicket {
-//   id         Int           @id @default(autoincrement())
-//   title      String
-//   fields     Json?
-//   media      Media[]
-//   comment    Comment[]
-//   historyLog HistoryLog[]
-//   status     TicketStatus? @default(PENDING)
-//   userId     Int?
-//   user       User?         @relation(fields: [userId], references: [id])
-//   ticketId   Int
-//   ticket     Ticket        @relation(fields: [ticketId], references: [id])
-//   isActive   Boolean       @default(true)
-//   isArchived Boolean       @default(false)
-//   createdAt  DateTime      @default(now())
-//   updatedAt  DateTime      @updatedAt
-// }
-
-// model Media {
-//   id          Int        @id @default(autoincrement())
-//   link        String?    @db.LongText
-//   ticketId    Int?
-//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
-//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
-//   subTicketId Int?
-//   isActive    Boolean    @default(true)
-//   isDeleted   Boolean    @default(false)
-//   createdAt   DateTime   @default(now())
-//   updatedAt   DateTime   @updatedAt
-// }
-
-// model Comment {
-//   id          Int        @id @default(autoincrement())
-//   content     String     @db.LongText
-//   userId      Int
-//   user        User       @relation(fields: [userId], references: [id])
-//   ticketId    Int?
-//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
-//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
-//   subTicketId Int?
-//   isDeleted   Boolean    @default(false)
-//   isActive    Boolean    @default(true)
-//   createdAt   DateTime   @default(now())
-//   updatedAt   DateTime   @updatedAt
-// }
-
-// model HistoryLog {
-//   id          Int        @id @default(autoincrement())
-//   differences Json?
-//   userId      Int
-//   user        User       @relation(fields: [userId], references: [id])
-//   ticketId    Int?
-//   ticket      Ticket?    @relation(fields: [ticketId], references: [id])
-//   subTicket   SubTicket? @relation(fields: [subTicketId], references: [id])
-//   subTicketId Int?
-//   isDeleted   Boolean    @default(false)
-//   isActive    Boolean    @default(true)
-//   createdAt   DateTime   @default(now())
-//   updatedAt   DateTime   @updatedAt
-// }
+model HotelImages {
+  id              Int            @id @default(autoincrement())
+  fileKey         String         @db.VarChar(320)
+  accommodationId Int?
+  accommodation   Accommodation? @relation(fields: [accommodationId], references: [id])
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt @db.Date
+}
 
 enum UserStatus {
   APPROVED

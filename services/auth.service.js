@@ -2,7 +2,6 @@ const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
 const { prisma } = require('./prisma.service');
 const tokenService = require('./token.service');
-const userService = require('./user.service');
 const ApiError = require('../utils/ApiError');
 const { auth } = require('../constants/service.constants');
 const {
@@ -54,7 +53,11 @@ exports.refreshAuth = async refreshToken => {
       auth.tokenTypes.REFRESH,
     );
 
-    const user = await userService.findUserById(refreshTokenDoc.sub);
+    const user = await prisma.user.findFirst({
+      where: {
+        id: refreshTokenDoc.sub,
+      },
+    });
 
     if (!user) {
       throw new Error(httpStatus.UNAUTHORIZED, 'Please Authenticate');
