@@ -30,11 +30,6 @@ exports.getTransportationScheduleById = catchAsync(async (req, res) => {
 exports.getTransportationSchedules = catchAsync(async (req, res) => {
   const query = req?.query;
 
-  // Convert string boolean to actual boolean
-  if (query.isActive !== undefined) {
-    query.isActive = query.isActive === 'true';
-  }
-
   const result = await transportationScheduleService.getTransportationSchedules(
     query,
   );

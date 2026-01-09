@@ -37,11 +37,6 @@ exports.getTripById = catchAsync(async (req, res) => {
 exports.getTrips = catchAsync(async (req, res) => {
   const query = req?.query;
 
-  // Convert string boolean to actual boolean
-  if (query.isActive !== undefined) {
-    query.isActive = query.isActive === 'true';
-  }
-
   const result = await tripService.getTrips(query);
   res.status(httpStatus.OK).send({ result });
 });
