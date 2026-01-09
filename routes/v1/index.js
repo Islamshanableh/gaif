@@ -7,6 +7,9 @@ const participationTypeRoute = require('./participationType.route');
 const settingRoute = require('./setting.route');
 const companyRoute = require('./company.route');
 const accommodationRoute = require('./accommodation.route');
+const registrationRoute = require('./registration.route');
+const tripRoute = require('./trip.route');
+const transportationScheduleRoute = require('./transportationSchedule.route');
 
 const defaultRoutes = [
   {
@@ -28,6 +31,18 @@ const defaultRoutes = [
   {
     path: '/accommodation',
     route: accommodationRoute,
+  },
+  {
+    path: '/registration',
+    route: registrationRoute,
+  },
+  {
+    path: '/trip',
+    route: tripRoute,
+  },
+  {
+    path: '/transportation-schedule',
+    route: transportationScheduleRoute,
   },
 ];
 

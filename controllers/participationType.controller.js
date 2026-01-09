@@ -37,9 +37,11 @@ exports.getParticipationTypeById = catchAsync(async (req, res) => {
 });
 
 exports.getParticipationTypeList = catchAsync(async (req, res) => {
-  const search = req?.query?.search;
-  const result = await participationTypeService.getParticipationTypeList(
-    search,
-  );
+  const query = req?.query;
+  // Convert string numbers to actual numbers
+  if (query.page) query.page = parseInt(query.page, 10);
+  if (query.limit) query.limit = parseInt(query.limit, 10);
+
+  const result = await participationTypeService.getParticipationTypeList(query);
   res.status(httpStatus.OK).send({ result });
 });

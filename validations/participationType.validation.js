@@ -34,3 +34,11 @@ exports.updateParticipationType = {
     id: Joi.number().required(),
   }),
 };
+
+exports.getParticipationTypeList = {
+  query: Joi.object().keys({
+    page: Joi.number().min(1).default(1),
+    limit: Joi.number().min(1).max(100).default(10),
+    search: Joi.string().allow('', null).optional(),
+  }),
+};

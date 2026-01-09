@@ -34,8 +34,11 @@ exports.updateCompany = {
 };
 
 exports.getCompanyList = {
-  body: Joi.object().keys({
-    countryId: Joi.number(),
-    participationId: Joi.number(),
+  query: Joi.object().keys({
+    page: Joi.number().min(1).default(1),
+    limit: Joi.number().min(1).max(100).default(10),
+    search: Joi.string().allow('', null).optional(),
+    countryId: Joi.number().optional(),
+    participationId: Joi.number().optional(),
   }),
 };

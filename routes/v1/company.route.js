@@ -32,7 +32,7 @@ router
 
 router
   .route('/list')
-  .post(
+  .get(
     validate(companyValidation.getCompanyList),
     companyController.getCompanyList,
   );

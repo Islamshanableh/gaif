@@ -48,22 +48,63 @@ exports.createCompany = async payload => {
 };
 
 exports.getCompanyList = async payload => {
-  const result = await prisma.company.findMany({
-    where: {
-      isActive: true,
-      countryId: payload.countryId,
-      participationId: payload.participationId,
-    },
-  });
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    countryId,
+    participationId,
+  } = payload;
+  const skip = (page - 1) * limit;
 
-  result.map(item => {
+  const where = {
+    isActive: true,
+  };
+
+  if (countryId) {
+    where.countryId = countryId;
+  }
+
+  if (participationId) {
+    where.participationId = participationId;
+  }
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search } },
+      { email: { contains: search } },
+    ];
+  }
+
+  const [companies, total] = await Promise.all([
+    prisma.company.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        country: true,
+        participation: true,
+      },
+    }),
+    prisma.company.count({ where }),
+  ]);
+
+  companies.forEach(item => {
     if (item.logo) {
       item.logo = `${config.cdnPrefix}/${item.logo}`;
     }
-    return item;
   });
 
-  return result;
+  return {
+    data: companies,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 exports.getCompanyById = async id => {

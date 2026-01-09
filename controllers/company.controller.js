@@ -46,7 +46,14 @@ exports.getCompanyById = catchAsync(async (req, res) => {
 });
 
 exports.getCompanyList = catchAsync(async (req, res) => {
-  const payload = req?.body;
-  const result = await companyService.getCompanyList(payload);
+  const query = req?.query;
+  // Convert string numbers to actual numbers
+  if (query.page) query.page = parseInt(query.page, 10);
+  if (query.limit) query.limit = parseInt(query.limit, 10);
+  if (query.countryId) query.countryId = parseInt(query.countryId, 10);
+  if (query.participationId)
+    query.participationId = parseInt(query.participationId, 10);
+
+  const result = await companyService.getCompanyList(query);
   res.status(httpStatus.OK).send({ result });
 });

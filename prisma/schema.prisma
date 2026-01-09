@@ -26,8 +26,8 @@ model User {
 }
 
 model ParticipationType {
-  id                 Int       @id @default(autoincrement())
-  title              String    @unique @db.VarChar(320)
+  id                 Int            @id @default(autoincrement())
+  title              String         @unique @db.VarChar(320)
   price              Int?
   fees               Boolean
   spouse             Boolean
@@ -35,21 +35,24 @@ model ParticipationType {
   petraSpouse        Boolean
   accommodationAqaba Boolean
   accommodationAmman Boolean
-  isActive           Boolean   @default(true)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt @db.Date
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt @db.Date
   companies          Company[]
+  registrations      Registration[]
 }
 
 model Country {
-  id           Int       @id @default(autoincrement())
-  cca3         String    @db.Char(3)
-  cca2         String    @unique @db.Char(2)
-  ccn3         String?   @unique @db.Char(3)
-  currencyCode String?
-  name         String?   @unique
-  phone        String?
-  companies    Company[]
+  id            Int            @id @default(autoincrement())
+  cca3          String         @db.Char(3)
+  cca2          String         @unique @db.Char(2)
+  ccn3          String?        @unique @db.Char(3)
+  currencyCode  String?
+  name          String?        @unique
+  phone         String?
+  companies     Company[]
+  registrations Registration[]
+  spouses       Spouse[]
 }
 
 model Company {
@@ -66,43 +69,48 @@ model Company {
   isActive        Boolean            @default(true)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt @db.Date
+  registrations   Registration[]
 }
 
 model Accommodation {
-  id             Int           @id @default(autoincrement())
-  hotelName      String        @db.VarChar(320)
-  urlTitle       String?
-  location       String?
-  stars          String?
-  hotelTax       String?
-  hotelService   String?
-  hotelOrder     Int?
-  hotelNameAr    String?
-  distance       String?
-  time           String?
-  timeInArabic   String?
-  entryDate      DateTime?
-  expirationDate DateTime?
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt @db.Date
-  hotelRooms     HotelRoom[]
-  hotelImages    HotelImages[]
+  id                      Int            @id @default(autoincrement())
+  hotelName               String         @db.VarChar(320)
+  urlTitle                String?
+  location                String?
+  stars                   String?
+  hotelTax                String?
+  hotelService            String?
+  hotelOrder              Int?
+  hotelNameAr             String?
+  distance                String?
+  time                    String?
+  timeInArabic            String?
+  entryDate               DateTime?
+  expirationDate          DateTime?
+  isActive                Boolean        @default(true)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt @db.Date
+  hotelRooms              HotelRoom[]
+  hotelImages             HotelImages[]
+  registrationsAmman      Registration[] @relation("AmmanHotel")
+  registrationsDeadSea    Registration[] @relation("DeadSeaHotel")
 }
 
 model HotelRoom {
-  id                   Int            @id @default(autoincrement())
-  roomCategory         String         @db.VarChar(320)
-  roomCategoryInArabic String?
-  numberOfRooms        Int
-  single               Int
-  double               Int
-  available            Int
-  accommodationId      Int?
-  accommodation        Accommodation? @relation(fields: [accommodationId], references: [id])
-  isActive             Boolean        @default(true)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt @db.Date
+  id                    Int            @id @default(autoincrement())
+  roomCategory          String         @db.VarChar(320)
+  roomCategoryInArabic  String?
+  numberOfRooms         Int
+  single                Int
+  double                Int
+  available             Int
+  accommodationId       Int?
+  accommodation         Accommodation? @relation(fields: [accommodationId], references: [id])
+  isActive              Boolean        @default(true)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt @db.Date
+  registrationsAmman    Registration[] @relation("AmmanRoom")
+  registrationsDeadSea  Registration[] @relation("DeadSeaRoom")
 }
 
 model HotelImages {
@@ -129,4 +137,185 @@ enum TicketStatus {
   INPROGRESS
   PENDING
   DONE
+}
+
+enum Title {
+  MR
+  MRS
+  MS
+  DR
+  PROF
+}
+
+enum AirportPickupOption {
+  NEED_PICKUP
+  NO_PICKUP
+  PROVIDE_LATER
+}
+
+enum TransportationType {
+  BY_COACH
+  OWN_TRANSPORTATION
+}
+
+model Registration {
+  id                        Int                        @id @default(autoincrement())
+  companyId                 Int?
+  company                   Company?                   @relation(fields: [companyId], references: [id])
+  participationId           Int?
+  participation             ParticipationType?         @relation(fields: [participationId], references: [id])
+  // New Company Request (when user wants to add a new company)
+  isNewCompany              Boolean                    @default(false)
+  newCompanyName            String?                    @db.VarChar(320)
+  newCompanyEmail           String?                    @db.VarChar(320)
+  newCompanyLogo            String?                    @db.VarChar(500)
+  newCompanyApproved        Boolean                    @default(false)
+  // Step 2: Personal Information
+  title                     Title?
+  firstName                 String                     @db.VarChar(100)
+  middleName                String?                    @db.VarChar(100)
+  lastName                  String                     @db.VarChar(100)
+  position                  String                     @db.VarChar(200)
+  nationalityId             Int?
+  nationality               Country?                   @relation(fields: [nationalityId], references: [id])
+  email                     String                     @db.VarChar(320)
+  telephone                 String?                    @db.VarChar(20)
+  mobile                    String                     @db.VarChar(20)
+  whatsapp                  String                     @db.VarChar(20)
+  participantPicture        String?                    @db.VarChar(500)
+  // Step 3: Spouse Information
+  hasSpouse                 Boolean                    @default(false)
+  spouse                    Spouse?
+  // Step 5: Accommodation
+  accommodationInAmman      Boolean                    @default(false)
+  ammanHotelId              Int?
+  ammanHotel                Accommodation?             @relation("AmmanHotel", fields: [ammanHotelId], references: [id])
+  ammanRoomId               Int?
+  ammanRoom                 HotelRoom?                 @relation("AmmanRoom", fields: [ammanRoomId], references: [id])
+  ammanCheckIn              DateTime?
+  ammanCheckOut             DateTime?
+  ammanPartnerProfileId     String?                    @db.VarChar(100)
+  accommodationInDeadSea    Boolean                    @default(false)
+  deadSeaHotelId            Int?
+  deadSeaHotel              Accommodation?             @relation("DeadSeaHotel", fields: [deadSeaHotelId], references: [id])
+  deadSeaRoomId             Int?
+  deadSeaRoom               HotelRoom?                 @relation("DeadSeaRoom", fields: [deadSeaRoomId], references: [id])
+  deadSeaCheckIn            DateTime?
+  deadSeaCheckOut           DateTime?
+  deadSeaPartnerProfileId   String?                    @db.VarChar(100)
+  // Step 7: Airport Pickup
+  airportPickupOption       AirportPickupOption?
+  arrivalDate               DateTime?
+  arrivalAirline            String?                    @db.VarChar(100)
+  arrivalFlightNumber       String?                    @db.VarChar(50)
+  arrivalTime               String?                    @db.VarChar(10)
+  departureDate             DateTime?
+  departureAirline          String?                    @db.VarChar(100)
+  departureFlightNumber     String?                    @db.VarChar(50)
+  departureTime             String?                    @db.VarChar(10)
+  flightDetailsForSpouse    Boolean                    @default(false)
+  // Step 8: Transportation
+  transportationToDeadSea   TransportationType?
+  toDeadSeaScheduleId       Int?
+  toDeadSeaSchedule         TransportationSchedule?    @relation("ToDeadSea", fields: [toDeadSeaScheduleId], references: [id])
+  transportationFromDeadSea TransportationType?
+  fromDeadSeaScheduleId     Int?
+  fromDeadSeaSchedule       TransportationSchedule?    @relation("FromDeadSea", fields: [fromDeadSeaScheduleId], references: [id])
+  // Step 9: Special Request
+  specialRequest            String?                    @db.Text
+  photographyConsent        Boolean                    @default(false)
+  // Visa Information
+  needsVisa                 Boolean                    @default(false)
+  passportCopy              String?                    @db.VarChar(500)
+  visaForm                  String?                    @db.VarChar(500)
+  // System fields
+  totalPrice                Decimal?                   @db.Decimal(10, 2)
+  paymentStatus             PaymentStatus              @default(PENDING)
+  registrationStatus        RegistrationStatus         @default(DRAFT)
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt @db.Date
+  trips                     RegistrationTrip[]
+}
+
+model Spouse {
+  id             Int           @id @default(autoincrement())
+  registrationId Int           @unique
+  registration   Registration  @relation(fields: [registrationId], references: [id])
+  title          Title?
+  firstName      String        @db.VarChar(100)
+  middleName     String?       @db.VarChar(100)
+  lastName       String        @db.VarChar(100)
+  nationalityId  Int?
+  nationality    Country?      @relation(fields: [nationalityId], references: [id])
+  needsVisaHelp  Boolean       @default(false)
+  passportCopy   String?       @db.VarChar(500)
+  visaForm       String?       @db.VarChar(500)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt @db.Date
+}
+
+model Trip {
+  id                Int                @id @default(autoincrement())
+  name              String             @db.VarChar(200)
+  nameAr            String?            @db.VarChar(200)
+  description       String?            @db.Text
+  descriptionAr     String?            @db.Text
+  price             Decimal            @db.Decimal(10, 2)
+  currency          String             @default("JD") @db.VarChar(10)
+  tripDate          DateTime?
+  maxParticipants   Int?
+  image             String?            @db.VarChar(500)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt @db.Date
+  registrationTrips RegistrationTrip[]
+}
+
+model RegistrationTrip {
+  id             Int          @id @default(autoincrement())
+  registrationId Int
+  registration   Registration @relation(fields: [registrationId], references: [id])
+  tripId         Int
+  trip           Trip         @relation(fields: [tripId], references: [id])
+  forSpouse      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@unique([registrationId, tripId, forSpouse])
+}
+
+model TransportationSchedule {
+  id                      Int                @id @default(autoincrement())
+  direction               TransportDirection
+  scheduleDate            DateTime
+  departureTime           String             @db.VarChar(10)
+  expectedArrivalTime     String             @db.VarChar(10)
+  route                   String             @db.VarChar(200)
+  routeAr                 String?            @db.VarChar(200)
+  availableSeats          Int?
+  isActive                Boolean            @default(true)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt @db.Date
+  registrationsToDeadSea  Registration[]     @relation("ToDeadSea")
+  registrationsFromDeadSea Registration[]    @relation("FromDeadSea")
+}
+
+enum TransportDirection {
+  AMMAN_TO_DEAD_SEA
+  DEAD_SEA_TO_AMMAN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+}
+
+enum RegistrationStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  CANCELLED
 }

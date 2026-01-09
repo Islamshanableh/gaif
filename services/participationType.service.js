@@ -46,14 +46,37 @@ exports.createParticipationType = async payload => {
   return result;
 };
 
-exports.getParticipationTypeList = async () => {
-  const result = await prisma.participationType.findMany({
-    where: {
-      isActive: true,
-    },
-  });
+exports.getParticipationTypeList = async query => {
+  const { page = 1, limit = 10, search } = query || {};
+  const skip = (page - 1) * limit;
 
-  return result;
+  const where = {
+    isActive: true,
+  };
+
+  if (search) {
+    where.title = { contains: search };
+  }
+
+  const [participationTypes, total] = await Promise.all([
+    prisma.participationType.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.participationType.count({ where }),
+  ]);
+
+  return {
+    data: participationTypes,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 exports.getParticipationTypeById = async id => {

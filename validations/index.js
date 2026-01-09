@@ -4,3 +4,6 @@ module.exports.participationTypeValidation = require('./participationType.valida
 module.exports.ticketValidation = require('./ticket.validation');
 module.exports.companyValidation = require('./company.validation');
 module.exports.accommodationValidation = require('./accommodation.validation');
+module.exports.registrationValidation = require('./registration.validation');
+module.exports.tripValidation = require('./trip.validation');
+module.exports.transportationScheduleValidation = require('./transportationSchedule.validation');

@@ -36,6 +36,9 @@ router
 
 router
   .route('/list')
-  .post(auth(), participationTypeController.getParticipationTypeList);
+  .get(
+    validate(participationTypeValidation.getParticipationTypeList),
+    participationTypeController.getParticipationTypeList,
+  );
 
 module.exports = router;
