@@ -1,14 +1,14 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { companyService } = require('../services');
-const { uploadFile } = require('../utils/fileUpload');
+const { uploadFileToDb } = require('../utils/fileUpload');
 
 exports.createCompany = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.logo) {
-    const logoPath = await uploadFile(req.files.logo, 'companies');
-    payload.logo = logoPath;
+    const uploadedFile = await uploadFileToDb(req.files.logo, 'company', null, 'logo');
+    payload.logoId = uploadedFile.id;
   }
 
   const result = await companyService.createCompany(payload);
@@ -20,8 +20,8 @@ exports.updateCompany = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.logo) {
-    const logoPath = await uploadFile(req.files.logo, 'companies');
-    payload.logo = logoPath;
+    const uploadedFile = await uploadFileToDb(req.files.logo, 'company', parseInt(id, 10), 'logo');
+    payload.logoId = uploadedFile.id;
   }
 
   const result = await companyService.updateCompany({

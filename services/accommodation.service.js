@@ -1,8 +1,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { Prisma } = require('@prisma/client');
-const { prisma } = require('./prisma.service');
+const { Accommodation, HotelRoom, HotelImages, sequelize } = require('./db.service');
 const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
@@ -11,143 +10,140 @@ exports.createAccommodation = async payload => {
   const hotelImages = payload?.hotelImages;
   delete payload?.hotelRooms;
   delete payload?.hotelImages;
-  const result = await prisma.accommodation.create({
-    data: {
-      ...payload,
-      hotelRooms: hotelRooms
-        ? {
-            create: hotelRooms?.map(room => ({
-              roomCategory: room.roomCategory,
-              roomCategoryInArabic: room.roomCategoryInArabic,
-              numberOfRooms: room.numberOfRooms,
-              single: room.single,
-              double: room.double,
-              available: room.available,
-            })),
-          }
-        : undefined,
 
-      hotelImages: hotelImages
-        ? {
-            create: hotelImages?.map(image => ({
-              fileKey: image.fileKey,
-            })),
-          }
-        : undefined,
-    },
-  });
+  const transaction = await sequelize.transaction();
 
-  return result;
+  try {
+    const accommodation = await Accommodation.create(payload, { transaction });
+
+    if (hotelRooms && hotelRooms.length > 0) {
+      await HotelRoom.bulkCreate(
+        hotelRooms.map(room => ({
+          roomCategory: room.roomCategory,
+          roomCategoryInArabic: room.roomCategoryInArabic,
+          numberOfRooms: room.numberOfRooms,
+          single: room.single,
+          double: room.double,
+          roomRate: room.roomRate,
+          available: room.available,
+          accommodationId: accommodation.id,
+        })),
+        { transaction }
+      );
+    }
+
+    if (hotelImages && hotelImages.length > 0) {
+      await HotelImages.bulkCreate(
+        hotelImages.map(image => ({
+          fileKey: image.fileKey,
+          accommodationId: accommodation.id,
+        })),
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    return accommodation.toJSON();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 };
 
 exports.getAccommodationList = async () => {
-  const result = await prisma.accommodation.findMany({
+  const result = await Accommodation.findAll({
     where: {
       isActive: true,
     },
-    include: {
-      hotelImages: true,
-      hotelRooms: true,
-    },
+    include: [
+      { model: HotelImages, as: 'hotelImages' },
+      { model: HotelRoom, as: 'hotelRooms' },
+    ],
   });
 
-  result.map(item => {
-    item?.hotelImages?.map(image => {
-      if (image?.fileKey) {
-        image.fileKey = `${config.cdnPrefix}/${image.fileKey}`;
-      }
-      return image;
-    });
-    return item;
+  return result.map(item => {
+    const accommodation = item.toJSON();
+    if (accommodation.hotelImages) {
+      accommodation.hotelImages = accommodation.hotelImages.map(image => {
+        if (image?.fileKey) {
+          image.fileKey = `${config.cdnPrefix}/${image.fileKey}`;
+        }
+        return image;
+      });
+    }
+    return accommodation;
   });
-
-  return result;
 };
 
 exports.getAccommodationById = async id => {
-  const result = await prisma.accommodation.findFirst({
-    where: {
-      id,
-    },
-    include: {
-      hotelImages: true,
-      hotelRooms: true,
-    },
+  const result = await Accommodation.findOne({
+    where: { id },
+    include: [
+      { model: HotelImages, as: 'hotelImages' },
+      { model: HotelRoom, as: 'hotelRooms' },
+    ],
   });
 
-  result?.hotelImages?.map(item => {
-    if (item.fileKey) {
-      item.fileKey = `${config.cdnPrefix}/${item.fileKey}`;
-    }
-    return item;
-  });
-  return result;
+  if (!result) {
+    return null;
+  }
+
+  const accommodation = result.toJSON();
+  if (accommodation.hotelImages) {
+    accommodation.hotelImages = accommodation.hotelImages.map(item => {
+      if (item.fileKey) {
+        item.fileKey = `${config.cdnPrefix}/${item.fileKey}`;
+      }
+      return item;
+    });
+  }
+
+  return accommodation;
 };
 
 exports.deleteAccommodation = async id => {
-  const result = await prisma.accommodation.update({
-    where: {
-      id,
-    },
-    data: {
-      isActive: false,
-    },
-  });
+  await Accommodation.update(
+    { isActive: false },
+    { where: { id } }
+  );
 
-  return result;
+  const result = await Accommodation.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.updateAccommodation = async payload => {
-  const hotelImages = payload?.hotelImages;
-  const updateData = { ...payload };
-  delete updateData.hotelImages;
+  const { id, hotelImages, ...updateData } = payload;
 
-  const result = await prisma.accommodation
-    .update({
-      where: {
-        id: payload.id,
-      },
-      data: {
-        ...updateData,
-        hotelImages: hotelImages
-          ? {
-              create: hotelImages?.map(image => ({
-                fileKey: image.fileKey,
-              })),
-            }
-          : undefined,
-      },
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
+  const transaction = await sequelize.transaction();
 
-            arr.shift();
-            const msg = arr.join(' ');
-
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
+  try {
+    await Accommodation.update(updateData, {
+      where: { id },
+      transaction,
     });
 
-  return result;
+    if (hotelImages && hotelImages.length > 0) {
+      await HotelImages.bulkCreate(
+        hotelImages.map(image => ({
+          fileKey: image.fileKey,
+          accommodationId: id,
+        })),
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    const result = await Accommodation.findByPk(id);
+    return result ? result.toJSON() : null;
+  } catch (e) {
+    await transaction.rollback();
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };

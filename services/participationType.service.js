@@ -1,75 +1,100 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { Prisma } = require('@prisma/client');
-const { prisma } = require('./prisma.service');
+const { ParticipationType, ParticipationTypeCountry, Country, Op, sequelize } = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
 exports.createParticipationType = async payload => {
-  const result = await prisma.participationType
-    .create({
-      data: {
-        ...payload,
-      },
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
+  const { countryIds, ...participationData } = payload;
+  const transaction = await sequelize.transaction();
 
-            arr.shift();
-            const msg = arr.join(' ');
+  try {
+    const result = await ParticipationType.create(participationData, { transaction });
 
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
+    // Add countries if provided
+    if (countryIds && countryIds.length > 0) {
+      await ParticipationTypeCountry.bulkCreate(
+        countryIds.map(countryId => ({
+          participationTypeId: result.id,
+          countryId,
+        })),
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    // Fetch with countries
+    const participationType = await ParticipationType.findByPk(result.id, {
+      include: [{ model: Country, as: 'countries' }],
     });
 
-  return result;
+    return participationType.toJSON();
+  } catch (e) {
+    await transaction.rollback();
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };
 
 exports.getParticipationTypeList = async query => {
-  const { page = 1, limit = 10, search } = query || {};
-  const skip = (page - 1) * limit;
+  const { page = 1, limit = 10, search, allowForRegister, countryId } = query || {};
+  const offset = (page - 1) * limit;
 
   const where = {
     isActive: true,
   };
 
   if (search) {
-    where.title = { contains: search };
+    where.title = { [Op.like]: `%${search}%` };
   }
 
-  const [participationTypes, total] = await Promise.all([
-    prisma.participationType.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.participationType.count({ where }),
-  ]);
+  if (allowForRegister !== undefined) {
+    where.allowForRegister = allowForRegister;
+  }
+
+  // Build include for countries
+  const include = [{ model: Country, as: 'countries' }];
+
+  // If filtering by countryId, we need to filter participation types that have this country
+  let participationTypeIds = null;
+  if (countryId) {
+    const ptCountries = await ParticipationTypeCountry.findAll({
+      where: { countryId },
+      attributes: ['participationTypeId'],
+    });
+    participationTypeIds = ptCountries.map(ptc => ptc.participationTypeId);
+    if (participationTypeIds.length > 0) {
+      where.id = { [Op.in]: participationTypeIds };
+    } else {
+      // No participation types for this country
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+  }
+
+  const { count: total, rows: participationTypes } = await ParticipationType.findAndCountAll({
+    where,
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    include,
+    distinct: true,
+  });
 
   return {
-    data: participationTypes,
+    data: participationTypes.map(p => p.toJSON()),
     pagination: {
       page,
       limit,
@@ -80,66 +105,67 @@ exports.getParticipationTypeList = async query => {
 };
 
 exports.getParticipationTypeById = async id => {
-  const result = await prisma.participationType.findFirst({
-    where: {
-      id,
-    },
+  const result = await ParticipationType.findOne({
+    where: { id },
+    include: [{ model: Country, as: 'countries' }],
   });
 
-  return result;
+  return result ? result.toJSON() : null;
 };
 
 exports.deleteParticipationType = async id => {
-  const result = await prisma.participationType.update({
-    where: {
-      id,
-    },
-    data: {
-      isActive: false,
-    },
-  });
+  await ParticipationType.update(
+    { isActive: false },
+    { where: { id } }
+  );
 
-  return result;
+  const result = await ParticipationType.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.updateParticipationType = async payload => {
-  const result = await prisma.participationType
-    .update({
-      where: {
-        id: payload.id,
-      },
-      data: payload,
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
+  const { id, countryIds, ...updateData } = payload;
+  const transaction = await sequelize.transaction();
 
-            arr.shift();
-            const msg = arr.join(' ');
-
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
+  try {
+    await ParticipationType.update(updateData, {
+      where: { id },
+      transaction,
     });
 
-  return result;
+    // Update countries if provided
+    if (countryIds !== undefined) {
+      // Remove existing countries
+      await ParticipationTypeCountry.destroy({
+        where: { participationTypeId: id },
+        transaction,
+      });
+
+      // Add new countries
+      if (countryIds && countryIds.length > 0) {
+        await ParticipationTypeCountry.bulkCreate(
+          countryIds.map(countryId => ({
+            participationTypeId: id,
+            countryId,
+          })),
+          { transaction }
+        );
+      }
+    }
+
+    await transaction.commit();
+
+    const result = await ParticipationType.findByPk(id, {
+      include: [{ model: Country, as: 'countries' }],
+    });
+    return result ? result.toJSON() : null;
+  } catch (e) {
+    await transaction.rollback();
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };

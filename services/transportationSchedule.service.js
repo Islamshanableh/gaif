@@ -1,38 +1,34 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { prisma } = require('./prisma.service');
+const { TransportationSchedule } = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
 exports.createTransportationSchedule = async payload => {
-  const result = await prisma.transportationSchedule.create({
-    data: {
-      direction: payload.direction,
-      scheduleDate: payload.scheduleDate,
-      departureTime: payload.departureTime,
-      expectedArrivalTime: payload.expectedArrivalTime,
-      route: payload.route,
-      routeAr: payload.routeAr,
-      availableSeats: payload.availableSeats,
-    },
+  const result = await TransportationSchedule.create({
+    direction: payload.direction,
+    scheduleDate: payload.scheduleDate,
+    departureTime: payload.departureTime,
+    expectedArrivalTime: payload.expectedArrivalTime,
+    route: payload.route,
+    routeAr: payload.routeAr,
+    availableSeats: payload.availableSeats,
   });
 
-  return result;
+  return result.toJSON();
 };
 
 exports.updateTransportationSchedule = async (id, payload) => {
-  const result = await prisma.transportationSchedule.update({
+  await TransportationSchedule.update(payload, {
     where: { id },
-    data: payload,
   });
 
-  return result;
+  const result = await TransportationSchedule.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.getTransportationScheduleById = async id => {
-  const result = await prisma.transportationSchedule.findUnique({
-    where: { id },
-  });
+  const result = await TransportationSchedule.findByPk(id);
 
   if (!result) {
     throw new ApiError(
@@ -41,7 +37,7 @@ exports.getTransportationScheduleById = async id => {
     );
   }
 
-  return result;
+  return result.toJSON();
 };
 
 exports.getTransportationSchedules = async query => {
@@ -61,19 +57,20 @@ exports.getTransportationSchedules = async query => {
     where.isActive = true;
   }
 
-  const result = await prisma.transportationSchedule.findMany({
+  const result = await TransportationSchedule.findAll({
     where,
-    orderBy: [{ scheduleDate: 'asc' }, { departureTime: 'asc' }],
+    order: [['scheduleDate', 'ASC'], ['departureTime', 'ASC']],
   });
 
-  return result;
+  return result.map(schedule => schedule.toJSON());
 };
 
 exports.deleteTransportationSchedule = async id => {
-  const result = await prisma.transportationSchedule.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  await TransportationSchedule.update(
+    { isActive: false },
+    { where: { id } }
+  );
 
-  return result;
+  const result = await TransportationSchedule.findByPk(id);
+  return result ? result.toJSON() : null;
 };

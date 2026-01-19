@@ -10,6 +10,7 @@ const accommodationRoute = require('./accommodation.route');
 const registrationRoute = require('./registration.route');
 const tripRoute = require('./trip.route');
 const transportationScheduleRoute = require('./transportationSchedule.route');
+const fileRoute = require('./file.route');
 
 const defaultRoutes = [
   {
@@ -43,6 +44,10 @@ const defaultRoutes = [
   {
     path: '/transportation-schedule',
     route: transportationScheduleRoute,
+  },
+  {
+    path: '/file',
+    route: fileRoute,
   },
 ];
 

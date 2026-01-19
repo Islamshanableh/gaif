@@ -1,66 +1,89 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { registrationService } = require('../services');
-const { uploadFile } = require('../utils/fileUpload');
+const { uploadFileToDb } = require('../utils/fileUpload');
 
 // Create full registration in one API call
 exports.createRegistration = catchAsync(async (req, res) => {
   const payload = req?.body;
 
-  // Handle file uploads
+  // Handle file uploads - store in database
   if (req.files) {
     // Participant picture
     if (req.files.participantPicture) {
-      const picturePath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.participantPicture,
-        'registrations/pictures',
+        'registration',
+        null,
+        'participantPicture',
       );
-      payload.participantPicture = picturePath;
+      payload.participantPictureId = uploadedFile.id;
     }
 
     // Passport copy
     if (req.files.passportCopy) {
-      const passportPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.passportCopy,
-        'registrations/documents',
+        'registration',
+        null,
+        'passportCopy',
       );
-      payload.passportCopy = passportPath;
+      payload.passportCopyId = uploadedFile.id;
+    }
+
+    // Residency document
+    if (req.files.residency) {
+      const uploadedFile = await uploadFileToDb(
+        req.files.residency,
+        'registration',
+        null,
+        'residency',
+      );
+      payload.residencyId = uploadedFile.id;
     }
 
     // Visa form
     if (req.files.visaForm) {
-      const visaPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.visaForm,
-        'registrations/documents',
+        'registration',
+        null,
+        'visaForm',
       );
-      payload.visaForm = visaPath;
+      payload.visaFormId = uploadedFile.id;
     }
 
     // Spouse passport copy
     if (req.files.spousePassportCopy && payload.spouse) {
-      const spousePassportPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.spousePassportCopy,
-        'registrations/documents',
+        'spouse',
+        null,
+        'passportCopy',
       );
-      payload.spouse.passportCopy = spousePassportPath;
+      payload.spouse.passportCopyId = uploadedFile.id;
+    }
+
+    // Spouse residency document
+    if (req.files.spouseResidency && payload.spouse) {
+      const uploadedFile = await uploadFileToDb(
+        req.files.spouseResidency,
+        'spouse',
+        null,
+        'residency',
+      );
+      payload.spouse.residencyId = uploadedFile.id;
     }
 
     // Spouse visa form
     if (req.files.spouseVisaForm && payload.spouse) {
-      const spouseVisaPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.spouseVisaForm,
-        'registrations/documents',
+        'spouse',
+        null,
+        'visaForm',
       );
-      payload.spouse.visaForm = spouseVisaPath;
-    }
-
-    // New company logo
-    if (req.files.newCompanyLogo) {
-      const logoPath = await uploadFile(
-        req.files.newCompanyLogo,
-        'companies/pending',
-      );
-      payload.newCompanyLogo = logoPath;
+      payload.spouse.visaFormId = uploadedFile.id;
     }
   }
 
@@ -112,8 +135,8 @@ exports.createRegistration = catchAsync(async (req, res) => {
   if (typeof payload.needsVisa === 'string') {
     payload.needsVisa = payload.needsVisa === 'true';
   }
-  if (typeof payload.isNewCompany === 'string') {
-    payload.isNewCompany = payload.isNewCompany === 'true';
+  if (typeof payload.needsVenueTransportation === 'string') {
+    payload.needsVenueTransportation = payload.needsVenueTransportation === 'true';
   }
 
   const result = await registrationService.createFullRegistration(payload);
@@ -125,30 +148,46 @@ exports.updateRegistration = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
   const payload = req?.body;
 
-  // Handle file uploads
+  // Handle file uploads - store in database
   if (req.files) {
     if (req.files.participantPicture) {
-      const picturePath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.participantPicture,
-        'registrations/pictures',
+        'registration',
+        id,
+        'participantPicture',
       );
-      payload.participantPicture = picturePath;
+      payload.participantPictureId = uploadedFile.id;
     }
 
     if (req.files.passportCopy) {
-      const passportPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.passportCopy,
-        'registrations/documents',
+        'registration',
+        id,
+        'passportCopy',
       );
-      payload.passportCopy = passportPath;
+      payload.passportCopyId = uploadedFile.id;
+    }
+
+    if (req.files.residency) {
+      const uploadedFile = await uploadFileToDb(
+        req.files.residency,
+        'registration',
+        id,
+        'residency',
+      );
+      payload.residencyId = uploadedFile.id;
     }
 
     if (req.files.visaForm) {
-      const visaPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.visaForm,
-        'registrations/documents',
+        'registration',
+        id,
+        'visaForm',
       );
-      payload.visaForm = visaPath;
+      payload.visaFormId = uploadedFile.id;
     }
   }
 
@@ -210,8 +249,9 @@ exports.updateRegistration = catchAsync(async (req, res) => {
   // Update visa documents
   if (
     payload.needsVisa !== undefined ||
-    payload.passportCopy ||
-    payload.visaForm
+    payload.passportCopyId ||
+    payload.residencyId ||
+    payload.visaFormId
   ) {
     result = await registrationService.uploadVisaDocuments(id, payload);
   }
@@ -256,19 +296,33 @@ exports.uploadVisaDocuments = catchAsync(async (req, res) => {
 
   if (req.files) {
     if (req.files.passportCopy) {
-      const passportPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.passportCopy,
-        'registrations/documents',
+        'registration',
+        id,
+        'passportCopy',
       );
-      payload.passportCopy = passportPath;
+      payload.passportCopyId = uploadedFile.id;
+    }
+
+    if (req.files.residency) {
+      const uploadedFile = await uploadFileToDb(
+        req.files.residency,
+        'registration',
+        id,
+        'residency',
+      );
+      payload.residencyId = uploadedFile.id;
     }
 
     if (req.files.visaForm) {
-      const visaPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.visaForm,
-        'registrations/documents',
+        'registration',
+        id,
+        'visaForm',
       );
-      payload.visaForm = visaPath;
+      payload.visaFormId = uploadedFile.id;
     }
   }
 
@@ -287,19 +341,33 @@ exports.uploadSpouseVisaDocuments = catchAsync(async (req, res) => {
 
   if (req.files) {
     if (req.files.passportCopy) {
-      const passportPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.passportCopy,
-        'registrations/documents',
+        'spouse',
+        id,
+        'passportCopy',
       );
-      payload.passportCopy = passportPath;
+      payload.passportCopyId = uploadedFile.id;
+    }
+
+    if (req.files.residency) {
+      const uploadedFile = await uploadFileToDb(
+        req.files.residency,
+        'spouse',
+        id,
+        'residency',
+      );
+      payload.residencyId = uploadedFile.id;
     }
 
     if (req.files.visaForm) {
-      const visaPath = await uploadFile(
+      const uploadedFile = await uploadFileToDb(
         req.files.visaForm,
-        'registrations/documents',
+        'spouse',
+        id,
+        'visaForm',
       );
-      payload.visaForm = visaPath;
+      payload.visaFormId = uploadedFile.id;
     }
   }
 

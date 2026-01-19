@@ -1,11 +1,13 @@
-const { prisma } = require('./prisma.service');
+const { Country, Op } = require('./db.service');
 
 exports.getCountries = async search => {
-  const result = await prisma.country.findMany({
-    where: {
-      name: { contains: search },
-    },
-  });
+  const where = {};
 
-  return result;
+  if (search) {
+    where.name = { [Op.like]: `%${search}%` };
+  }
+
+  const result = await Country.findAll({ where });
+
+  return result.map(country => country.toJSON());
 };

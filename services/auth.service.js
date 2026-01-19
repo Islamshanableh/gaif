@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
-const { prisma } = require('./prisma.service');
+const { User } = require('./db.service');
 const tokenService = require('./token.service');
 const ApiError = require('../utils/ApiError');
 const { auth } = require('../constants/service.constants');
@@ -15,7 +15,7 @@ const { sendEmail } = require('../utils/email');
 const config = require('../config/config');
 
 const getUserDetail = async payload => {
-  const user = await prisma.user.findFirst({
+  const user = await User.findOne({
     where: {
       email: payload.email,
     },
@@ -25,9 +25,7 @@ const getUserDetail = async payload => {
     throw new ApiError(httpStatus.NOT_FOUND, 'user not found');
   }
 
-  if (user) {
-    return user;
-  }
+  return user.toJSON();
 };
 
 exports.loginByEmailAndPassword = async ({ email, password }) => {
@@ -53,17 +51,13 @@ exports.refreshAuth = async refreshToken => {
       auth.tokenTypes.REFRESH,
     );
 
-    const user = await prisma.user.findFirst({
-      where: {
-        id: refreshTokenDoc.sub,
-      },
-    });
+    const user = await User.findByPk(refreshTokenDoc.sub);
 
     if (!user) {
       throw new Error(httpStatus.UNAUTHORIZED, 'Please Authenticate');
     }
 
-    const token = tokenService.generateAuthTokens(user);
+    const token = tokenService.generateAuthTokens(user.toJSON());
     return token;
   } catch (error) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate');

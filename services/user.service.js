@@ -3,9 +3,7 @@
 const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
 
-const { Prisma } = require('@prisma/client');
-
-const { prisma } = require('./prisma.service');
+const { User, Op } = require('./db.service');
 const { hash } = require('../config/config');
 
 const ApiError = require('../utils/ApiError');
@@ -13,160 +11,109 @@ const ApiError = require('../utils/ApiError');
 exports.register = async payload => {
   payload.password = bcrypt.hashSync(payload.password, hash.secret);
 
-  const user = await prisma.user
-    .create({
-      data: payload,
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
-
-            arr.shift();
-            const msg = arr.join(' ');
-
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
-    });
-
-  delete user.password;
-  return user;
+  try {
+    const user = await User.create(payload);
+    const userData = user.toJSON();
+    delete userData.password;
+    return userData;
+  } catch (e) {
+    // Handle unique constraint violations
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };
 
 exports.getUserById = async id => {
-  const result = await prisma.user.findFirst({
-    where: {
-      id,
-    },
-    include: {
-      sections: {
-        include: {
-          ticket: {
-            where: {
-              userId: id,
-            },
-          },
-        },
-      },
-    },
+  const result = await User.findOne({
+    where: { id },
   });
 
-  return result;
+  return result ? result.toJSON() : null;
 };
 
 exports.approveUserById = async payload => {
-  await prisma.user.update({
-    where: {
-      id: payload?.id,
-    },
-    data: {
-      sections: {
-        set: [],
-      },
-    },
-  });
-  const result = await prisma.user.update({
-    where: {
-      id: payload?.id,
-    },
-    data: {
+  const result = await User.update(
+    {
       status: 'APPROVED',
       role: payload?.role,
-      sections: {
-        connect: payload.sectionsIds.map(sectionId => ({ id: sectionId })),
-      },
     },
-  });
+    {
+      where: { id: payload?.id },
+      returning: true,
+    }
+  );
 
-  return result;
+  // Fetch the updated user
+  const updatedUser = await User.findByPk(payload?.id);
+  return updatedUser ? updatedUser.toJSON() : null;
 };
 
 exports.updateUserById = async payload => {
-  const result = await prisma.user.update({
-    where: {
-      id: payload.id,
-    },
-    data: payload,
+  const { id, ...updateData } = payload;
+
+  await User.update(updateData, {
+    where: { id },
   });
 
-  return result;
+  const result = await User.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.updateUserPassword = async (id, payload) => {
   if (payload.oldPassword) {
-    const user = await prisma.user.findFirst({
-      id,
-    });
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+    }
+
     const isPasswordMatched = bcrypt.compareSync(
       payload.oldPassword,
       user.password,
     );
 
-    if (!isPasswordMatched)
+    if (!isPasswordMatched) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid old password');
+    }
   }
 
   const password = bcrypt.hashSync(payload.password, hash.secret);
-  const result = await prisma.user.update({
-    where: {
-      id,
-    },
-    data: {
-      password,
-    },
-  });
 
-  return result;
+  await User.update(
+    { password },
+    { where: { id } }
+  );
+
+  const result = await User.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.deleteUserById = async id => {
-  const userInfo = await prisma.user.findUnique({
-    where: {
-      id,
-    },
-  });
+  const userInfo = await User.findByPk(id);
 
-  await prisma.user.update({
-    where: {
-      id,
-    },
-    data: {
-      isActive: false,
-      email: `${userInfo?.email}-${Date.now()}`,
-      mobile: `${userInfo?.mobile}-${Date.now()}`,
-    },
-  });
+  if (userInfo) {
+    await User.update(
+      {
+        isActive: false,
+        email: `${userInfo.email}-${Date.now()}`,
+        mobile: userInfo.mobile ? `${userInfo.mobile}-${Date.now()}` : null,
+      },
+      { where: { id } }
+    );
+  }
 };
 
 exports.getUserList = async status => {
-  const result = await prisma.user.findMany({
+  const result = await User.findAll({
     where: {
       isActive: true,
-      status,
-    },
-    include: {
-      sections: true,
+      ...(status && { status }),
     },
   });
 
-  return result;
+  return result.map(user => user.toJSON());
 };

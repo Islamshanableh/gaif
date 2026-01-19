@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const { IpDeniedError } = require('express-ipfilter');
-const { prismaBase } = require('../services/prisma.service');
+const { Sequelize } = require('../services/db.service');
 const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
@@ -8,10 +8,15 @@ const errorConverter = (err, req, res, next) => {
   let error = err;
 
   if (!(error instanceof ApiError)) {
+    // Check for Sequelize-specific errors
+    const isSequelizeError =
+      error instanceof Sequelize.ValidationError ||
+      error instanceof Sequelize.UniqueConstraintError ||
+      error instanceof Sequelize.ForeignKeyConstraintError ||
+      error instanceof Sequelize.DatabaseError;
+
     const statusCode =
-      error.statusCode ||
-      error instanceof prismaBase.PrismaClientKnownRequestError ||
-      error instanceof prismaBase.PrismaClientValidationError
+      error.statusCode || isSequelizeError
         ? httpStatus.BAD_REQUEST
         : httpStatus.INTERNAL_SERVER_ERROR;
 
@@ -42,7 +47,7 @@ const errorHandler = (err, req, res, next) => {
   };
 
   console.log(
-    '🚀 ~ file: error.js ~ line 39 ~ errorHandler ~ message : ',
+    '~ file: error.js ~ line 39 ~ errorHandler ~ message : ',
     message,
   );
 

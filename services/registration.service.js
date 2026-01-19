@@ -1,40 +1,117 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { Prisma } = require('@prisma/client');
-const { prisma } = require('./prisma.service');
-const config = require('../config/config');
+const {
+  Registration,
+  Company,
+  Country,
+  ParticipationType,
+  Spouse,
+  Trip,
+  RegistrationTrip,
+  Accommodation,
+  HotelRoom,
+  HotelImages,
+  TransportationSchedule,
+  File,
+  Op,
+  sequelize,
+} = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
-// Helper function to add CDN prefix to file paths
-const addCdnPrefix = filePath => {
-  if (filePath) {
-    return `${config.cdnPrefix}/${filePath}`;
-  }
-  return filePath;
+// File attributes to include (without content)
+const fileAttributes = ['id', 'fileKey', 'fileName', 'fileType', 'fileSize'];
+
+// Common include configuration for registration queries
+const getRegistrationIncludes = () => [
+  {
+    model: Company,
+    as: 'company',
+    include: [
+      { model: Country, as: 'country' },
+      { model: File, as: 'logo', attributes: fileAttributes },
+    ],
+  },
+  { model: ParticipationType, as: 'participation' },
+  { model: Country, as: 'nationality' },
+  {
+    model: Spouse,
+    as: 'spouse',
+    include: [
+      { model: Country, as: 'nationality' },
+      { model: File, as: 'passportCopy', attributes: fileAttributes },
+      { model: File, as: 'residency', attributes: fileAttributes },
+      { model: File, as: 'visaForm', attributes: fileAttributes },
+    ],
+  },
+  {
+    model: RegistrationTrip,
+    as: 'trips',
+    include: [
+      {
+        model: Trip,
+        as: 'trip',
+        include: [{ model: File, as: 'image', attributes: fileAttributes }],
+      },
+    ],
+  },
+  {
+    model: Accommodation,
+    as: 'ammanHotel',
+    include: [
+      { model: HotelRoom, as: 'hotelRooms' },
+      { model: HotelImages, as: 'hotelImages' },
+    ],
+  },
+  { model: HotelRoom, as: 'ammanRoom' },
+  {
+    model: Accommodation,
+    as: 'deadSeaHotel',
+    include: [
+      { model: HotelRoom, as: 'hotelRooms' },
+      { model: HotelImages, as: 'hotelImages' },
+    ],
+  },
+  { model: HotelRoom, as: 'deadSeaRoom' },
+  { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
+  { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
+  // Registration file associations
+  { model: File, as: 'participantPicture', attributes: fileAttributes },
+  { model: File, as: 'passportCopy', attributes: fileAttributes },
+  { model: File, as: 'residency', attributes: fileAttributes },
+  { model: File, as: 'visaForm', attributes: fileAttributes },
+];
+
+// Helper to process registration data
+// Files are now stored in database, so no CDN prefix needed
+// File data is included as associations with id, fileKey, fileName, fileType
+const processRegistrationData = reg => {
+  // No transformation needed - files are included as associations
+  return reg;
 };
 
-// Step 1: Create initial registration
+// Step 1: Create initial registration (companyId is now required)
 exports.createRegistration = async payload => {
-  const result = await prisma.registration.create({
-    data: {
-      companyId: payload.companyId,
-      participationId: payload.participationId,
-      firstName: payload.firstName || '',
-      lastName: payload.lastName || '',
-      position: payload.position || '',
-      email: payload.email || '',
-      mobile: payload.mobile || '',
-      whatsapp: payload.whatsapp || '',
-      registrationStatus: 'DRAFT',
-    },
-    include: {
-      company: true,
-      participation: true,
-    },
+  const result = await Registration.create({
+    companyId: payload.companyId,
+    participationId: payload.participationId,
+    firstName: payload.firstName || '',
+    lastName: payload.lastName || '',
+    position: payload.position || '',
+    email: payload.email || '',
+    mobile: payload.mobile || '',
+    whatsapp: payload.whatsapp || '',
+    registrationStatus: 'DRAFT',
   });
 
-  return result;
+  const registration = await Registration.findByPk(result.id, {
+    include: [
+      { model: Company, as: 'company' },
+      { model: ParticipationType, as: 'participation' },
+    ],
+  });
+
+  return registration.toJSON();
 };
 
 // Step 2: Update personal information
@@ -52,32 +129,30 @@ exports.updatePersonalInfo = async (id, payload) => {
     whatsapp: payload.whatsapp,
   };
 
-  if (payload.participantPicture) {
-    registrationData.participantPicture = payload.participantPicture;
+  if (payload.participantPictureId) {
+    registrationData.participantPictureId = payload.participantPictureId;
   }
 
-  const result = await prisma.registration.update({
+  await Registration.update(registrationData, {
     where: { id },
-    data: registrationData,
-    include: {
-      company: true,
-      participation: true,
-      nationality: true,
-    },
   });
 
-  if (result.participantPicture) {
-    result.participantPicture = addCdnPrefix(result.participantPicture);
-  }
+  const result = await Registration.findByPk(id, {
+    include: [
+      { model: Company, as: 'company', include: [{ model: File, as: 'logo', attributes: fileAttributes }] },
+      { model: ParticipationType, as: 'participation' },
+      { model: Country, as: 'nationality' },
+      { model: File, as: 'participantPicture', attributes: fileAttributes },
+    ],
+  });
 
-  return result;
+  return result.toJSON();
 };
 
 // Step 3: Update spouse information
 exports.updateSpouseInfo = async (id, payload) => {
-  const registration = await prisma.registration.findUnique({
-    where: { id },
-    include: { spouse: true },
+  const registration = await Registration.findByPk(id, {
+    include: [{ model: Spouse, as: 'spouse' }],
   });
 
   if (!registration) {
@@ -85,10 +160,10 @@ exports.updateSpouseInfo = async (id, payload) => {
   }
 
   // Update registration hasSpouse flag
-  await prisma.registration.update({
-    where: { id },
-    data: { hasSpouse: payload.hasSpouse },
-  });
+  await Registration.update(
+    { hasSpouse: payload.hasSpouse },
+    { where: { id } }
+  );
 
   if (payload.hasSpouse && payload.spouse) {
     const spouseData = {
@@ -97,124 +172,112 @@ exports.updateSpouseInfo = async (id, payload) => {
       middleName: payload.spouse.middleName,
       lastName: payload.spouse.lastName,
       nationalityId: payload.spouse.nationalityId,
+      whatsapp: payload.spouse.whatsapp,
       needsVisaHelp: payload.spouse.needsVisaHelp || false,
     };
 
     if (registration.spouse) {
       // Update existing spouse
-      await prisma.spouse.update({
+      await Spouse.update(spouseData, {
         where: { registrationId: id },
-        data: spouseData,
       });
     } else {
       // Create new spouse
-      await prisma.spouse.create({
-        data: {
-          ...spouseData,
-          registrationId: id,
-        },
+      await Spouse.create({
+        ...spouseData,
+        registrationId: id,
       });
     }
   } else if (!payload.hasSpouse && registration.spouse) {
     // Remove spouse if hasSpouse is false
-    await prisma.spouse.delete({
+    await Spouse.destroy({
       where: { registrationId: id },
     });
   }
 
-  const result = await prisma.registration.findUnique({
-    where: { id },
-    include: {
-      company: true,
-      participation: true,
-      nationality: true,
-      spouse: {
-        include: {
-          nationality: true,
-        },
+  const result = await Registration.findByPk(id, {
+    include: [
+      { model: Company, as: 'company' },
+      { model: ParticipationType, as: 'participation' },
+      { model: Country, as: 'nationality' },
+      {
+        model: Spouse,
+        as: 'spouse',
+        include: [{ model: Country, as: 'nationality' }],
       },
-    },
+    ],
   });
 
-  return result;
+  return result.toJSON();
 };
 
 // Step 4: Update trips
 exports.updateTrips = async (id, payload) => {
   // Delete existing trip selections
-  await prisma.registrationTrip.deleteMany({
+  await RegistrationTrip.destroy({
     where: { registrationId: id },
   });
 
   // Add new trip selections
   if (payload.trips && payload.trips.length > 0) {
-    await prisma.registrationTrip.createMany({
-      data: payload.trips.map(trip => ({
+    await RegistrationTrip.bulkCreate(
+      payload.trips.map(trip => ({
         registrationId: id,
         tripId: trip.tripId,
         forSpouse: trip.forSpouse || false,
-      })),
-    });
+      }))
+    );
   }
 
-  const result = await prisma.registration.findUnique({
-    where: { id },
-    include: {
-      trips: {
-        include: {
-          trip: true,
-        },
+  const result = await Registration.findByPk(id, {
+    include: [
+      {
+        model: RegistrationTrip,
+        as: 'trips',
+        include: [{ model: Trip, as: 'trip' }],
       },
-    },
+    ],
   });
 
-  return result;
+  return result.toJSON();
 };
 
 // Step 5: Update accommodation
 exports.updateAccommodation = async (id, payload) => {
-  const result = await prisma.registration.update({
-    where: { id },
-    data: {
+  await Registration.update(
+    {
       accommodationInAmman: payload.accommodationInAmman || false,
       ammanHotelId: payload.accommodationInAmman ? payload.ammanHotelId : null,
       ammanRoomId: payload.accommodationInAmman ? payload.ammanRoomId : null,
       ammanCheckIn: payload.accommodationInAmman ? payload.ammanCheckIn : null,
-      ammanCheckOut: payload.accommodationInAmman
-        ? payload.ammanCheckOut
-        : null,
+      ammanCheckOut: payload.accommodationInAmman ? payload.ammanCheckOut : null,
       ammanPartnerProfileId: payload.ammanPartnerProfileId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
-      deadSeaHotelId: payload.accommodationInDeadSea
-        ? payload.deadSeaHotelId
-        : null,
-      deadSeaRoomId: payload.accommodationInDeadSea
-        ? payload.deadSeaRoomId
-        : null,
-      deadSeaCheckIn: payload.accommodationInDeadSea
-        ? payload.deadSeaCheckIn
-        : null,
-      deadSeaCheckOut: payload.accommodationInDeadSea
-        ? payload.deadSeaCheckOut
-        : null,
+      deadSeaHotelId: payload.accommodationInDeadSea ? payload.deadSeaHotelId : null,
+      deadSeaRoomId: payload.accommodationInDeadSea ? payload.deadSeaRoomId : null,
+      deadSeaCheckIn: payload.accommodationInDeadSea ? payload.deadSeaCheckIn : null,
+      deadSeaCheckOut: payload.accommodationInDeadSea ? payload.deadSeaCheckOut : null,
       deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
     },
-    include: {
-      ammanHotel: true,
-      ammanRoom: true,
-      deadSeaHotel: true,
-      deadSeaRoom: true,
-    },
+    { where: { id } }
+  );
+
+  const result = await Registration.findByPk(id, {
+    include: [
+      { model: Accommodation, as: 'ammanHotel' },
+      { model: HotelRoom, as: 'ammanRoom' },
+      { model: Accommodation, as: 'deadSeaHotel' },
+      { model: HotelRoom, as: 'deadSeaRoom' },
+    ],
   });
 
-  return result;
+  return result.toJSON();
 };
 
 // Step 7: Update airport pickup and flight details
 exports.updateAirportPickup = async (id, payload) => {
-  const result = await prisma.registration.update({
-    where: { id },
-    data: {
+  await Registration.update(
+    {
       airportPickupOption: payload.airportPickupOption,
       arrivalDate: payload.arrivalDate,
       arrivalAirline: payload.arrivalAirline,
@@ -226,16 +289,19 @@ exports.updateAirportPickup = async (id, payload) => {
       departureTime: payload.departureTime,
       flightDetailsForSpouse: payload.flightDetailsForSpouse || false,
     },
-  });
+    { where: { id } }
+  );
 
-  return result;
+  const result = await Registration.findByPk(id);
+  return result.toJSON();
 };
 
-// Step 8: Update transportation
+// Step 5 (part): Update transportation/additional services
 exports.updateTransportation = async (id, payload) => {
-  const result = await prisma.registration.update({
-    where: { id },
-    data: {
+  await Registration.update(
+    {
+      needsVenueTransportation: payload.needsVenueTransportation || false,
+      // Legacy fields for backward compatibility
       transportationToDeadSea: payload.transportationToDeadSea,
       toDeadSeaScheduleId:
         payload.transportationToDeadSea === 'BY_COACH'
@@ -247,26 +313,31 @@ exports.updateTransportation = async (id, payload) => {
           ? payload.fromDeadSeaScheduleId
           : null,
     },
-    include: {
-      toDeadSeaSchedule: true,
-      fromDeadSeaSchedule: true,
-    },
+    { where: { id } }
+  );
+
+  const result = await Registration.findByPk(id, {
+    include: [
+      { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
+      { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
+    ],
   });
 
-  return result;
+  return result.toJSON();
 };
 
 // Step 9: Update special request
 exports.updateSpecialRequest = async (id, payload) => {
-  const result = await prisma.registration.update({
-    where: { id },
-    data: {
+  await Registration.update(
+    {
       specialRequest: payload.specialRequest,
       photographyConsent: payload.photographyConsent || false,
     },
-  });
+    { where: { id } }
+  );
 
-  return result;
+  const result = await Registration.findByPk(id);
+  return result.toJSON();
 };
 
 // Upload visa documents
@@ -275,34 +346,35 @@ exports.uploadVisaDocuments = async (id, payload) => {
     needsVisa: payload.needsVisa || false,
   };
 
-  if (payload.passportCopy) {
-    updateData.passportCopy = payload.passportCopy;
+  if (payload.passportCopyId) {
+    updateData.passportCopyId = payload.passportCopyId;
   }
 
-  if (payload.visaForm) {
-    updateData.visaForm = payload.visaForm;
+  if (payload.residencyId) {
+    updateData.residencyId = payload.residencyId;
   }
 
-  const result = await prisma.registration.update({
-    where: { id },
-    data: updateData,
+  if (payload.visaFormId) {
+    updateData.visaFormId = payload.visaFormId;
+  }
+
+  await Registration.update(updateData, { where: { id } });
+
+  const result = await Registration.findByPk(id, {
+    include: [
+      { model: File, as: 'passportCopy', attributes: fileAttributes },
+      { model: File, as: 'residency', attributes: fileAttributes },
+      { model: File, as: 'visaForm', attributes: fileAttributes },
+    ],
   });
 
-  if (result.passportCopy) {
-    result.passportCopy = addCdnPrefix(result.passportCopy);
-  }
-  if (result.visaForm) {
-    result.visaForm = addCdnPrefix(result.visaForm);
-  }
-
-  return result;
+  return result.toJSON();
 };
 
 // Upload spouse visa documents
 exports.uploadSpouseVisaDocuments = async (registrationId, payload) => {
-  const registration = await prisma.registration.findUnique({
-    where: { id: registrationId },
-    include: { spouse: true },
+  const registration = await Registration.findByPk(registrationId, {
+    include: [{ model: Spouse, as: 'spouse' }],
   });
 
   if (!registration || !registration.spouse) {
@@ -311,127 +383,47 @@ exports.uploadSpouseVisaDocuments = async (registrationId, payload) => {
 
   const updateData = {};
 
-  if (payload.passportCopy) {
-    updateData.passportCopy = payload.passportCopy;
+  if (payload.passportCopyId) {
+    updateData.passportCopyId = payload.passportCopyId;
   }
 
-  if (payload.visaForm) {
-    updateData.visaForm = payload.visaForm;
+  if (payload.residencyId) {
+    updateData.residencyId = payload.residencyId;
   }
 
-  const result = await prisma.spouse.update({
+  if (payload.visaFormId) {
+    updateData.visaFormId = payload.visaFormId;
+  }
+
+  await Spouse.update(updateData, {
     where: { registrationId },
-    data: updateData,
   });
 
-  if (result.passportCopy) {
-    result.passportCopy = addCdnPrefix(result.passportCopy);
-  }
-  if (result.visaForm) {
-    result.visaForm = addCdnPrefix(result.visaForm);
-  }
+  const result = await Spouse.findOne({
+    where: { registrationId },
+    include: [
+      { model: Country, as: 'nationality' },
+      { model: File, as: 'passportCopy', attributes: fileAttributes },
+      { model: File, as: 'residency', attributes: fileAttributes },
+      { model: File, as: 'visaForm', attributes: fileAttributes },
+    ],
+  });
 
-  return result;
+  return result.toJSON();
 };
 
 // Get registration by ID
 exports.getRegistrationById = async id => {
-  const result = await prisma.registration.findUnique({
-    where: { id },
-    include: {
-      company: {
-        include: {
-          country: true,
-        },
-      },
-      participation: true,
-      nationality: true,
-      spouse: {
-        include: {
-          nationality: true,
-        },
-      },
-      trips: {
-        include: {
-          trip: true,
-        },
-      },
-      ammanHotel: {
-        include: {
-          hotelRooms: true,
-          hotelImages: true,
-        },
-      },
-      ammanRoom: true,
-      deadSeaHotel: {
-        include: {
-          hotelRooms: true,
-          hotelImages: true,
-        },
-      },
-      deadSeaRoom: true,
-      toDeadSeaSchedule: true,
-      fromDeadSeaSchedule: true,
-    },
+  const result = await Registration.findByPk(id, {
+    include: getRegistrationIncludes(),
   });
 
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
 
-  // Add CDN prefix to file paths
-  // Participant files
-  if (result.participantPicture) {
-    result.participantPicture = addCdnPrefix(result.participantPicture);
-  }
-  if (result.passportCopy) {
-    result.passportCopy = addCdnPrefix(result.passportCopy);
-  }
-  if (result.visaForm) {
-    result.visaForm = addCdnPrefix(result.visaForm);
-  }
-  // New company logo
-  if (result.newCompanyLogo) {
-    result.newCompanyLogo = addCdnPrefix(result.newCompanyLogo);
-  }
-  // Company logo
-  if (result.company && result.company.logo) {
-    result.company.logo = addCdnPrefix(result.company.logo);
-  }
-  // Spouse files
-  if (result.spouse) {
-    if (result.spouse.passportCopy) {
-      result.spouse.passportCopy = addCdnPrefix(result.spouse.passportCopy);
-    }
-    if (result.spouse.visaForm) {
-      result.spouse.visaForm = addCdnPrefix(result.spouse.visaForm);
-    }
-  }
-  // Trip images
-  if (result.trips && result.trips.length > 0) {
-    result.trips.forEach(regTrip => {
-      if (regTrip.trip && regTrip.trip.image) {
-        regTrip.trip.image = addCdnPrefix(regTrip.trip.image);
-      }
-    });
-  }
-  // Hotel images
-  if (result.ammanHotel && result.ammanHotel.hotelImages) {
-    result.ammanHotel.hotelImages.forEach(img => {
-      if (img.fileKey) {
-        img.fileKey = addCdnPrefix(img.fileKey);
-      }
-    });
-  }
-  if (result.deadSeaHotel && result.deadSeaHotel.hotelImages) {
-    result.deadSeaHotel.hotelImages.forEach(img => {
-      if (img.fileKey) {
-        img.fileKey = addCdnPrefix(img.fileKey);
-      }
-    });
-  }
-
-  return result;
+  const data = result.toJSON();
+  return processRegistrationData(data);
 };
 
 // Get all registrations with pagination and filters
@@ -445,7 +437,7 @@ exports.getRegistrations = async query => {
     paymentStatus,
     search,
   } = query;
-  const skip = (page - 1) * limit;
+  const offset = (page - 1) * limit;
 
   const where = {
     isActive: true,
@@ -469,116 +461,29 @@ exports.getRegistrations = async query => {
 
   // Search by name or email
   if (search) {
-    where.OR = [
-      { firstName: { contains: search } },
-      { lastName: { contains: search } },
-      { email: { contains: search } },
-      { mobile: { contains: search } },
-      { newCompanyName: { contains: search } },
+    where[Op.or] = [
+      { firstName: { [Op.like]: `%${search}%` } },
+      { lastName: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
+      { mobile: { [Op.like]: `%${search}%` } },
     ];
   }
 
-  const [registrations, total] = await Promise.all([
-    prisma.registration.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        company: {
-          include: {
-            country: true,
-          },
-        },
-        participation: true,
-        nationality: true,
-        spouse: {
-          include: {
-            nationality: true,
-          },
-        },
-        trips: {
-          include: {
-            trip: true,
-          },
-        },
-        ammanHotel: {
-          include: {
-            hotelRooms: true,
-            hotelImages: true,
-          },
-        },
-        ammanRoom: true,
-        deadSeaHotel: {
-          include: {
-            hotelRooms: true,
-            hotelImages: true,
-          },
-        },
-        deadSeaRoom: true,
-        toDeadSeaSchedule: true,
-        fromDeadSeaSchedule: true,
-      },
-    }),
-    prisma.registration.count({ where }),
-  ]);
+  const { count: total, rows: registrations } = await Registration.findAndCountAll({
+    where,
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    include: getRegistrationIncludes(),
+  });
 
-  // Add CDN prefix to all file paths
-  registrations.forEach(reg => {
-    // Participant files
-    if (reg.participantPicture) {
-      reg.participantPicture = addCdnPrefix(reg.participantPicture);
-    }
-    if (reg.passportCopy) {
-      reg.passportCopy = addCdnPrefix(reg.passportCopy);
-    }
-    if (reg.visaForm) {
-      reg.visaForm = addCdnPrefix(reg.visaForm);
-    }
-    // New company logo
-    if (reg.newCompanyLogo) {
-      reg.newCompanyLogo = addCdnPrefix(reg.newCompanyLogo);
-    }
-    // Company logo
-    if (reg.company && reg.company.logo) {
-      reg.company.logo = addCdnPrefix(reg.company.logo);
-    }
-    // Spouse files
-    if (reg.spouse) {
-      if (reg.spouse.passportCopy) {
-        reg.spouse.passportCopy = addCdnPrefix(reg.spouse.passportCopy);
-      }
-      if (reg.spouse.visaForm) {
-        reg.spouse.visaForm = addCdnPrefix(reg.spouse.visaForm);
-      }
-    }
-    // Trip images
-    if (reg.trips && reg.trips.length > 0) {
-      reg.trips.forEach(regTrip => {
-        if (regTrip.trip && regTrip.trip.image) {
-          regTrip.trip.image = addCdnPrefix(regTrip.trip.image);
-        }
-      });
-    }
-    // Hotel images
-    if (reg.ammanHotel && reg.ammanHotel.hotelImages) {
-      reg.ammanHotel.hotelImages.forEach(img => {
-        if (img.fileKey) {
-          img.fileKey = addCdnPrefix(img.fileKey);
-        }
-      });
-    }
-    if (reg.deadSeaHotel && reg.deadSeaHotel.hotelImages) {
-      reg.deadSeaHotel.hotelImages.forEach(img => {
-        if (img.fileKey) {
-          img.fileKey = addCdnPrefix(img.fileKey);
-        }
-      });
-    }
+  const data = registrations.map(reg => {
+    const regData = reg.toJSON();
+    return processRegistrationData(regData);
   });
 
   return {
-    data: registrations,
+    data,
     pagination: {
       page,
       limit,
@@ -590,44 +495,46 @@ exports.getRegistrations = async query => {
 
 // Submit registration (final step)
 exports.submitRegistration = async id => {
-  const registration = await prisma.registration.findUnique({
-    where: { id },
-    include: {
-      participation: true,
-      spouse: true,
-      trips: {
-        include: { trip: true },
+  const registration = await Registration.findByPk(id, {
+    include: [
+      { model: ParticipationType, as: 'participation' },
+      { model: Spouse, as: 'spouse' },
+      {
+        model: RegistrationTrip,
+        as: 'trips',
+        include: [{ model: Trip, as: 'trip' }],
       },
-      ammanRoom: true,
-      deadSeaRoom: true,
-    },
+      { model: HotelRoom, as: 'ammanRoom' },
+      { model: HotelRoom, as: 'deadSeaRoom' },
+    ],
   });
 
   if (!registration) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
 
+  const regData = registration.toJSON();
+
   // Calculate total price
   let totalPrice = 0;
 
   // Add participation fee
-  if (registration.participation && registration.participation.price) {
-    totalPrice += registration.participation.price;
+  if (regData.participation && regData.participation.price) {
+    totalPrice += regData.participation.price;
   }
 
   // Add spouse fee if applicable
   if (
-    registration.hasSpouse &&
-    registration.spouse &&
-    registration.participation?.spouse
+    regData.hasSpouse &&
+    regData.spouse &&
+    regData.participation?.spouse
   ) {
-    // Assuming spouse fee is same as participant or could be configured
-    totalPrice += registration.participation.price || 0;
+    totalPrice += regData.participation.price || 0;
   }
 
   // Add trip fees
-  if (registration.trips && registration.trips.length > 0) {
-    registration.trips.forEach(regTrip => {
+  if (regData.trips && regData.trips.length > 0) {
+    regData.trips.forEach(regTrip => {
       if (regTrip.trip) {
         totalPrice += parseFloat(regTrip.trip.price) || 0;
       }
@@ -635,134 +542,145 @@ exports.submitRegistration = async id => {
   }
 
   // Add accommodation fees
-  if (registration.accommodationInAmman && registration.ammanRoom) {
-    // Assuming single/double rate based on room type
-    totalPrice +=
-      registration.ammanRoom.double || registration.ammanRoom.single || 0;
+  if (regData.accommodationInAmman && regData.ammanRoom) {
+    totalPrice += regData.ammanRoom.double || regData.ammanRoom.single || 0;
   }
 
-  if (registration.accommodationInDeadSea && registration.deadSeaRoom) {
-    totalPrice +=
-      registration.deadSeaRoom.double || registration.deadSeaRoom.single || 0;
+  if (regData.accommodationInDeadSea && regData.deadSeaRoom) {
+    totalPrice += regData.deadSeaRoom.double || regData.deadSeaRoom.single || 0;
   }
 
-  const result = await prisma.registration.update({
-    where: { id },
-    data: {
+  await Registration.update(
+    {
       registrationStatus: 'SUBMITTED',
-      totalPrice: new Prisma.Decimal(totalPrice),
+      totalPrice,
     },
-  });
+    { where: { id } }
+  );
 
-  return result;
+  const result = await Registration.findByPk(id);
+  return result.toJSON();
 };
 
 // Delete registration (soft delete)
 exports.deleteRegistration = async id => {
-  const result = await prisma.registration.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  await Registration.update(
+    { isActive: false },
+    { where: { id } }
+  );
 
-  return result;
+  const result = await Registration.findByPk(id);
+  return result.toJSON();
 };
 
 // Create full registration (all steps at once)
 exports.createFullRegistration = async payload => {
-  // Create registration with all data
-  const registrationData = {
-    companyId: payload.isNewCompany ? null : payload.companyId,
-    participationId: payload.participationId,
-    // New company fields
-    isNewCompany: payload.isNewCompany || false,
-    newCompanyName: payload.newCompanyName,
-    newCompanyEmail: payload.newCompanyEmail,
-    newCompanyLogo: payload.newCompanyLogo,
-    newCompanyApproved: false,
-    title: payload.title,
-    firstName: payload.firstName,
-    middleName: payload.middleName,
-    lastName: payload.lastName,
-    position: payload.position,
-    nationalityId: payload.nationalityId,
-    email: payload.email,
-    telephone: payload.telephone,
-    mobile: payload.mobile,
-    whatsapp: payload.whatsapp,
-    hasSpouse: payload.hasSpouse || false,
-    accommodationInAmman: payload.accommodationInAmman || false,
-    ammanHotelId: payload.ammanHotelId,
-    ammanRoomId: payload.ammanRoomId,
-    ammanCheckIn: payload.ammanCheckIn,
-    ammanCheckOut: payload.ammanCheckOut,
-    ammanPartnerProfileId: payload.ammanPartnerProfileId,
-    accommodationInDeadSea: payload.accommodationInDeadSea || false,
-    deadSeaHotelId: payload.deadSeaHotelId,
-    deadSeaRoomId: payload.deadSeaRoomId,
-    deadSeaCheckIn: payload.deadSeaCheckIn,
-    deadSeaCheckOut: payload.deadSeaCheckOut,
-    deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
-    airportPickupOption: payload.airportPickupOption,
-    arrivalDate: payload.arrivalDate,
-    arrivalAirline: payload.arrivalAirline,
-    arrivalFlightNumber: payload.arrivalFlightNumber,
-    arrivalTime: payload.arrivalTime,
-    departureDate: payload.departureDate,
-    departureAirline: payload.departureAirline,
-    departureFlightNumber: payload.departureFlightNumber,
-    departureTime: payload.departureTime,
-    flightDetailsForSpouse: payload.flightDetailsForSpouse || false,
-    transportationToDeadSea: payload.transportationToDeadSea,
-    toDeadSeaScheduleId: payload.toDeadSeaScheduleId,
-    transportationFromDeadSea: payload.transportationFromDeadSea,
-    fromDeadSeaScheduleId: payload.fromDeadSeaScheduleId,
-    specialRequest: payload.specialRequest,
-    photographyConsent: payload.photographyConsent || false,
-    needsVisa: payload.needsVisa || false,
-    registrationStatus: 'DRAFT',
-  };
+  const transaction = await sequelize.transaction();
 
-  if (payload.participantPicture) {
-    registrationData.participantPicture = payload.participantPicture;
+  try {
+    // Create registration with all data (companyId is now required)
+    const registrationData = {
+      companyId: payload.companyId,
+      participationId: payload.participationId,
+      title: payload.title,
+      firstName: payload.firstName,
+      middleName: payload.middleName,
+      lastName: payload.lastName,
+      position: payload.position,
+      nationalityId: payload.nationalityId,
+      email: payload.email,
+      telephone: payload.telephone,
+      mobile: payload.mobile,
+      whatsapp: payload.whatsapp,
+      hasSpouse: payload.hasSpouse || false,
+      accommodationInAmman: payload.accommodationInAmman || false,
+      ammanHotelId: payload.ammanHotelId,
+      ammanRoomId: payload.ammanRoomId,
+      ammanCheckIn: payload.ammanCheckIn,
+      ammanCheckOut: payload.ammanCheckOut,
+      ammanPartnerProfileId: payload.ammanPartnerProfileId,
+      accommodationInDeadSea: payload.accommodationInDeadSea || false,
+      deadSeaHotelId: payload.deadSeaHotelId,
+      deadSeaRoomId: payload.deadSeaRoomId,
+      deadSeaCheckIn: payload.deadSeaCheckIn,
+      deadSeaCheckOut: payload.deadSeaCheckOut,
+      deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
+      airportPickupOption: payload.airportPickupOption,
+      arrivalDate: payload.arrivalDate,
+      arrivalAirline: payload.arrivalAirline,
+      arrivalFlightNumber: payload.arrivalFlightNumber,
+      arrivalTime: payload.arrivalTime,
+      departureDate: payload.departureDate,
+      departureAirline: payload.departureAirline,
+      departureFlightNumber: payload.departureFlightNumber,
+      departureTime: payload.departureTime,
+      flightDetailsForSpouse: payload.flightDetailsForSpouse || false,
+      needsVenueTransportation: payload.needsVenueTransportation || false,
+      transportationToDeadSea: payload.transportationToDeadSea,
+      toDeadSeaScheduleId: payload.toDeadSeaScheduleId,
+      transportationFromDeadSea: payload.transportationFromDeadSea,
+      fromDeadSeaScheduleId: payload.fromDeadSeaScheduleId,
+      specialRequest: payload.specialRequest,
+      photographyConsent: payload.photographyConsent || false,
+      needsVisa: payload.needsVisa || false,
+      registrationStatus: 'DRAFT',
+    };
+
+    if (payload.participantPictureId) {
+      registrationData.participantPictureId = payload.participantPictureId;
+    }
+
+    if (payload.passportCopyId) {
+      registrationData.passportCopyId = payload.passportCopyId;
+    }
+
+    if (payload.residencyId) {
+      registrationData.residencyId = payload.residencyId;
+    }
+
+    if (payload.visaFormId) {
+      registrationData.visaFormId = payload.visaFormId;
+    }
+
+    const registration = await Registration.create(registrationData, { transaction });
+
+    // Create spouse if provided
+    if (payload.hasSpouse && payload.spouse) {
+      await Spouse.create(
+        {
+          registrationId: registration.id,
+          title: payload.spouse.title,
+          firstName: payload.spouse.firstName,
+          middleName: payload.spouse.middleName,
+          lastName: payload.spouse.lastName,
+          nationalityId: payload.spouse.nationalityId,
+          whatsapp: payload.spouse.whatsapp,
+          needsVisaHelp: payload.spouse.needsVisaHelp || false,
+          passportCopyId: payload.spouse.passportCopyId,
+          residencyId: payload.spouse.residencyId,
+          visaFormId: payload.spouse.visaFormId,
+        },
+        { transaction }
+      );
+    }
+
+    // Create trips if provided
+    if (payload.trips && payload.trips.length > 0) {
+      await RegistrationTrip.bulkCreate(
+        payload.trips.map(trip => ({
+          registrationId: registration.id,
+          tripId: trip.tripId,
+          forSpouse: trip.forSpouse || false,
+        })),
+        { transaction }
+      );
+    }
+
+    await transaction.commit();
+
+    return exports.getRegistrationById(registration.id);
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
-
-  if (payload.passportCopy) {
-    registrationData.passportCopy = payload.passportCopy;
-  }
-
-  if (payload.visaForm) {
-    registrationData.visaForm = payload.visaForm;
-  }
-
-  const registration = await prisma.registration.create({
-    data: registrationData,
-  });
-
-  // Create spouse if provided
-  if (payload.hasSpouse && payload.spouse) {
-    await prisma.spouse.create({
-      data: {
-        registrationId: registration.id,
-        title: payload.spouse.title,
-        firstName: payload.spouse.firstName,
-        middleName: payload.spouse.middleName,
-        lastName: payload.spouse.lastName,
-        nationalityId: payload.spouse.nationalityId,
-        needsVisaHelp: payload.spouse.needsVisaHelp || false,
-      },
-    });
-  }
-
-  // Create trips if provided
-  if (payload.trips && payload.trips.length > 0) {
-    await prisma.registrationTrip.createMany({
-      data: payload.trips.map(trip => ({
-        registrationId: registration.id,
-        tripId: trip.tripId,
-        forSpouse: trip.forSpouse || false,
-      })),
-    });
-  }
-
-  return exports.getRegistrationById(registration.id);
 };

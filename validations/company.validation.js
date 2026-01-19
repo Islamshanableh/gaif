@@ -8,7 +8,10 @@ exports.createCompany = {
     expirationDate: Joi.date().required(),
     countryId: Joi.number().required(),
     participationId: Joi.number().required(),
-    logo: Joi.string().optional(),
+    logoId: Joi.number().allow(null).optional(),
+    numberOfFreeSeats: Joi.number().allow(null).optional(),
+    available: Joi.number().allow(null).optional(),
+    allowFreeSeats: Joi.boolean().optional(),
   }),
 };
 
@@ -26,7 +29,10 @@ exports.updateCompany = {
     expirationDate: Joi.date(),
     countryId: Joi.number(),
     participationId: Joi.number(),
-    logo: Joi.string().optional(),
+    logoId: Joi.number().allow(null).optional(),
+    numberOfFreeSeats: Joi.number().allow(null).optional(),
+    available: Joi.number().allow(null).optional(),
+    allowFreeSeats: Joi.boolean().optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

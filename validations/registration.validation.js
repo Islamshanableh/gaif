@@ -5,7 +5,7 @@ const titleEnum = ['MR', 'MRS', 'MS', 'DR', 'PROF'];
 const airportPickupOptions = ['NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER'];
 const transportationTypes = ['BY_COACH', 'OWN_TRANSPORTATION'];
 
-// Step 1: Registration Type
+// Step 1: Registration Type (companyId is now required - company must be created first)
 exports.createRegistrationStep1 = {
   body: Joi.object().keys({
     participationId: Joi.number().required(),
@@ -50,6 +50,7 @@ exports.updateRegistrationStep3 = {
           middleName: Joi.string().max(100).allow('', null).optional(),
           lastName: Joi.string().max(100).required(),
           nationalityId: Joi.number().optional(),
+          whatsapp: Joi.string().max(20).allow('', null).optional(),
           needsVisaHelp: Joi.boolean().optional(),
         })
         .required(),
@@ -170,9 +171,11 @@ exports.updateRegistrationStep7 = {
   }),
 };
 
-// Step 8: Transportation to/from Dead Sea
+// Step 5 (part): Transportation (simplified in new flow)
 exports.updateRegistrationStep8 = {
   body: Joi.object().keys({
+    needsVenueTransportation: Joi.boolean().optional(),
+    // Legacy fields for backward compatibility
     transportationToDeadSea: Joi.string()
       .valid(...transportationTypes)
       .allow(null)
@@ -251,23 +254,10 @@ exports.getRegistrations = {
 // Full registration (all steps at once for API convenience)
 exports.createFullRegistration = {
   body: Joi.object().keys({
-    // Step 1
+    // Step 1 - Company must be created first and ID provided
     participationId: Joi.number().required(),
-    companyId: Joi.number().optional(), // Optional if isNewCompany is true
-    // New Company fields (when user wants to add a new company)
-    isNewCompany: Joi.boolean().optional(),
-    newCompanyName: Joi.when('isNewCompany', {
-      is: true,
-      then: Joi.string().max(320).required(),
-      otherwise: Joi.string().max(320).allow('', null).optional(),
-    }),
-    newCompanyEmail: Joi.when('isNewCompany', {
-      is: true,
-      then: Joi.string().email().max(320).required(),
-      otherwise: Joi.string().email().max(320).allow('', null).optional(),
-    }),
-    // newCompanyLogo is handled via file upload
-    // Step 2
+    companyId: Joi.number().required(),
+    // Step 2 - Personal Information
     title: Joi.string()
       .valid(...titleEnum)
       .optional(),
@@ -280,7 +270,7 @@ exports.createFullRegistration = {
     telephone: Joi.string().max(20).allow('', null).optional(),
     mobile: Joi.string().max(20).required(),
     whatsapp: Joi.string().max(20).required(),
-    // Step 3
+    // Spouse Information (combined with personal info in new flow)
     hasSpouse: Joi.boolean().optional(),
     spouse: Joi.object()
       .keys({
@@ -291,6 +281,7 @@ exports.createFullRegistration = {
         middleName: Joi.string().max(100).allow('', null).optional(),
         lastName: Joi.string().max(100).required(),
         nationalityId: Joi.number().optional(),
+        whatsapp: Joi.string().max(20).allow('', null).optional(),
         needsVisaHelp: Joi.boolean().optional(),
       })
       .when('hasSpouse', {
@@ -298,16 +289,7 @@ exports.createFullRegistration = {
         then: Joi.required(),
         otherwise: Joi.optional(),
       }),
-    // Step 4
-    trips: Joi.array()
-      .items(
-        Joi.object().keys({
-          tripId: Joi.number().required(),
-          forSpouse: Joi.boolean().default(false),
-        }),
-      )
-      .optional(),
-    // Step 5
+    // Step 3 - Accommodation
     accommodationInAmman: Joi.boolean().optional(),
     ammanHotelId: Joi.number().allow(null).optional(),
     ammanRoomId: Joi.number().allow(null).optional(),
@@ -320,7 +302,17 @@ exports.createFullRegistration = {
     deadSeaCheckIn: Joi.date().allow(null).optional(),
     deadSeaCheckOut: Joi.date().allow(null).optional(),
     deadSeaPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
-    // Step 7
+    // Step 4 - Trips
+    trips: Joi.array()
+      .items(
+        Joi.object().keys({
+          tripId: Joi.number().required(),
+          forSpouse: Joi.boolean().default(false),
+        }),
+      )
+      .optional(),
+    // Step 5 - Additional Services (Visa, Airport, Transportation)
+    needsVisa: Joi.boolean().optional(),
     airportPickupOption: Joi.string()
       .valid(...airportPickupOptions)
       .optional(),
@@ -333,7 +325,8 @@ exports.createFullRegistration = {
     departureFlightNumber: Joi.string().max(50).allow('', null).optional(),
     departureTime: Joi.string().max(10).allow('', null).optional(),
     flightDetailsForSpouse: Joi.boolean().optional(),
-    // Step 8
+    needsVenueTransportation: Joi.boolean().optional(),
+    // Legacy transportation fields (for backward compatibility)
     transportationToDeadSea: Joi.string()
       .valid(...transportationTypes)
       .allow(null)
@@ -344,10 +337,8 @@ exports.createFullRegistration = {
       .allow(null)
       .optional(),
     fromDeadSeaScheduleId: Joi.number().allow(null).optional(),
-    // Step 9
+    // Step 6 - Special Request
     specialRequest: Joi.string().max(2000).allow('', null).optional(),
     photographyConsent: Joi.boolean().optional(),
-    // Visa
-    needsVisa: Joi.boolean().optional(),
   }),
 };

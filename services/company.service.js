@@ -1,61 +1,32 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { Prisma } = require('@prisma/client');
-const { prisma } = require('./prisma.service');
-const config = require('../config/config');
+const {
+  Company,
+  Country,
+  ParticipationType,
+  File,
+  Op,
+} = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
 exports.createCompany = async payload => {
-  const result = await prisma.company
-    .create({
-      data: {
-        ...payload,
-      },
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
-
-            arr.shift();
-            const msg = arr.join(' ');
-
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
-    });
-
-  return result;
+  try {
+    const result = await Company.create(payload);
+    return result.toJSON();
+  } catch (e) {
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };
 
 exports.getCompanyList = async payload => {
-  const {
-    page = 1,
-    limit = 10,
-    search,
-    countryId,
-    participationId,
-  } = payload;
-  const skip = (page - 1) * limit;
+  const { page = 1, limit = 10, search, countryId, participationId } = payload;
+  const offset = (page - 1) * limit;
 
   const where = {
     isActive: true,
@@ -70,34 +41,30 @@ exports.getCompanyList = async payload => {
   }
 
   if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { email: { contains: search } },
+    where[Op.or] = [
+      { name: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
     ];
   }
 
-  const [companies, total] = await Promise.all([
-    prisma.company.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        country: true,
-        participation: true,
+  const { count: total, rows: companies } = await Company.findAndCountAll({
+    where,
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    include: [
+      { model: Country, as: 'country' },
+      { model: ParticipationType, as: 'participation' },
+      {
+        model: File,
+        as: 'logo',
+        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
       },
-    }),
-    prisma.company.count({ where }),
-  ]);
-
-  companies.forEach(item => {
-    if (item.logo) {
-      item.logo = `${config.cdnPrefix}/${item.logo}`;
-    }
+    ],
   });
 
   return {
-    data: companies,
+    data: companies.map(item => item.toJSON()),
     pagination: {
       page,
       limit,
@@ -108,69 +75,49 @@ exports.getCompanyList = async payload => {
 };
 
 exports.getCompanyById = async id => {
-  const result = await prisma.company.findFirst({
-    where: {
-      id,
-    },
+  const result = await Company.findOne({
+    where: { id },
+    include: [
+      { model: Country, as: 'country' },
+      { model: ParticipationType, as: 'participation' },
+      {
+        model: File,
+        as: 'logo',
+        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
+      },
+    ],
   });
-  if (result.logo) {
-    result.logo = `${config.cdnPrefix}/${result.logo}`;
+
+  if (!result) {
+    return null;
   }
 
-  return result;
+  return result.toJSON();
 };
 
 exports.deleteCompany = async id => {
-  const result = await prisma.company.update({
-    where: {
-      id,
-    },
-    data: {
-      isActive: false,
-    },
-  });
+  await Company.update({ isActive: false }, { where: { id } });
 
-  return result;
+  const result = await Company.findByPk(id);
+  return result ? result.toJSON() : null;
 };
 
 exports.updateCompany = async payload => {
-  const result = await prisma.company
-    .update({
-      where: {
-        id: payload.id,
-      },
-      data: payload,
-    })
-    .catch(e => {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        if (typeof e === 'string') e = JSON.parse(e);
-        const errMeta = e?.meta;
-        if (e.code === 'P2002') {
-          if (
-            errMeta &&
-            errMeta?.target &&
-            typeof errMeta.target === 'string'
-          ) {
-            const arr = errMeta.target
-              .replaceAll('_', ' ')
-              .replace('key', '')
-              .concat('allready exists')
-              .split(' ');
+  const { id, ...updateData } = payload;
 
-            arr.shift();
-            const msg = arr.join(' ');
-
-            throw new ApiError(httpStatus.BAD_REQUEST, msg);
-          }
-        } else if (e?.meta?.target && typeof e.meta.target === 'string') {
-          const msg = e?.meta?.target
-            .replaceAll('_', ' ')
-            .replace('key', '')
-            .concat('allready exists');
-          throw new ApiError(httpStatus.BAD_REQUEST, msg);
-        }
-      }
+  try {
+    await Company.update(updateData, {
+      where: { id },
     });
 
-  return result;
+    const result = await Company.findByPk(id);
+    return result ? result.toJSON() : null;
+  } catch (e) {
+    if (e.name === 'SequelizeUniqueConstraintError') {
+      const field = e.errors?.[0]?.path || 'field';
+      const msg = `${field.replace(/_/g, ' ')} already exists`;
+      throw new ApiError(httpStatus.BAD_REQUEST, msg);
+    }
+    throw e;
+  }
 };

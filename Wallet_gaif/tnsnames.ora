@@ -1,0 +1,12 @@
+gaif_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.me-riyadh-1.oraclecloud.com))(connect_data=(service_name=ge9b130d08fee78_gaif_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+gaif_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.me-riyadh-1.oraclecloud.com))(connect_data=(service_name=ge9b130d08fee78_gaif_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+gaif_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.me-riyadh-1.oraclecloud.com))(connect_data=(service_name=ge9b130d08fee78_gaif_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+gaif_tp = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.me-riyadh-1.oraclecloud.com))(connect_data=(service_name=ge9b130d08fee78_gaif_tp.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+gaif_tpurgent = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.me-riyadh-1.oraclecloud.com))(connect_data=(service_name=ge9b130d08fee78_gaif_tpurgent.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+

@@ -6,3 +6,4 @@ module.exports.accommodationController = require('./accommodation.controller');
 module.exports.registrationController = require('./registration.controller');
 module.exports.tripController = require('./trip.controller');
 module.exports.transportationScheduleController = require('./transportationSchedule.controller');
+module.exports.fileController = require('./file.controller');

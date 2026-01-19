@@ -1,14 +1,14 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { tripService } = require('../services');
-const { uploadFile } = require('../utils/fileUpload');
+const { uploadFileToDb } = require('../utils/fileUpload');
 
 exports.createTrip = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.image) {
-    const imagePath = await uploadFile(req.files.image, 'trips');
-    payload.image = imagePath;
+    const uploadedFile = await uploadFileToDb(req.files.image, 'trip', null, 'image');
+    payload.imageId = uploadedFile.id;
   }
 
   const result = await tripService.createTrip(payload);
@@ -20,8 +20,8 @@ exports.updateTrip = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.image) {
-    const imagePath = await uploadFile(req.files.image, 'trips');
-    payload.image = imagePath;
+    const uploadedFile = await uploadFileToDb(req.files.image, 'trip', id, 'image');
+    payload.imageId = uploadedFile.id;
   }
 
   const result = await tripService.updateTrip(id, payload);

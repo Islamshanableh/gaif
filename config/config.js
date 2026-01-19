@@ -21,6 +21,11 @@ const envVarsSchema = Joi.object()
     JWT_RESET_EXP_MIN: Joi.string().required(),
     JWT_ACCESS_EXP_HR: Joi.string().required(),
     JWT_REFRESH_EXP_DAYS: Joi.string().required(),
+    // Oracle Database
+    ORACLE_USER: Joi.string().required().description('Oracle database user'),
+    ORACLE_PASSWORD: Joi.string().required().description('Oracle database password'),
+    ORACLE_CONNECTION_STRING: Joi.string().required().description('Oracle connection string'),
+    ORACLE_WALLET_LOCATION: Joi.string().allow('').description('Oracle wallet location for ADB'),
     AWS_ACCESS_KEY_ID: Joi.string().allow(''),
     AWS_SECRET_ACCESS_KEY: Joi.string().allow(''),
     AWS_BUCKET_NAME_UPLOAD: Joi.string().required(),
@@ -53,6 +58,12 @@ module.exports = {
   },
   hash: {
     secret: envVars.HASH_SECRET_KEY,
+  },
+  oracle: {
+    user: envVars.ORACLE_USER,
+    password: envVars.ORACLE_PASSWORD,
+    connectionString: envVars.ORACLE_CONNECTION_STRING,
+    walletLocation: envVars.ORACLE_WALLET_LOCATION,
   },
   aws: {
     access_key_id: envVars.AWS_ACCESS_KEY_ID,
