@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:24.9.0-alpine
 
 WORKDIR /usr/src/app
 
@@ -11,4 +11,4 @@ RUN npm install
 # Now copy the rest of the application files
 COPY . .
 
-CMD npx prisma generate && npm run dev
+CMD  npm run dev

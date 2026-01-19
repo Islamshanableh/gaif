@@ -7,7 +7,12 @@ exports.createCompany = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.logo) {
-    const uploadedFile = await uploadFileToDb(req.files.logo, 'company', null, 'logo');
+    const uploadedFile = await uploadFileToDb(
+      req.files.logo,
+      'company',
+      null,
+      'logo',
+    );
     payload.logoId = uploadedFile.id;
   }
 
@@ -20,7 +25,12 @@ exports.updateCompany = catchAsync(async (req, res) => {
   const payload = req?.body;
 
   if (req.files && req.files.logo) {
-    const uploadedFile = await uploadFileToDb(req.files.logo, 'company', parseInt(id, 10), 'logo');
+    const uploadedFile = await uploadFileToDb(
+      req.files.logo,
+      'company',
+      parseInt(id, 10),
+      'logo',
+    );
     payload.logoId = uploadedFile.id;
   }
 
