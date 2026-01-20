@@ -66,5 +66,7 @@ exports.updateAccommodation = {
 };
 
 exports.getAccommodationList = {
-  body: Joi.object().keys({}),
+  body: Joi.object().keys({
+    stars: Joi.string(),
+  }),
 };

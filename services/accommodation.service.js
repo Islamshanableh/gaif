@@ -1,7 +1,12 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { Accommodation, HotelRoom, HotelImages, sequelize } = require('./db.service');
+const {
+  Accommodation,
+  HotelRoom,
+  HotelImages,
+  sequelize,
+} = require('./db.service');
 const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
@@ -28,7 +33,7 @@ exports.createAccommodation = async payload => {
           available: room.available,
           accommodationId: accommodation.id,
         })),
-        { transaction }
+        { transaction },
       );
     }
 
@@ -38,7 +43,7 @@ exports.createAccommodation = async payload => {
           fileKey: image.fileKey,
           accommodationId: accommodation.id,
         })),
-        { transaction }
+        { transaction },
       );
     }
 
@@ -51,10 +56,15 @@ exports.createAccommodation = async payload => {
   }
 };
 
-exports.getAccommodationList = async () => {
+exports.getAccommodationList = async payload => {
+  const where = {};
+  if (payload.stars) {
+    where.stars = payload.stars;
+  }
   const result = await Accommodation.findAll({
     where: {
       isActive: true,
+      ...where,
     },
     include: [
       { model: HotelImages, as: 'hotelImages' },
@@ -103,10 +113,7 @@ exports.getAccommodationById = async id => {
 };
 
 exports.deleteAccommodation = async id => {
-  await Accommodation.update(
-    { isActive: false },
-    { where: { id } }
-  );
+  await Accommodation.update({ isActive: false }, { where: { id } });
 
   const result = await Accommodation.findByPk(id);
   return result ? result.toJSON() : null;
@@ -129,7 +136,7 @@ exports.updateAccommodation = async payload => {
           fileKey: image.fileKey,
           accommodationId: id,
         })),
-        { transaction }
+        { transaction },
       );
     }
 
