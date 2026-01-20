@@ -139,7 +139,11 @@ exports.updatePersonalInfo = async (id, payload) => {
 
   const result = await Registration.findByPk(id, {
     include: [
-      { model: Company, as: 'company', include: [{ model: File, as: 'logo', attributes: fileAttributes }] },
+      {
+        model: Company,
+        as: 'company',
+        include: [{ model: File, as: 'logo', attributes: fileAttributes }],
+      },
       { model: ParticipationType, as: 'participation' },
       { model: Country, as: 'nationality' },
       { model: File, as: 'participantPicture', attributes: fileAttributes },
@@ -162,7 +166,7 @@ exports.updateSpouseInfo = async (id, payload) => {
   // Update registration hasSpouse flag
   await Registration.update(
     { hasSpouse: payload.hasSpouse },
-    { where: { id } }
+    { where: { id } },
   );
 
   if (payload.hasSpouse && payload.spouse) {
@@ -225,7 +229,7 @@ exports.updateTrips = async (id, payload) => {
         registrationId: id,
         tripId: trip.tripId,
         forSpouse: trip.forSpouse || false,
-      }))
+      })),
     );
   }
 
@@ -250,16 +254,26 @@ exports.updateAccommodation = async (id, payload) => {
       ammanHotelId: payload.accommodationInAmman ? payload.ammanHotelId : null,
       ammanRoomId: payload.accommodationInAmman ? payload.ammanRoomId : null,
       ammanCheckIn: payload.accommodationInAmman ? payload.ammanCheckIn : null,
-      ammanCheckOut: payload.accommodationInAmman ? payload.ammanCheckOut : null,
+      ammanCheckOut: payload.accommodationInAmman
+        ? payload.ammanCheckOut
+        : null,
       ammanPartnerProfileId: payload.ammanPartnerProfileId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
-      deadSeaHotelId: payload.accommodationInDeadSea ? payload.deadSeaHotelId : null,
-      deadSeaRoomId: payload.accommodationInDeadSea ? payload.deadSeaRoomId : null,
-      deadSeaCheckIn: payload.accommodationInDeadSea ? payload.deadSeaCheckIn : null,
-      deadSeaCheckOut: payload.accommodationInDeadSea ? payload.deadSeaCheckOut : null,
+      deadSeaHotelId: payload.accommodationInDeadSea
+        ? payload.deadSeaHotelId
+        : null,
+      deadSeaRoomId: payload.accommodationInDeadSea
+        ? payload.deadSeaRoomId
+        : null,
+      deadSeaCheckIn: payload.accommodationInDeadSea
+        ? payload.deadSeaCheckIn
+        : null,
+      deadSeaCheckOut: payload.accommodationInDeadSea
+        ? payload.deadSeaCheckOut
+        : null,
       deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
     },
-    { where: { id } }
+    { where: { id } },
   );
 
   const result = await Registration.findByPk(id, {
@@ -289,7 +303,7 @@ exports.updateAirportPickup = async (id, payload) => {
       departureTime: payload.departureTime,
       flightDetailsForSpouse: payload.flightDetailsForSpouse || false,
     },
-    { where: { id } }
+    { where: { id } },
   );
 
   const result = await Registration.findByPk(id);
@@ -313,7 +327,7 @@ exports.updateTransportation = async (id, payload) => {
           ? payload.fromDeadSeaScheduleId
           : null,
     },
-    { where: { id } }
+    { where: { id } },
   );
 
   const result = await Registration.findByPk(id, {
@@ -333,7 +347,7 @@ exports.updateSpecialRequest = async (id, payload) => {
       specialRequest: payload.specialRequest,
       photographyConsent: payload.photographyConsent || false,
     },
-    { where: { id } }
+    { where: { id } },
   );
 
   const result = await Registration.findByPk(id);
@@ -469,13 +483,14 @@ exports.getRegistrations = async query => {
     ];
   }
 
-  const { count: total, rows: registrations } = await Registration.findAndCountAll({
-    where,
-    offset,
-    limit,
-    order: [['createdAt', 'DESC']],
-    include: getRegistrationIncludes(),
-  });
+  const { count: total, rows: registrations } =
+    await Registration.findAndCountAll({
+      where,
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']],
+      include: getRegistrationIncludes(),
+    });
 
   const data = registrations.map(reg => {
     const regData = reg.toJSON();
@@ -524,11 +539,7 @@ exports.submitRegistration = async id => {
   }
 
   // Add spouse fee if applicable
-  if (
-    regData.hasSpouse &&
-    regData.spouse &&
-    regData.participation?.spouse
-  ) {
+  if (regData.hasSpouse && regData.spouse && regData.participation?.spouse) {
     totalPrice += regData.participation.price || 0;
   }
 
@@ -555,19 +566,27 @@ exports.submitRegistration = async id => {
       registrationStatus: 'SUBMITTED',
       totalPrice,
     },
-    { where: { id } }
+    { where: { id } },
   );
 
-  const result = await Registration.findByPk(id);
-  return result.toJSON();
+  // Get full registration data with all associations for email
+  const fullRegistration = await Registration.findByPk(id, {
+    include: getRegistrationIncludes(),
+  });
+
+  // Send appropriate emails based on participation type
+  // This is done asynchronously - don't wait for it
+  const registrationNotificationService = require('./registrationNotification.service');
+  registrationNotificationService
+    .handleRegistrationComplete(fullRegistration.toJSON())
+    .catch(err => console.error('Error sending registration emails:', err));
+
+  return fullRegistration.toJSON();
 };
 
 // Delete registration (soft delete)
 exports.deleteRegistration = async id => {
-  await Registration.update(
-    { isActive: false },
-    { where: { id } }
-  );
+  await Registration.update({ isActive: false }, { where: { id } });
 
   const result = await Registration.findByPk(id);
   return result.toJSON();
@@ -642,7 +661,9 @@ exports.createFullRegistration = async payload => {
       registrationData.visaFormId = payload.visaFormId;
     }
 
-    const registration = await Registration.create(registrationData, { transaction });
+    const registration = await Registration.create(registrationData, {
+      transaction,
+    });
 
     // Create spouse if provided
     if (payload.hasSpouse && payload.spouse) {
@@ -660,7 +681,7 @@ exports.createFullRegistration = async payload => {
           residencyId: payload.spouse.residencyId,
           visaFormId: payload.spouse.visaFormId,
         },
-        { transaction }
+        { transaction },
       );
     }
 
@@ -672,7 +693,7 @@ exports.createFullRegistration = async payload => {
           tripId: trip.tripId,
           forSpouse: trip.forSpouse || false,
         })),
-        { transaction }
+        { transaction },
       );
     }
 

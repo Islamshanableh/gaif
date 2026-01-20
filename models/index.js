@@ -1085,6 +1085,75 @@ const File = sequelize.define(
   },
 );
 
+// Token Types for Registration Actions
+const TOKEN_TYPES = [
+  'COMPANY_CONFIRM',
+  'COMPANY_DECLINE',
+  'VIEW_REGISTRATION',
+  'VIEW_INVOICE',
+  'UPDATE_REGISTRATION',
+];
+
+// RegistrationToken Model (for secure email action links)
+const RegistrationToken = sequelize.define(
+  'RegistrationToken',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    token: {
+      type: DataTypes.STRING(64),
+      allowNull: false,
+      unique: true,
+    },
+    registrationId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Registrations',
+        key: 'id',
+      },
+    },
+    tokenType: {
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      validate: {
+        isIn: [TOKEN_TYPES],
+      },
+    },
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Companies',
+        key: 'id',
+      },
+    },
+    used: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    usedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    expiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true, // null means never expires
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  },
+  {
+    tableName: 'RegistrationTokens',
+    timestamps: true,
+  },
+);
+
 // ============================================================================
 // ASSOCIATIONS
 // ============================================================================
@@ -1258,6 +1327,20 @@ Spouse.belongsTo(File, {
   as: 'visaForm',
 });
 
+// RegistrationToken associations
+RegistrationToken.belongsTo(Registration, {
+  foreignKey: 'registrationId',
+  as: 'registration',
+});
+RegistrationToken.belongsTo(Company, {
+  foreignKey: 'companyId',
+  as: 'company',
+});
+Registration.hasMany(RegistrationToken, {
+  foreignKey: 'registrationId',
+  as: 'tokens',
+});
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -1280,4 +1363,5 @@ module.exports = {
   Spouse,
   File,
   RegistrationTrip,
+  RegistrationToken,
 };

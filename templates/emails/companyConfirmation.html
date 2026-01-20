@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAIF 2026 - Registration Confirmation Request</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <!-- Header with logos -->
+          <tr>
+            <td style="padding: 20px 30px; border-bottom: 1px solid #eee;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="50%" style="text-align: left;">
+                    <!-- GAIF Logo placeholder -->
+                    <img src="{{gaifLogoUrl}}" alt="GAIF" style="height: 60px; max-width: 150px;" />
+                  </td>
+                  <td width="50%" style="text-align: right;">
+                    <!-- JIF Logo placeholder -->
+                    <img src="{{jifLogoUrl}}" alt="JIF" style="height: 60px; max-width: 150px;" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Email Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="color: #333; font-size: 16px; margin-bottom: 20px;">Dear Sir/Madam,</p>
+
+              <p style="color: #333; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+                A new participant has registered to the <strong>GAIF 2026</strong> conference and selected your company as a <strong>GAIF Member Company</strong>.
+              </p>
+
+              <h3 style="color: #333; font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">Participant Information:</h3>
+
+              <table width="100%" cellpadding="8" cellspacing="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td width="140" style="color: #666; font-size: 14px; font-weight: bold;">Name</td>
+                  <td style="color: #333; font-size: 14px;">{{participantName}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Position</td>
+                  <td style="color: #333; font-size: 14px;">{{participantPosition}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Nationality</td>
+                  <td style="color: #333; font-size: 14px;">{{participantNationality}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Mobile</td>
+                  <td style="color: #333; font-size: 14px;">{{participantMobile}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Email</td>
+                  <td style="color: #0066cc; font-size: 14px;">
+                    <a href="mailto:{{participantEmail}}" style="color: #0066cc; text-decoration: none;">{{participantEmail}}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Participation Type</td>
+                  <td style="color: #333; font-size: 14px;">{{participationType}}</td>
+                </tr>
+                <tr>
+                  <td style="color: #666; font-size: 14px; font-weight: bold;">Company</td>
+                  <td style="color: #333; font-size: 14px;">{{companyName}}</td>
+                </tr>
+              </table>
+
+              <p style="color: #333; font-size: 15px; margin-bottom: 20px;">Please confirm or decline this registration:</p>
+
+              <!-- Action Buttons -->
+              <table cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td style="padding-right: 15px;">
+                    <a href="{{confirmUrl}}" style="display: inline-block; background-color: #0066cc; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold;">Confirm Registration</a>
+                  </td>
+                  <td>
+                    <a href="{{declineUrl}}" style="display: inline-block; background-color: #dc3545; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold;">Decline Registration</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color: #666; font-size: 13px; margin-bottom: 10px;">If the buttons above do not work, you can copy and paste these links into your browser:</p>
+
+              <p style="color: #666; font-size: 13px; margin-bottom: 5px;"><strong>Confirm:</strong></p>
+              <p style="color: #0066cc; font-size: 12px; word-break: break-all; margin-bottom: 15px;">
+                <a href="{{confirmUrl}}" style="color: #0066cc;">{{confirmUrl}}</a>
+              </p>
+
+              <p style="color: #666; font-size: 13px; margin-bottom: 5px;"><strong>Decline:</strong></p>
+              <p style="color: #0066cc; font-size: 12px; word-break: break-all; margin-bottom: 25px;">
+                <a href="{{declineUrl}}" style="color: #0066cc;">{{declineUrl}}</a>
+              </p>
+
+              <p style="color: #333; font-size: 14px; margin-bottom: 5px;">Best regards,</p>
+              <p style="color: #333; font-size: 14px; font-weight: bold;">GAIF 2026 Registration Team</p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #eee;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                This is an automated message from GAIF 2026 Registration System.<br>
+                Please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

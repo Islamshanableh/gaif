@@ -136,7 +136,8 @@ exports.createRegistration = catchAsync(async (req, res) => {
     payload.needsVisa = payload.needsVisa === 'true';
   }
   if (typeof payload.needsVenueTransportation === 'string') {
-    payload.needsVenueTransportation = payload.needsVenueTransportation === 'true';
+    payload.needsVenueTransportation =
+      payload.needsVenueTransportation === 'true';
   }
 
   const result = await registrationService.createFullRegistration(payload);

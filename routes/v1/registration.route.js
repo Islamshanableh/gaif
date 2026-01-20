@@ -5,6 +5,7 @@ const parseFormData = require('../../middlewares/parseFormData');
 const { auth } = require('../../middlewares/auth');
 
 const { registrationController } = require('../../controllers');
+const registrationActionController = require('../../controllers/registrationAction.controller');
 
 const { registrationValidation } = require('../../validations');
 
@@ -65,5 +66,22 @@ router
     validate(registrationValidation.getById),
     registrationController.uploadSpouseVisaDocuments,
   );
+
+// Company action routes (confirm/decline registration)
+// These are public routes accessed via secure tokens in emails
+router.get(
+  '/company-action/confirm',
+  registrationActionController.companyConfirm,
+);
+router.get(
+  '/company-action/decline',
+  registrationActionController.companyDecline,
+);
+
+// View registration details via secure token
+router.get('/view', registrationActionController.viewRegistration);
+
+// View/Download invoice via secure token
+router.get('/invoice', registrationActionController.viewInvoice);
 
 module.exports = router;
