@@ -27,7 +27,13 @@ exports.updateTrip = async (id, payload) => {
   });
 
   const result = await Trip.findByPk(id, {
-    include: [{ model: File, as: 'image', attributes: ['id', 'fileKey', 'fileName', 'fileType'] }],
+    include: [
+      {
+        model: File,
+        as: 'image',
+        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
+      },
+    ],
   });
 
   return result.toJSON();
@@ -35,7 +41,13 @@ exports.updateTrip = async (id, payload) => {
 
 exports.getTripById = async id => {
   const result = await Trip.findByPk(id, {
-    include: [{ model: File, as: 'image', attributes: ['id', 'fileKey', 'fileName', 'fileType'] }],
+    include: [
+      {
+        model: File,
+        as: 'image',
+        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
+      },
+    ],
   });
 
   if (!result) {
@@ -61,7 +73,13 @@ exports.getTrips = async query => {
   const result = await Trip.findAll({
     where,
     order: [['tripDate', 'ASC']],
-    include: [{ model: File, as: 'image', attributes: ['id', 'fileKey', 'fileName', 'fileType'] }],
+    include: [
+      {
+        model: File,
+        as: 'image',
+        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
+      },
+    ],
   });
 
   return result.map(trip => trip.toJSON());

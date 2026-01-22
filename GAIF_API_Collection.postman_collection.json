@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "gaif-api-collection-2024",
-    "name": "GAIF API Collection",
-    "description": "Complete API collection for GAIF Conference Registration System",
+    "_postman_id": "gaif-api-collection-2026",
+    "name": "GAIF 2026 API Collection",
+    "description": "Complete API collection for GAIF 2026 Conference Registration System with full examples",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -20,6 +20,12 @@
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "tempToken",
+      "value": "",
+      "type": "string",
+      "description": "Temporary token for MFA verification during login"
     }
   ],
   "item": [
@@ -48,7 +54,14 @@
             },
             "description": "Register a new user account"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"fullName\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"mobile\": \"+962791234567\",\n    \"role\": \"USER\",\n    \"status\": \"PENDING\",\n    \"isActive\": true,\n    \"isVerify\": true,\n    \"mfaEnabled\": false\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Login",
@@ -58,9 +71,12 @@
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "if (jsonData.result && jsonData.result.tokens) {",
-                  "    pm.collectionVariables.set('accessToken', jsonData.result.tokens.access.token);",
-                  "    pm.collectionVariables.set('refreshToken', jsonData.result.tokens.refresh.token);",
+                  "if (jsonData.mfaRequired) {",
+                  "    pm.collectionVariables.set('tempToken', jsonData.tempToken);",
+                  "    console.log('MFA Required - Use MFA Verify Login endpoint');",
+                  "} else if (jsonData.tokens) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.tokens.access.token);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -84,9 +100,22 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "login"]
             },
-            "description": "Login with email and password"
+            "description": "Login with email and password. If MFA is enabled, returns mfaRequired: true with tempToken."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success (No MFA)",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"fullName\": \"Admin User\",\n    \"email\": \"admin@gaif.com\",\n    \"role\": \"ADMINISTRATOR\",\n    \"mfaEnabled\": false\n  },\n  \"tokens\": {\n    \"access\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n      \"expires\": \"2024-01-16T12:00:00.000Z\"\n    },\n    \"refresh\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n      \"expires\": \"2024-02-15T12:00:00.000Z\"\n    }\n  }\n}"
+            },
+            {
+              "name": "MFA Required",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"mfaRequired\": true,\n  \"tempToken\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"message\": \"Please enter your MFA code from Google Authenticator\"\n}"
+            }
+          ]
         },
         {
           "name": "Refresh Token",
@@ -96,9 +125,9 @@
               "script": {
                 "exec": [
                   "var jsonData = pm.response.json();",
-                  "if (jsonData.result && jsonData.result.access) {",
-                  "    pm.collectionVariables.set('accessToken', jsonData.result.access.token);",
-                  "    pm.collectionVariables.set('refreshToken', jsonData.result.refresh.token);",
+                  "if (jsonData.access) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.access.token);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refresh.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -124,7 +153,14 @@
             },
             "description": "Refresh access token using refresh token"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"access\": {\n    \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"expires\": \"2024-01-16T12:00:00.000Z\"\n  },\n  \"refresh\": {\n    \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"expires\": \"2024-02-15T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Forget Password",
@@ -145,9 +181,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "forget-password"]
             },
-            "description": "Request password reset code"
+            "description": "Request password reset code via email"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
+            }
+          ]
         },
         {
           "name": "Verify Code",
@@ -161,7 +204,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"123456\",\n  \"token\": \"verification-token-from-forget-password\"\n}"
+              "raw": "{\n  \"code\": \"123456\",\n  \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/verify-code",
@@ -170,7 +213,186 @@
             },
             "description": "Verify password reset code"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Accepted",
+              "code": 202,
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"fullName\": \"John Doe\",\n    \"email\": \"john.doe@example.com\"\n  },\n  \"tokens\": {\n    \"access\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n    },\n    \"refresh\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\"\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MFA (Multi-Factor Authentication)",
+      "description": "Multi-Factor Authentication using Google Authenticator (TOTP)",
+      "item": [
+        {
+          "name": "Setup MFA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mfa/setup",
+              "host": ["{{baseUrl}}"],
+              "path": ["mfa", "setup"]
+            },
+            "description": "Generate QR code for Google Authenticator setup. Scan the QR code with your authenticator app."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Scan the QR code with Google Authenticator\",\n  \"qrCode\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\",\n  \"secret\": \"JBSWY3DPEHPK3PXP\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify MFA Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mfa/verify-setup",
+              "host": ["{{baseUrl}}"],
+              "path": ["mfa", "verify-setup"]
+            },
+            "description": "Verify the 6-digit code from Google Authenticator to enable MFA"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"MFA enabled successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify MFA Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.tokens) {",
+                  "    pm.collectionVariables.set('accessToken', jsonData.tokens.access.token);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.tokens.refresh.token);",
+                  "    pm.collectionVariables.set('tempToken', '');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempToken\": \"{{tempToken}}\",\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mfa/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["mfa", "verify"]
+            },
+            "description": "Complete login with MFA verification using tempToken from login response"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"MFA verification successful\",\n  \"user\": {\n    \"id\": 1,\n    \"fullName\": \"Admin User\",\n    \"email\": \"admin@gaif.com\",\n    \"role\": \"ADMINISTRATOR\"\n  },\n  \"tokens\": {\n    \"access\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n      \"expires\": \"2024-01-16T12:00:00.000Z\"\n    },\n    \"refresh\": {\n      \"token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...\",\n      \"expires\": \"2024-02-15T12:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Disable MFA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/mfa/disable",
+              "host": ["{{baseUrl}}"],
+              "path": ["mfa", "disable"]
+            },
+            "description": "Disable MFA - requires current MFA code for verification"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"MFA disabled successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get MFA Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/mfa/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["mfa", "status"]
+            },
+            "description": "Check if MFA is enabled for the authenticated user"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"mfaEnabled\": true\n}"
+            }
+          ]
         }
       ]
     },
@@ -190,7 +412,14 @@
             },
             "description": "Get list of all countries"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Jordan\",\n    \"cca2\": \"JO\",\n    \"cca3\": \"JOR\",\n    \"ccn3\": \"400\",\n    \"currencyCode\": \"JOD\",\n    \"phone\": \"+962\"\n  },\n  {\n    \"id\": 2,\n    \"name\": \"United Arab Emirates\",\n    \"cca2\": \"AE\",\n    \"cca3\": \"ARE\",\n    \"ccn3\": \"784\",\n    \"currencyCode\": \"AED\",\n    \"phone\": \"+971\"\n  }\n]"
+            }
+          ]
         }
       ]
     },
@@ -223,7 +452,14 @@
             },
             "description": "Create a new participation type (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Participation Type by ID",
@@ -246,9 +482,16 @@
                 }
               ]
             },
-            "description": "Get participation type by ID (Admin only)"
+            "description": "Get participation type by ID"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"countries\": [\n    {\"id\": 1, \"name\": \"Jordan\"},\n    {\"id\": 2, \"name\": \"UAE\"}\n  ]\n}"
+            }
+          ]
         },
         {
           "name": "Update Participation Type",
@@ -266,7 +509,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"currency\": \"USD\",\n  \"allowForRegister\": true,\n  \"countryIds\": [1, 2, 3, 4]\n}"
+              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"currency\": \"USD\",\n  \"countryIds\": [1, 2, 3, 4]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
@@ -281,7 +524,14 @@
             },
             "description": "Update participation type (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"currency\": \"USD\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete Participation Type",
@@ -304,9 +554,16 @@
                 }
               ]
             },
-            "description": "Delete participation type (soft delete, Admin only)"
+            "description": "Delete participation type - soft delete (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Participation type deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Participation Types List",
@@ -314,18 +571,10 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/participation-type/list?page=1&limit=10&allowForRegister=true&countryId=1",
+              "raw": "{{baseUrl}}/participation-type/list?allowForRegister=true&countryId=1",
               "host": ["{{baseUrl}}"],
               "path": ["participation-type", "list"],
               "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
                 {
                   "key": "allowForRegister",
                   "value": "true",
@@ -338,9 +587,16 @@
                 }
               ]
             },
-            "description": "Get paginated list of participation types with optional filters"
+            "description": "Get list of participation types with optional filters"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"title\": \"VIP Delegate\",\n    \"price\": 500,\n    \"currency\": \"JD\",\n    \"allowForRegister\": true,\n    \"spouse\": true,\n    \"petra\": true\n  },\n  {\n    \"id\": 2,\n    \"title\": \"Standard Delegate\",\n    \"price\": 300,\n    \"currency\": \"JD\",\n    \"allowForRegister\": true,\n    \"spouse\": false,\n    \"petra\": false\n  }\n]"
+            }
+          ]
         }
       ]
     },
@@ -361,57 +617,16 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "name",
-                  "value": "Acme Corporation",
-                  "type": "text"
-                },
-                {
-                  "key": "email",
-                  "value": "contact@acme.com",
-                  "type": "text"
-                },
-                {
-                  "key": "entryDate",
-                  "value": "2024-01-01",
-                  "type": "text"
-                },
-                {
-                  "key": "expirationDate",
-                  "value": "2024-12-31",
-                  "type": "text"
-                },
-                {
-                  "key": "countryId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "participationId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "numberOfFreeSeats",
-                  "value": "5",
-                  "type": "text"
-                },
-                {
-                  "key": "available",
-                  "value": "5",
-                  "type": "text"
-                },
-                {
-                  "key": "allowFreeSeats",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "logo",
-                  "type": "file",
-                  "src": "/path/to/logo.png",
-                  "description": "Company logo image file"
-                }
+                {"key": "name", "value": "Acme Corporation", "type": "text"},
+                {"key": "email", "value": "contact@acme.com", "type": "text"},
+                {"key": "entryDate", "value": "2024-01-01", "type": "text"},
+                {"key": "expirationDate", "value": "2024-12-31", "type": "text"},
+                {"key": "countryId", "value": "1", "type": "text"},
+                {"key": "participationId", "value": "1", "type": "text"},
+                {"key": "numberOfFreeSeats", "value": "5", "type": "text"},
+                {"key": "available", "value": "5", "type": "text"},
+                {"key": "allowFreeSeats", "value": "true", "type": "text"},
+                {"key": "logo", "type": "file", "src": "/path/to/logo.png", "description": "Company logo"}
               ]
             },
             "url": {
@@ -419,36 +634,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["company"]
             },
-            "description": "Create a new company with optional logo upload (Admin only)"
+            "description": "Create a new company with optional logo upload"
           },
-          "response": []
-        },
-        {
-          "name": "Create Company (JSON)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Acme Corporation\",\n  \"email\": \"contact@acme.com\",\n  \"entryDate\": \"2024-01-01\",\n  \"expirationDate\": \"2024-12-31\",\n  \"countryId\": 1,\n  \"participationId\": 1,\n  \"numberOfFreeSeats\": 5,\n  \"available\": 5,\n  \"allowFreeSeats\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/company",
-              "host": ["{{baseUrl}}"],
-              "path": ["company"]
-            },
-            "description": "Create a new company without logo (Admin only)"
-          },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Acme Corporation\",\n  \"email\": \"contact@acme.com\",\n  \"entryDate\": \"2024-01-01\",\n  \"expirationDate\": \"2024-12-31\",\n  \"countryId\": 1,\n  \"participationId\": 1,\n  \"numberOfFreeSeats\": 5,\n  \"available\": 5,\n  \"allowFreeSeats\": true,\n  \"logoFileKey\": \"companies/1705312800000-abc123.png\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Company by ID",
@@ -459,92 +654,73 @@
               "raw": "{{baseUrl}}/company?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["company"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Get company by ID"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Acme Corporation\",\n  \"email\": \"contact@acme.com\",\n  \"country\": {\"id\": 1, \"name\": \"Jordan\"},\n  \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"},\n  \"numberOfFreeSeats\": 5,\n  \"available\": 3,\n  \"logoFileKey\": \"https://cdn.example.com/companies/logo.png\"\n}"
+            }
+          ]
         },
         {
           "name": "Update Company",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
             ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "name",
-                  "value": "Acme Corporation Updated",
-                  "type": "text"
-                },
-                {
-                  "key": "email",
-                  "value": "new-contact@acme.com",
-                  "type": "text"
-                },
-                {
-                  "key": "numberOfFreeSeats",
-                  "value": "10",
-                  "type": "text"
-                },
-                {
-                  "key": "logo",
-                  "type": "file",
-                  "src": "/path/to/new-logo.png",
-                  "description": "New company logo (optional)"
-                }
+                {"key": "name", "value": "Acme Corporation Updated", "type": "text"},
+                {"key": "email", "value": "new-contact@acme.com", "type": "text"},
+                {"key": "numberOfFreeSeats", "value": "10", "type": "text"},
+                {"key": "logo", "type": "file", "src": "/path/to/new-logo.png"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/company?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["company"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Update company (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Acme Corporation Updated\",\n  \"email\": \"new-contact@acme.com\",\n  \"numberOfFreeSeats\": 10\n}"
+            }
+          ]
         },
         {
           "name": "Delete Company",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/company?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["company"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Delete company (soft delete, Admin only)"
+            "description": "Delete company - soft delete (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Company deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Companies List",
@@ -552,38 +728,27 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/company/list?page=1&limit=10&search=acme&countryId=1&participationId=1",
+              "raw": "{{baseUrl}}/company/list?page=1&limit=10&search=acme&countryId=1",
               "host": ["{{baseUrl}}"],
               "path": ["company", "list"],
               "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "search",
-                  "value": "acme",
-                  "description": "Search by company name or email"
-                },
-                {
-                  "key": "countryId",
-                  "value": "1",
-                  "description": "Filter by country"
-                },
-                {
-                  "key": "participationId",
-                  "value": "1",
-                  "description": "Filter by participation type"
-                }
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"},
+                {"key": "search", "value": "acme", "description": "Search by name or email"},
+                {"key": "countryId", "value": "1"},
+                {"key": "participationId", "value": "1", "disabled": true}
               ]
             },
             "description": "Get paginated list of companies with filters"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"id\": 1,\n      \"name\": \"Acme Corporation\",\n      \"email\": \"contact@acme.com\",\n      \"country\": {\"id\": 1, \"name\": \"Jordan\"},\n      \"available\": 3\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1,\n  \"totalResults\": 1\n}"
+            }
+          ]
         }
       ]
     },
@@ -595,67 +760,20 @@
           "name": "Create Trip",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "type",
-                  "value": "participation",
-                  "type": "text",
-                  "description": "participation or spouse"
-                },
-                {
-                  "key": "name",
-                  "value": "Petra Day Trip",
-                  "type": "text"
-                },
-                {
-                  "key": "nameAr",
-                  "value": "رحلة البتراء",
-                  "type": "text"
-                },
-                {
-                  "key": "description",
-                  "value": "Full day trip to the ancient city of Petra",
-                  "type": "text"
-                },
-                {
-                  "key": "descriptionAr",
-                  "value": "رحلة يوم كامل إلى مدينة البتراء القديمة",
-                  "type": "text"
-                },
-                {
-                  "key": "price",
-                  "value": "150.00",
-                  "type": "text"
-                },
-                {
-                  "key": "currency",
-                  "value": "JD",
-                  "type": "text"
-                },
-                {
-                  "key": "tripDate",
-                  "value": "2024-06-15",
-                  "type": "text"
-                },
-                {
-                  "key": "maxParticipants",
-                  "value": "50",
-                  "type": "text"
-                },
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": "/path/to/trip-image.jpg",
-                  "description": "Trip image"
-                }
+                {"key": "type", "value": "participation", "type": "text", "description": "participation or spouse"},
+                {"key": "name", "value": "Petra Day Trip", "type": "text"},
+                {"key": "nameAr", "value": "رحلة البتراء", "type": "text"},
+                {"key": "description", "value": "Full day trip to the ancient city of Petra", "type": "text"},
+                {"key": "descriptionAr", "value": "رحلة يوم كامل إلى مدينة البتراء القديمة", "type": "text"},
+                {"key": "price", "value": "150.00", "type": "text"},
+                {"key": "currency", "value": "JD", "type": "text"},
+                {"key": "tripDate", "value": "2024-06-15", "type": "text"},
+                {"key": "maxParticipants", "value": "50", "type": "text"},
+                {"key": "image", "type": "file", "src": "/path/to/petra.jpg"}
               ]
             },
             "url": {
@@ -665,34 +783,14 @@
             },
             "description": "Create a new trip (Admin only)"
           },
-          "response": []
-        },
-        {
-          "name": "Create Trip (JSON)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"participation\",\n  \"name\": \"Petra Day Trip\",\n  \"nameAr\": \"رحلة البتراء\",\n  \"description\": \"Full day trip to the ancient city of Petra\",\n  \"descriptionAr\": \"رحلة يوم كامل إلى مدينة البتراء القديمة\",\n  \"price\": 150.00,\n  \"currency\": \"JD\",\n  \"tripDate\": \"2024-06-15\",\n  \"maxParticipants\": 50\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/trip",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip"]
-            },
-            "description": "Create a new trip without image (Admin only)"
-          },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"type\": \"participation\",\n  \"name\": \"Petra Day Trip\",\n  \"nameAr\": \"رحلة البتراء\",\n  \"price\": 150.00,\n  \"currency\": \"JD\",\n  \"tripDate\": \"2024-06-15\",\n  \"maxParticipants\": 50,\n  \"isActive\": true\n}"
+            }
+          ]
         },
         {
           "name": "Get Trip by ID",
@@ -703,87 +801,70 @@
               "raw": "{{baseUrl}}/trip?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["trip"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Get trip by ID"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"type\": \"participation\",\n  \"name\": \"Petra Day Trip\",\n  \"nameAr\": \"رحلة البتراء\",\n  \"description\": \"Full day trip to the ancient city of Petra\",\n  \"price\": 150.00,\n  \"currency\": \"JD\",\n  \"tripDate\": \"2024-06-15\",\n  \"maxParticipants\": 50,\n  \"imageUrl\": \"https://cdn.example.com/trips/petra.jpg\"\n}"
+            }
+          ]
         },
         {
           "name": "Update Trip",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "name",
-                  "value": "Petra Day Trip - Updated",
-                  "type": "text"
-                },
-                {
-                  "key": "price",
-                  "value": "175.00",
-                  "type": "text"
-                },
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": "/path/to/new-trip-image.jpg",
-                  "description": "New trip image (optional)"
-                }
+                {"key": "name", "value": "Petra Day Trip - Premium", "type": "text"},
+                {"key": "price", "value": "175.00", "type": "text"},
+                {"key": "image", "type": "file", "src": "/path/to/new-petra.jpg"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/trip?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["trip"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Update trip (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Petra Day Trip - Premium\",\n  \"price\": 175.00\n}"
+            }
+          ]
         },
         {
           "name": "Delete Trip",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/trip?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["trip"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Delete trip (soft delete, Admin only)"
+            "description": "Delete trip - soft delete (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Trip deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Trips List",
@@ -795,21 +876,20 @@
               "host": ["{{baseUrl}}"],
               "path": ["trip", "list"],
               "query": [
-                {
-                  "key": "isActive",
-                  "value": "true",
-                  "description": "Filter by active status"
-                },
-                {
-                  "key": "type",
-                  "value": "participation",
-                  "description": "Filter by type: participation or spouse"
-                }
+                {"key": "isActive", "value": "true"},
+                {"key": "type", "value": "participation", "description": "participation or spouse"}
               ]
             },
             "description": "Get list of trips with optional filters"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"type\": \"participation\",\n    \"name\": \"Petra Day Trip\",\n    \"price\": 150.00,\n    \"currency\": \"JD\",\n    \"tripDate\": \"2024-06-15\"\n  },\n  {\n    \"id\": 2,\n    \"type\": \"participation\",\n    \"name\": \"Dead Sea Float Experience\",\n    \"price\": 75.00,\n    \"currency\": \"JD\",\n    \"tripDate\": \"2024-06-14\"\n  }\n]"
+            }
+          ]
         }
       ]
     },
@@ -821,85 +901,24 @@
           "name": "Create Accommodation",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "hotelName",
-                  "value": "Grand Hyatt Amman",
-                  "type": "text"
-                },
-                {
-                  "key": "urlTitle",
-                  "value": "grand-hyatt-amman",
-                  "type": "text"
-                },
-                {
-                  "key": "location",
-                  "value": "Hussein Bin Ali Street, Amman, Jordan",
-                  "type": "text"
-                },
-                {
-                  "key": "stars",
-                  "value": "5",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelTax",
-                  "value": "16%",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelService",
-                  "value": "Spa, Pool, Gym, Restaurant",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelOrder",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelNameAr",
-                  "value": "جراند حياة عمان",
-                  "type": "text"
-                },
-                {
-                  "key": "distance",
-                  "value": "10 km from airport",
-                  "type": "text"
-                },
-                {
-                  "key": "time",
-                  "value": "20 minutes",
-                  "type": "text"
-                },
-                {
-                  "key": "timeInArabic",
-                  "value": "20 دقيقة",
-                  "type": "text"
-                },
-                {
-                  "key": "entryDate",
-                  "value": "2024-01-01",
-                  "type": "text"
-                },
-                {
-                  "key": "expirationDate",
-                  "value": "2024-12-31",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelRooms",
-                  "value": "[{\"roomCategory\": \"Standard Room\", \"roomCategoryInArabic\": \"غرفة عادية\", \"numberOfRooms\": 50, \"single\": 100, \"double\": 150, \"roomRate\": 120, \"available\": 50}, {\"roomCategory\": \"Deluxe Suite\", \"roomCategoryInArabic\": \"جناح فاخر\", \"numberOfRooms\": 20, \"single\": 200, \"double\": 280, \"roomRate\": 240, \"available\": 20}]",
-                  "type": "text"
-                }
+                {"key": "hotelName", "value": "Grand Hyatt Amman", "type": "text"},
+                {"key": "urlTitle", "value": "grand-hyatt-amman", "type": "text"},
+                {"key": "location", "value": "Hussein Bin Ali Street, Amman", "type": "text"},
+                {"key": "stars", "value": "5", "type": "text"},
+                {"key": "hotelTax", "value": "16%", "type": "text"},
+                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant", "type": "text"},
+                {"key": "hotelOrder", "value": "1", "type": "text"},
+                {"key": "hotelNameAr", "value": "جراند حياة عمان", "type": "text"},
+                {"key": "distance", "value": "10 km from airport", "type": "text"},
+                {"key": "time", "value": "20 minutes", "type": "text"},
+                {"key": "timeInArabic", "value": "20 دقيقة", "type": "text"},
+                {"key": "entryDate", "value": "2024-01-01", "type": "text"},
+                {"key": "expirationDate", "value": "2024-12-31", "type": "text"},
+                {"key": "hotelRooms", "value": "[{\"roomCategory\": \"Standard Room\", \"roomCategoryInArabic\": \"غرفة عادية\", \"numberOfRooms\": 50, \"single\": 100, \"double\": 150, \"roomRate\": 120, \"currency\": \"JD\", \"available\": 50}, {\"roomCategory\": \"Deluxe Suite\", \"roomCategoryInArabic\": \"جناح فاخر\", \"numberOfRooms\": 20, \"single\": 200, \"double\": 280, \"roomRate\": 240, \"currency\": \"JD\", \"available\": 20}]", "type": "text"}
               ]
             },
             "url": {
@@ -907,9 +926,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["accommodation"]
             },
-            "description": "Create a new accommodation/hotel (Admin only)"
+            "description": "Create a new accommodation/hotel with rooms (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"hotelName\": \"Grand Hyatt Amman\",\n  \"urlTitle\": \"grand-hyatt-amman\",\n  \"location\": \"Hussein Bin Ali Street, Amman\",\n  \"stars\": \"5\",\n  \"hotelRooms\": [\n    {\n      \"id\": 1,\n      \"roomCategory\": \"Standard Room\",\n      \"roomRate\": 120,\n      \"currency\": \"JD\",\n      \"available\": 50\n    }\n  ]\n}"
+            }
+          ]
         },
         {
           "name": "Get Accommodation by ID",
@@ -920,124 +946,108 @@
               "raw": "{{baseUrl}}/accommodation?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["accommodation"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Get accommodation by ID with rooms and images"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"hotelName\": \"Grand Hyatt Amman\",\n  \"hotelNameAr\": \"جراند حياة عمان\",\n  \"location\": \"Hussein Bin Ali Street, Amman\",\n  \"stars\": \"5\",\n  \"hotelTax\": \"16%\",\n  \"hotelRooms\": [\n    {\n      \"id\": 1,\n      \"roomCategory\": \"Standard Room\",\n      \"roomCategoryInArabic\": \"غرفة عادية\",\n      \"numberOfRooms\": 50,\n      \"single\": 100,\n      \"double\": 150,\n      \"roomRate\": 120,\n      \"currency\": \"JD\",\n      \"available\": 48\n    }\n  ],\n  \"hotelImages\": [\n    {\"id\": 1, \"fileKey\": \"https://cdn.example.com/hotels/hyatt-1.jpg\"}\n  ]\n}"
+            }
+          ]
         },
         {
           "name": "Update Accommodation",
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "hotelName",
-                  "value": "Grand Hyatt Amman - Updated",
-                  "type": "text"
-                },
-                {
-                  "key": "hotelService",
-                  "value": "Spa, Pool, Gym, Restaurant, Business Center",
-                  "type": "text"
-                }
+                {"key": "hotelName", "value": "Grand Hyatt Amman - Updated", "type": "text"},
+                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant, Business Center", "type": "text"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["accommodation"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Update accommodation (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"hotelName\": \"Grand Hyatt Amman - Updated\",\n  \"hotelService\": \"Spa, Pool, Gym, Restaurant, Business Center\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete Accommodation",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/accommodation?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["accommodation"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Delete accommodation (soft delete, Admin only)"
+            "description": "Delete accommodation - soft delete (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Accommodation deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Accommodations List",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{"key": "Content-Type", "value": "application/json"}],
             "body": {
               "mode": "raw",
-              "raw": "{}"
+              "raw": "{\n  \"stars\": \"5\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation/list",
               "host": ["{{baseUrl}}"],
               "path": ["accommodation", "list"]
             },
-            "description": "Get list of all active accommodations"
+            "description": "Get list of all active accommodations with optional star filter"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"hotelName\": \"Grand Hyatt Amman\",\n    \"stars\": \"5\",\n    \"hotelRooms\": [\n      {\"id\": 1, \"roomCategory\": \"Standard\", \"roomRate\": 120, \"currency\": \"JD\"}\n    ],\n    \"hotelImages\": [\n      {\"fileKey\": \"https://cdn.example.com/hotels/hyatt.jpg\"}\n    ]\n  }\n]"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Transportation Schedules",
-      "description": "Manage transportation schedules",
+      "description": "Manage ground transportation schedules",
       "item": [
         {
           "name": "Create Transportation Schedule",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
             ],
             "body": {
               "mode": "raw",
@@ -1050,7 +1060,14 @@
             },
             "description": "Create a new transportation schedule (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"direction\": \"AMMAN_TO_DEAD_SEA\",\n  \"scheduleDate\": \"2024-06-10\",\n  \"departureTime\": \"08:00\",\n  \"expectedArrivalTime\": \"09:30\",\n  \"route\": \"Amman City Center to Dead Sea Resort\",\n  \"availableSeats\": 40,\n  \"isActive\": true\n}"
+            }
+          ]
         },
         {
           "name": "Get Transportation Schedule by ID",
@@ -1061,30 +1078,26 @@
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["transportation-schedule"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Get transportation schedule by ID"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"direction\": \"AMMAN_TO_DEAD_SEA\",\n  \"scheduleDate\": \"2024-06-10\",\n  \"departureTime\": \"08:00\",\n  \"expectedArrivalTime\": \"09:30\",\n  \"route\": \"Amman City Center to Dead Sea Resort\",\n  \"routeAr\": \"من وسط عمان إلى منتجع البحر الميت\",\n  \"availableSeats\": 38\n}"
+            }
+          ]
         },
         {
           "name": "Update Transportation Schedule",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
             ],
             "body": {
               "mode": "raw",
@@ -1094,41 +1107,40 @@
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["transportation-schedule"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Update transportation schedule (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"departureTime\": \"07:30\",\n  \"availableSeats\": 50\n}"
+            }
+          ]
         },
         {
           "name": "Delete Transportation Schedule",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["transportation-schedule"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Delete transportation schedule (soft delete, Admin only)"
+            "description": "Delete transportation schedule - soft delete (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Transportation schedule deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Transportation Schedules List",
@@ -1140,25 +1152,21 @@
               "host": ["{{baseUrl}}"],
               "path": ["transportation-schedule", "list"],
               "query": [
-                {
-                  "key": "direction",
-                  "value": "AMMAN_TO_DEAD_SEA",
-                  "description": "AMMAN_TO_DEAD_SEA or DEAD_SEA_TO_AMMAN"
-                },
-                {
-                  "key": "scheduleDate",
-                  "value": "2024-06-10",
-                  "disabled": true
-                },
-                {
-                  "key": "isActive",
-                  "value": "true"
-                }
+                {"key": "direction", "value": "AMMAN_TO_DEAD_SEA", "description": "AMMAN_TO_DEAD_SEA or DEAD_SEA_TO_AMMAN"},
+                {"key": "scheduleDate", "value": "2024-06-10", "disabled": true},
+                {"key": "isActive", "value": "true"}
               ]
             },
             "description": "Get list of transportation schedules with filters"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"direction\": \"AMMAN_TO_DEAD_SEA\",\n    \"scheduleDate\": \"2024-06-10\",\n    \"departureTime\": \"08:00\",\n    \"availableSeats\": 38\n  },\n  {\n    \"id\": 2,\n    \"direction\": \"AMMAN_TO_DEAD_SEA\",\n    \"scheduleDate\": \"2024-06-10\",\n    \"departureTime\": \"14:00\",\n    \"availableSeats\": 40\n  }\n]"
+            }
+          ]
         }
       ]
     },
@@ -1174,247 +1182,47 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "participationId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "companyId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "title",
-                  "value": "MR",
-                  "type": "text",
-                  "description": "MR, MRS, MS, DR, PROF"
-                },
-                {
-                  "key": "firstName",
-                  "value": "John",
-                  "type": "text"
-                },
-                {
-                  "key": "middleName",
-                  "value": "William",
-                  "type": "text"
-                },
-                {
-                  "key": "lastName",
-                  "value": "Doe",
-                  "type": "text"
-                },
-                {
-                  "key": "position",
-                  "value": "CEO",
-                  "type": "text"
-                },
-                {
-                  "key": "nationalityId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "email",
-                  "value": "john.doe@acme.com",
-                  "type": "text"
-                },
-                {
-                  "key": "telephone",
-                  "value": "+962-6-1234567",
-                  "type": "text"
-                },
-                {
-                  "key": "mobile",
-                  "value": "+962791234567",
-                  "type": "text"
-                },
-                {
-                  "key": "whatsapp",
-                  "value": "+962791234567",
-                  "type": "text"
-                },
-                {
-                  "key": "hasSpouse",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "spouse",
-                  "value": "{\"title\": \"MRS\", \"firstName\": \"Jane\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}",
-                  "type": "text",
-                  "description": "JSON string for spouse data"
-                },
-                {
-                  "key": "accommodationInAmman",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "ammanHotelId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "ammanRoomId",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "ammanCheckIn",
-                  "value": "2024-06-09",
-                  "type": "text"
-                },
-                {
-                  "key": "ammanCheckOut",
-                  "value": "2024-06-12",
-                  "type": "text"
-                },
-                {
-                  "key": "accommodationInDeadSea",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "deadSeaHotelId",
-                  "value": "2",
-                  "type": "text"
-                },
-                {
-                  "key": "deadSeaRoomId",
-                  "value": "3",
-                  "type": "text"
-                },
-                {
-                  "key": "deadSeaCheckIn",
-                  "value": "2024-06-12",
-                  "type": "text"
-                },
-                {
-                  "key": "deadSeaCheckOut",
-                  "value": "2024-06-15",
-                  "type": "text"
-                },
-                {
-                  "key": "trips",
-                  "value": "[{\"tripId\": 1, \"forSpouse\": false}, {\"tripId\": 1, \"forSpouse\": true}]",
-                  "type": "text",
-                  "description": "JSON array of trip selections"
-                },
-                {
-                  "key": "needsVisa",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "airportPickupOption",
-                  "value": "NEED_PICKUP",
-                  "type": "text",
-                  "description": "NEED_PICKUP, NO_PICKUP, PROVIDE_LATER"
-                },
-                {
-                  "key": "arrivalDate",
-                  "value": "2024-06-09",
-                  "type": "text"
-                },
-                {
-                  "key": "arrivalAirline",
-                  "value": "Royal Jordanian",
-                  "type": "text"
-                },
-                {
-                  "key": "arrivalFlightNumber",
-                  "value": "RJ115",
-                  "type": "text"
-                },
-                {
-                  "key": "arrivalTime",
-                  "value": "14:30",
-                  "type": "text"
-                },
-                {
-                  "key": "departureDate",
-                  "value": "2024-06-16",
-                  "type": "text"
-                },
-                {
-                  "key": "departureAirline",
-                  "value": "Royal Jordanian",
-                  "type": "text"
-                },
-                {
-                  "key": "departureFlightNumber",
-                  "value": "RJ116",
-                  "type": "text"
-                },
-                {
-                  "key": "departureTime",
-                  "value": "10:00",
-                  "type": "text"
-                },
-                {
-                  "key": "flightDetailsForSpouse",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "needsVenueTransportation",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "specialRequest",
-                  "value": "Vegetarian meals please",
-                  "type": "text"
-                },
-                {
-                  "key": "photographyConsent",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "participantPicture",
-                  "type": "file",
-                  "src": "/path/to/participant-photo.jpg",
-                  "description": "Participant photo"
-                },
-                {
-                  "key": "passportCopy",
-                  "type": "file",
-                  "src": "/path/to/passport.pdf",
-                  "description": "Passport copy"
-                },
-                {
-                  "key": "residency",
-                  "type": "file",
-                  "src": "/path/to/residency.pdf",
-                  "description": "Residency document"
-                },
-                {
-                  "key": "visaForm",
-                  "type": "file",
-                  "src": "/path/to/visa-form.pdf",
-                  "description": "Visa application form"
-                },
-                {
-                  "key": "spousePassportCopy",
-                  "type": "file",
-                  "src": "/path/to/spouse-passport.pdf",
-                  "description": "Spouse passport copy"
-                },
-                {
-                  "key": "spouseResidency",
-                  "type": "file",
-                  "src": "/path/to/spouse-residency.pdf",
-                  "description": "Spouse residency document"
-                },
-                {
-                  "key": "spouseVisaForm",
-                  "type": "file",
-                  "src": "/path/to/spouse-visa-form.pdf",
-                  "description": "Spouse visa form"
-                }
+                {"key": "participationId", "value": "1", "type": "text"},
+                {"key": "companyId", "value": "1", "type": "text"},
+                {"key": "title", "value": "MR", "type": "text", "description": "MR, MRS, MS, DR, PROF"},
+                {"key": "firstName", "value": "John", "type": "text"},
+                {"key": "middleName", "value": "William", "type": "text"},
+                {"key": "lastName", "value": "Doe", "type": "text"},
+                {"key": "position", "value": "CEO", "type": "text"},
+                {"key": "nationalityId", "value": "1", "type": "text"},
+                {"key": "email", "value": "john.doe@acme.com", "type": "text"},
+                {"key": "telephone", "value": "+962-6-1234567", "type": "text"},
+                {"key": "mobile", "value": "+962791234567", "type": "text"},
+                {"key": "whatsapp", "value": "+962791234567", "type": "text"},
+                {"key": "hasSpouse", "value": "true", "type": "text"},
+                {"key": "spouse", "value": "{\"title\": \"MRS\", \"firstName\": \"Jane\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}", "type": "text"},
+                {"key": "accommodationInAmman", "value": "true", "type": "text"},
+                {"key": "ammanHotelId", "value": "1", "type": "text"},
+                {"key": "ammanRoomId", "value": "1", "type": "text"},
+                {"key": "ammanCheckIn", "value": "2024-06-09", "type": "text"},
+                {"key": "ammanCheckOut", "value": "2024-06-12", "type": "text"},
+                {"key": "accommodationInDeadSea", "value": "true", "type": "text"},
+                {"key": "deadSeaHotelId", "value": "2", "type": "text"},
+                {"key": "deadSeaRoomId", "value": "3", "type": "text"},
+                {"key": "deadSeaCheckIn", "value": "2024-06-12", "type": "text"},
+                {"key": "deadSeaCheckOut", "value": "2024-06-15", "type": "text"},
+                {"key": "trips", "value": "[{\"tripId\": 1, \"forSpouse\": false}, {\"tripId\": 1, \"forSpouse\": true}]", "type": "text"},
+                {"key": "needsVisa", "value": "true", "type": "text"},
+                {"key": "airportPickupOption", "value": "NEED_PICKUP", "type": "text", "description": "NEED_PICKUP, NO_PICKUP, PROVIDE_LATER"},
+                {"key": "arrivalDate", "value": "2024-06-09", "type": "text"},
+                {"key": "arrivalAirline", "value": "Royal Jordanian", "type": "text"},
+                {"key": "arrivalFlightNumber", "value": "RJ115", "type": "text"},
+                {"key": "arrivalTime", "value": "14:30", "type": "text"},
+                {"key": "departureDate", "value": "2024-06-16", "type": "text"},
+                {"key": "departureAirline", "value": "Royal Jordanian", "type": "text"},
+                {"key": "departureFlightNumber", "value": "RJ116", "type": "text"},
+                {"key": "departureTime", "value": "10:00", "type": "text"},
+                {"key": "specialRequest", "value": "Vegetarian meals please", "type": "text"},
+                {"key": "photographyConsent", "value": "true", "type": "text"},
+                {"key": "participantPicture", "type": "file", "src": "/path/to/photo.jpg"},
+                {"key": "passportCopy", "type": "file", "src": "/path/to/passport.pdf"},
+                {"key": "residency", "type": "file", "src": "/path/to/residency.pdf"},
+                {"key": "visaForm", "type": "file", "src": "/path/to/visa-form.pdf"}
               ]
             },
             "url": {
@@ -1422,32 +1230,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["registration"]
             },
-            "description": "Create a full registration with all data and files in one request"
+            "description": "Create a full registration with all data and files"
           },
-          "response": []
-        },
-        {
-          "name": "Create Simple Registration (JSON)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"participationId\": 1,\n  \"companyId\": 1,\n  \"title\": \"MR\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"position\": \"Manager\",\n  \"email\": \"john@example.com\",\n  \"mobile\": \"+962791234567\",\n  \"whatsapp\": \"+962791234567\",\n  \"hasSpouse\": false,\n  \"photographyConsent\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/registration",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration"]
-            },
-            "description": "Create a simple registration without files"
-          },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"DRAFT\",\n  \"paymentStatus\": \"PENDING\",\n  \"hasSpouse\": true,\n  \"spouse\": {\n    \"id\": 1,\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Doe\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Get Registration by ID",
@@ -1458,16 +1250,18 @@
               "raw": "{{baseUrl}}/registration?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Get full registration details by ID"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"title\": \"MR\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"DRAFT\",\n  \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"},\n  \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n  \"spouse\": {\"id\": 1, \"firstName\": \"Jane\", \"lastName\": \"Doe\"},\n  \"trips\": [{\"id\": 1, \"name\": \"Petra Day Trip\"}],\n  \"ammanHotel\": {\"id\": 1, \"hotelName\": \"Grand Hyatt Amman\"}\n}"
+            }
+          ]
         },
         {
           "name": "Update Registration",
@@ -1477,43 +1271,27 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "firstName",
-                  "value": "John Updated",
-                  "type": "text"
-                },
-                {
-                  "key": "lastName",
-                  "value": "Doe Updated",
-                  "type": "text"
-                },
-                {
-                  "key": "email",
-                  "value": "john.updated@example.com",
-                  "type": "text"
-                },
-                {
-                  "key": "participantPicture",
-                  "type": "file",
-                  "src": "/path/to/new-photo.jpg",
-                  "description": "New participant photo (optional)"
-                }
+                {"key": "firstName", "value": "John Updated", "type": "text"},
+                {"key": "email", "value": "john.updated@example.com", "type": "text"},
+                {"key": "participantPicture", "type": "file", "src": "/path/to/new-photo.jpg"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Update registration with optional file uploads"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"firstName\": \"John Updated\",\n  \"email\": \"john.updated@example.com\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete Registration",
@@ -1524,65 +1302,47 @@
               "raw": "{{baseUrl}}/registration?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Delete registration (soft delete)"
+            "description": "Delete registration - soft delete"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Registration deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Registrations List",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
-              "raw": "{{baseUrl}}/registration/list?page=1&limit=10&companyId=1&status=DRAFT&paymentStatus=PENDING",
+              "raw": "{{baseUrl}}/registration/list?page=1&limit=10&companyId=1&status=DRAFT",
               "host": ["{{baseUrl}}"],
               "path": ["registration", "list"],
               "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "companyId",
-                  "value": "1",
-                  "description": "Filter by company"
-                },
-                {
-                  "key": "participationId",
-                  "value": "1",
-                  "disabled": true
-                },
-                {
-                  "key": "status",
-                  "value": "DRAFT",
-                  "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"
-                },
-                {
-                  "key": "paymentStatus",
-                  "value": "PENDING",
-                  "description": "PENDING, PAID, PARTIAL, REFUNDED"
-                }
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"},
+                {"key": "companyId", "value": "1"},
+                {"key": "participationId", "value": "1", "disabled": true},
+                {"key": "status", "value": "DRAFT", "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"},
+                {"key": "paymentStatus", "value": "PENDING", "disabled": true, "description": "PENDING, PAID, PARTIAL, REFUNDED"}
               ]
             },
-            "description": "Get paginated list of registrations with filters (Admin only)"
+            "description": "Get paginated list of registrations (Admin only)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"id\": 1,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@acme.com\",\n      \"status\": \"DRAFT\",\n      \"paymentStatus\": \"PENDING\",\n      \"company\": {\"name\": \"Acme Corporation\"}\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1,\n  \"totalResults\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Submit Registration",
@@ -1593,16 +1353,18 @@
               "raw": "{{baseUrl}}/registration/submit?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration", "submit"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Submit registration (calculates total price and changes status to SUBMITTED)"
+            "description": "Submit registration - calculates total price and changes status to SUBMITTED"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"status\": \"SUBMITTED\",\n  \"totalPrice\": 1250.00,\n  \"totalPriceUSD\": 1765.54\n}"
+            }
+          ]
         },
         {
           "name": "Upload Visa Documents",
@@ -1612,42 +1374,28 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "needsVisa",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "passportCopy",
-                  "type": "file",
-                  "src": "/path/to/passport.pdf"
-                },
-                {
-                  "key": "residency",
-                  "type": "file",
-                  "src": "/path/to/residency.pdf"
-                },
-                {
-                  "key": "visaForm",
-                  "type": "file",
-                  "src": "/path/to/visa-form.pdf"
-                }
+                {"key": "needsVisa", "value": "true", "type": "text"},
+                {"key": "passportCopy", "type": "file", "src": "/path/to/passport.pdf"},
+                {"key": "residency", "type": "file", "src": "/path/to/residency.pdf"},
+                {"key": "visaForm", "type": "file", "src": "/path/to/visa-form.pdf"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration/visa-documents?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration", "visa-documents"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Upload visa documents for a registration"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Visa documents uploaded successfully\",\n  \"passportCopyKey\": \"registrations/1/passport-123.pdf\",\n  \"residencyKey\": \"registrations/1/residency-123.pdf\",\n  \"visaFormKey\": \"registrations/1/visa-form-123.pdf\"\n}"
+            }
+          ]
         },
         {
           "name": "Upload Spouse Visa Documents",
@@ -1657,37 +1405,167 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "passportCopy",
-                  "type": "file",
-                  "src": "/path/to/spouse-passport.pdf"
-                },
-                {
-                  "key": "residency",
-                  "type": "file",
-                  "src": "/path/to/spouse-residency.pdf"
-                },
-                {
-                  "key": "visaForm",
-                  "type": "file",
-                  "src": "/path/to/spouse-visa-form.pdf"
-                }
+                {"key": "passportCopy", "type": "file", "src": "/path/to/spouse-passport.pdf"},
+                {"key": "residency", "type": "file", "src": "/path/to/spouse-residency.pdf"},
+                {"key": "visaForm", "type": "file", "src": "/path/to/spouse-visa-form.pdf"}
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration/spouse-visa-documents?id=1",
               "host": ["{{baseUrl}}"],
               "path": ["registration", "spouse-visa-documents"],
-              "query": [
-                {
-                  "key": "id",
-                  "value": "1"
-                }
-              ]
+              "query": [{"key": "id", "value": "1"}]
             },
             "description": "Upload visa documents for spouse"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Spouse visa documents uploaded successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Roommate List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/roommate?companyId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "roommate"],
+              "query": [{"key": "companyId", "value": "1"}]
+            },
+            "description": "Get confirmed registrations for roommate selection"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 2,\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"status\": \"CONFIRMED\"\n  },\n  {\n    \"id\": 3,\n    \"firstName\": \"Bob\",\n    \"lastName\": \"Johnson\",\n    \"status\": \"CONFIRMED\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Check WhatsApp Uniqueness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/check-whatsapp?whatsapp=+962791234567",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "check-whatsapp"],
+              "query": [{"key": "whatsapp", "value": "+962791234567"}]
+            },
+            "description": "Check if WhatsApp number is already registered"
+          },
+          "response": [
+            {
+              "name": "Available",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"available\": true,\n  \"message\": \"WhatsApp number is available\"\n}"
+            },
+            {
+              "name": "Already Exists",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"available\": false,\n  \"message\": \"WhatsApp number is already registered\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Company Confirm Registration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/company-action/confirm?token=abc123def456",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "company-action", "confirm"],
+              "query": [{"key": "token", "value": "abc123def456"}]
+            },
+            "description": "Company confirms participant registration via secure token (from email)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Registration confirmed successfully\",\n  \"registration\": {\n    \"id\": 1,\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"status\": \"CONFIRMED\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Company Decline Registration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/company-action/decline?token=abc123def456",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "company-action", "decline"],
+              "query": [{"key": "token", "value": "abc123def456"}]
+            },
+            "description": "Company declines participant registration via secure token (from email)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"Registration declined\",\n  \"registration\": {\n    \"id\": 1,\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"status\": \"DECLINED\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "View Registration (Public Token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/view?token=view-token-abc123",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "view"],
+              "query": [{"key": "token", "value": "view-token-abc123"}]
+            },
+            "description": "View registration details via secure token (public access)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"CONFIRMED\",\n  \"participation\": {\"title\": \"VIP Delegate\"},\n  \"company\": {\"name\": \"Acme Corporation\"}\n}"
+            }
+          ]
+        },
+        {
+          "name": "View/Download Invoice (Public Token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/invoice?token=invoice-token-abc123",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "invoice"],
+              "query": [{"key": "token", "value": "invoice-token-abc123"}]
+            },
+            "description": "View or download invoice PDF via secure token (public access)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "Text",
+              "header": [{"key": "Content-Type", "value": "application/pdf"}],
+              "body": "[PDF Binary Data]"
+            }
+          ]
         }
       ]
     },
@@ -1699,39 +1577,14 @@
           "name": "Upload Single File",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": "/path/to/file.pdf",
-                  "description": "File to upload"
-                },
-                {
-                  "key": "entityType",
-                  "value": "registration",
-                  "type": "text",
-                  "description": "Entity type (e.g., registration, company, trip)"
-                },
-                {
-                  "key": "entityId",
-                  "value": "1",
-                  "type": "text",
-                  "description": "Entity ID"
-                },
-                {
-                  "key": "fieldName",
-                  "value": "passportCopy",
-                  "type": "text",
-                  "description": "Field name for the file"
-                }
+                {"key": "file", "type": "file", "src": "/path/to/file.pdf"},
+                {"key": "entityType", "value": "registration", "type": "text"},
+                {"key": "entityId", "value": "1", "type": "text"},
+                {"key": "fieldName", "value": "passportCopy", "type": "text"}
               ]
             },
             "url": {
@@ -1741,41 +1594,27 @@
             },
             "description": "Upload a single file to the database"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"fileKey\": \"registrations/1/passportCopy-1705312800000-abc123.pdf\",\n  \"fileName\": \"passport.pdf\",\n  \"fileType\": \"application/pdf\",\n  \"fileSize\": 125000,\n  \"entityType\": \"registration\",\n  \"entityId\": 1\n}"
+            }
+          ]
         },
         {
           "name": "Upload Multiple Files",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "files",
-                  "type": "file",
-                  "src": "/path/to/file1.pdf"
-                },
-                {
-                  "key": "files",
-                  "type": "file",
-                  "src": "/path/to/file2.pdf"
-                },
-                {
-                  "key": "entityType",
-                  "value": "registration",
-                  "type": "text"
-                },
-                {
-                  "key": "entityId",
-                  "value": "1",
-                  "type": "text"
-                }
+                {"key": "files", "type": "file", "src": "/path/to/file1.pdf"},
+                {"key": "files", "type": "file", "src": "/path/to/file2.pdf"},
+                {"key": "entityType", "value": "registration", "type": "text"},
+                {"key": "entityId", "value": "1", "type": "text"}
               ]
             },
             "url": {
@@ -1783,15 +1622,22 @@
               "host": ["{{baseUrl}}"],
               "path": ["file", "upload-multiple"]
             },
-            "description": "Upload multiple files to the database"
+            "description": "Upload multiple files at once"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"files\": [\n    {\"id\": 1, \"fileKey\": \"file1-abc.pdf\"},\n    {\"id\": 2, \"fileKey\": \"file2-def.pdf\"}\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "Get File by ID (View)",
+          "name": "Get File by ID",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/file/1",
               "host": ["{{baseUrl}}"],
@@ -1799,27 +1645,41 @@
             },
             "description": "Get file content by ID (displays inline)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[File Binary Content]"
+            }
+          ]
         },
         {
-          "name": "Get File by Key (View)",
+          "name": "Get File by Key",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
-              "raw": "{{baseUrl}}/file/key/abc123-def456",
+              "raw": "{{baseUrl}}/file/key/registrations-1-passport-abc123.pdf",
               "host": ["{{baseUrl}}"],
-              "path": ["file", "key", "abc123-def456"]
+              "path": ["file", "key", "registrations-1-passport-abc123.pdf"]
             },
-            "description": "Get file content by file key (displays inline)"
+            "description": "Get file content by file key"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[File Binary Content]"
+            }
+          ]
         },
         {
-          "name": "Download File by ID",
+          "name": "Download File",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/file/1/download",
               "host": ["{{baseUrl}}"],
@@ -1827,13 +1687,21 @@
             },
             "description": "Download file by ID (forces download)"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{"key": "Content-Disposition", "value": "attachment; filename=\"passport.pdf\""}],
+              "body": "[File Binary Content]"
+            }
+          ]
         },
         {
           "name": "Get File Metadata",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/file/1/metadata",
               "host": ["{{baseUrl}}"],
@@ -1841,13 +1709,20 @@
             },
             "description": "Get file metadata without content"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"fileKey\": \"registrations/1/passport-abc123.pdf\",\n  \"fileName\": \"passport.pdf\",\n  \"fileType\": \"application/pdf\",\n  \"fileSize\": 125000,\n  \"entityType\": \"registration\",\n  \"entityId\": 1,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Files by Entity",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/file/entity/registration/1",
               "host": ["{{baseUrl}}"],
@@ -1855,21 +1730,22 @@
             },
             "description": "Get all files associated with an entity"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"fileKey\": \"passport-abc.pdf\",\n    \"fileName\": \"passport.pdf\",\n    \"fieldName\": \"passportCopy\"\n  },\n  {\n    \"id\": 2,\n    \"fileKey\": \"photo-def.jpg\",\n    \"fileName\": \"photo.jpg\",\n    \"fieldName\": \"participantPicture\"\n  }\n]"
+            }
+          ]
         },
         {
           "name": "Update File Entity Association",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
             ],
             "body": {
               "mode": "raw",
@@ -1882,45 +1758,56 @@
             },
             "description": "Update file's entity association"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"entityType\": \"registration\",\n  \"entityId\": 2,\n  \"fieldName\": \"participantPicture\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete File by ID",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
               "raw": "{{baseUrl}}/file/1",
               "host": ["{{baseUrl}}"],
               "path": ["file", "1"]
             },
-            "description": "Delete file by ID (soft delete)"
+            "description": "Delete file by ID - soft delete"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"File deleted successfully\"\n}"
+            }
+          ]
         },
         {
           "name": "Delete File by Key",
           "request": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
-              "raw": "{{baseUrl}}/file/key/abc123-def456",
+              "raw": "{{baseUrl}}/file/key/registrations-1-passport-abc123.pdf",
               "host": ["{{baseUrl}}"],
-              "path": ["file", "key", "abc123-def456"]
+              "path": ["file", "key", "registrations-1-passport-abc123.pdf"]
             },
-            "description": "Delete file by file key (soft delete)"
+            "description": "Delete file by file key - soft delete"
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"File deleted successfully\"\n}"
+            }
+          ]
         }
       ]
     }

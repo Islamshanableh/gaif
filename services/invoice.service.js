@@ -166,34 +166,34 @@ const generateInvoicePDF = async registration => {
       doc.fillColor(textColor);
 
       // ============================================================
-      // HEADER SECTION - These positions are correct
+      // HEADER SECTION - Positions converted from Figma
       // ============================================================
       doc.fontSize(10).font('Helvetica');
 
       // SERIAL NUMBER value
-      doc.text(serialNumber, 42, 122, { width: 200 });
+      doc.text(serialNumber, 40, 130, { width: 200 });
 
       // PARTICIPANT'S NAME value
-      doc.text(participantName, 42, 172, { width: 200 });
+      doc.text(participantName, 42, 183, { width: 200 });
 
       // REGISTRATION ID value (center column)
-      doc.text(registration.id.toString(), 355, 172, { width: 80 });
+      doc.text(registration.id.toString(), 346, 183, { width: 80 });
 
       // REGISTRATION DATE value (right column)
-      doc.text(registrationDate, 495, 172, { width: 90 });
+      doc.text(registrationDate, 470, 183, { width: 90 });
 
       // ============================================================
       // REGISTRATION section (left column) - Fee values
-      // Values at end of horizontal lines (left column ends ~270)
+      // Positions converted from Figma
       // ============================================================
-      const feeValueX = 195; // Start position so values end around X=265
+      const feeValueX = 162;
       const feeWidth = 70;
 
       doc.fontSize(9).font('Helvetica');
 
-      // Participation fees - same Y as label
+      // Participation fees
       if (fees.participationFees > 0) {
-        doc.text(formatCurrency(fees.participationFees), feeValueX, 295, {
+        doc.text(formatCurrency(fees.participationFees), feeValueX, 300, {
           width: feeWidth,
           align: 'right',
         });
@@ -201,7 +201,7 @@ const generateInvoicePDF = async registration => {
 
       // Spouse fees
       if (fees.spouseFees > 0) {
-        doc.text(formatCurrency(fees.spouseFees), feeValueX, 335, {
+        doc.text(formatCurrency(fees.spouseFees), feeValueX, 330, {
           width: feeWidth,
           align: 'right',
         });
@@ -209,7 +209,7 @@ const generateInvoicePDF = async registration => {
 
       // Trip
       if (fees.tripFees > 0) {
-        doc.text(formatCurrency(fees.tripFees), feeValueX, 385, {
+        doc.text(formatCurrency(fees.tripFees), feeValueX, 360, {
           width: feeWidth,
           align: 'right',
         });
@@ -217,7 +217,7 @@ const generateInvoicePDF = async registration => {
 
       // Spouse – Trip fees
       if (fees.spouseTripFees > 0) {
-        doc.text(formatCurrency(fees.spouseTripFees), feeValueX, 425, {
+        doc.text(formatCurrency(fees.spouseTripFees), feeValueX, 391, {
           width: feeWidth,
           align: 'right',
         });
@@ -225,22 +225,23 @@ const generateInvoicePDF = async registration => {
 
       // Total Participation fees
       doc.font('Helvetica-Bold');
-      doc.text(formatCurrency(fees.totalParticipationFees), feeValueX, 475, {
+      doc.text(formatCurrency(fees.totalParticipationFees), feeValueX, 422, {
         width: feeWidth,
         align: 'right',
       });
 
       // ============================================================
       // TOTAL box values (inside the beige box on left side)
+      // Positions converted from Figma
       // ============================================================
-      const totalValueX = 195;
+      const totalValueX = 162;
       const totalWidth = 70;
 
       doc.fontSize(9).font('Helvetica');
 
       // Total Discount (JD)
       if (fees.totalDiscount > 0) {
-        doc.text(formatCurrency(fees.totalDiscount), totalValueX, 560, {
+        doc.text(formatCurrency(fees.totalDiscount), totalValueX, 571, {
           width: totalWidth,
           align: 'right',
         });
@@ -248,24 +249,24 @@ const generateInvoicePDF = async registration => {
 
       // Total Value (JD)
       doc.font('Helvetica-Bold');
-      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 595, {
+      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 555, {
         width: totalWidth,
         align: 'right',
       });
 
       // Total Value (USD)
-      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 630, {
+      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 585, {
         width: totalWidth,
         align: 'right',
       });
 
       // ============================================================
       // ACCOMMODATION section (right column)
-      // Value at end of line (right side of page ~570)
+      // Positions converted from Figma
       // ============================================================
       doc.fontSize(9).font('Helvetica');
       if (fees.hotelAccommodation > 0) {
-        doc.text(formatCurrency(fees.hotelAccommodation), 500, 320, {
+        doc.text(formatCurrency(fees.hotelAccommodation), 450, 305, {
           width: 70,
           align: 'right',
         });

@@ -30,6 +30,7 @@ exports.createAccommodation = async payload => {
           single: room.single,
           double: room.double,
           roomRate: room.roomRate,
+          currency: room.currency || 'JD',
           available: room.available,
           accommodationId: accommodation.id,
         })),

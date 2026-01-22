@@ -11,8 +11,21 @@ exports.register = catchAsync(async (req, res) => {
 exports.loginByEmailAndPassword = catchAsync(async (req, res) => {
   const payload = pick(req.body, ['email', 'password']);
   const user = await authService.loginByEmailAndPassword(payload);
-  const tokens = await tokenService.generateAuthTokens(user);
 
+  // Check if MFA is enabled for this user
+  if (user.mfaEnabled) {
+    // Generate temporary token for MFA verification
+    const tempToken = await tokenService.generateMfaTempToken(user);
+
+    return res.status(httpStatus.OK).send({
+      mfaRequired: true,
+      tempToken,
+      message: 'Please enter your MFA code from Google Authenticator',
+    });
+  }
+
+  // No MFA, return full tokens
+  const tokens = await tokenService.generateAuthTokens(user);
   res.status(httpStatus.ACCEPTED).send({ user, tokens });
 });
 

@@ -12,3 +12,4 @@ module.exports.fileService = require('./file.service');
 module.exports.registrationTokenService = require('./registrationToken.service');
 module.exports.registrationNotificationService = require('./registrationNotification.service');
 module.exports.invoiceService = require('./invoice.service');
+module.exports.mfaService = require('./mfa.service');

@@ -7,6 +7,7 @@ module.exports = {
       RESET_PASSWORD: 'resetPassword',
       VERIFY_EMAIL: 'verifyEmail',
       VERIFY_MOBILE: 'verifyMobile',
+      MFA_PENDING: 'MFA_PENDING',
     },
     platform: {
       ANDROID: 'android',

@@ -11,6 +11,7 @@ const registrationRoute = require('./registration.route');
 const tripRoute = require('./trip.route');
 const transportationScheduleRoute = require('./transportationSchedule.route');
 const fileRoute = require('./file.route');
+const mfaRoute = require('./mfa.route');
 
 const defaultRoutes = [
   {
@@ -48,6 +49,10 @@ const defaultRoutes = [
   {
     path: '/file',
     route: fileRoute,
+  },
+  {
+    path: '/mfa',
+    route: mfaRoute,
   },
 ];
 

@@ -4,7 +4,10 @@ const tripTypes = ['participation', 'spouse'];
 
 exports.createTrip = {
   body: Joi.object().keys({
-    type: Joi.string().valid(...tripTypes).allow(null).optional(),
+    type: Joi.string()
+      .valid(...tripTypes)
+      .allow(null)
+      .optional(),
     name: Joi.string().max(200).required(),
     nameAr: Joi.string().max(200).allow('', null).optional(),
     description: Joi.string().allow('', null).optional(),
@@ -19,7 +22,10 @@ exports.createTrip = {
 
 exports.updateTrip = {
   body: Joi.object().keys({
-    type: Joi.string().valid(...tripTypes).allow(null).optional(),
+    type: Joi.string()
+      .valid(...tripTypes)
+      .allow(null)
+      .optional(),
     name: Joi.string().max(200).optional(),
     nameAr: Joi.string().max(200).allow('', null).optional(),
     description: Joi.string().allow('', null).optional(),
@@ -45,6 +51,8 @@ exports.getById = {
 exports.getTrips = {
   query: Joi.object().keys({
     isActive: Joi.boolean().optional(),
-    type: Joi.string().valid(...tripTypes).optional(),
+    type: Joi.string()
+      .valid(...tripTypes)
+      .optional(),
   }),
 };

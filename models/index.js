@@ -100,6 +100,14 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    mfaEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    mfaSecret: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
   {
     tableName: 'Users',

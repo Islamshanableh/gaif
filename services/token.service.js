@@ -103,3 +103,16 @@ exports.generateVerifyEmailToken = async user => {
   );
   return verifyEmailToken;
 };
+
+/**
+ * Generate temporary token for MFA verification during login
+ * Token expires in 5 minutes
+ */
+exports.generateMfaTempToken = async user => {
+  const mfaTempToken = generateToken(
+    user,
+    '5m', // 5 minutes to complete MFA
+    auth.tokenTypes.MFA_PENDING,
+  );
+  return mfaTempToken;
+};

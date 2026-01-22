@@ -41,6 +41,7 @@ exports.loginByEmailAndPassword = async ({ email, password }) => {
     );
 
   delete user.password;
+  delete user.mfaSecret; // Never expose MFA secret
   return user;
 };
 
