@@ -67,6 +67,15 @@ router
     registrationController.uploadSpouseVisaDocuments,
   );
 
+// Get confirmed registration for roommate selection
+router.get(
+  '/roommate',
+  registrationController.getConfirmedRegistrationForRoommate,
+);
+
+// Check WhatsApp uniqueness
+router.get('/check-whatsapp', registrationController.checkWhatsappUniqueness);
+
 // Company action routes (confirm/decline registration)
 // These are public routes accessed via secure tokens in emails
 router.get(

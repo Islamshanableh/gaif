@@ -378,3 +378,25 @@ exports.uploadSpouseVisaDocuments = catchAsync(async (req, res) => {
   );
   res.status(httpStatus.OK).send({ result });
 });
+
+// Get confirmed registration for roommate selection
+exports.getConfirmedRegistrationForRoommate = catchAsync(async (req, res) => {
+  const id = parseInt(req?.query?.id, 10);
+  const result = await registrationService.getConfirmedRegistrationForRoommate(
+    id,
+  );
+  res.status(httpStatus.OK).send({ result });
+});
+
+// Check WhatsApp uniqueness
+exports.checkWhatsappUniqueness = catchAsync(async (req, res) => {
+  const { whatsapp, excludeRegistrationId } = req?.query;
+  const excludeId = excludeRegistrationId
+    ? parseInt(excludeRegistrationId, 10)
+    : null;
+  const result = await registrationService.checkWhatsappUniqueness(
+    whatsapp,
+    excludeId,
+  );
+  res.status(httpStatus.OK).send({ result });
+});

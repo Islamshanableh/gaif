@@ -1,36 +1,25 @@
 /* eslint-disable no-await-in-loop */
 const PDFDocument = require('pdfkit');
 const moment = require('moment');
+const path = require('path');
 
 // Configuration for invoice
 const INVOICE_CONFIG = {
-  // Bank details
-  jifBank: {
-    name: 'Arab Bank/Abdali Branch',
-    accountJD: '0119/060725-501',
-    ibanJD: '3052 ARAB 1190 0000 0011 9060 7255 01',
-    accountUSD: '0119/060725-511',
-    ibanUSD: '3073 ARAB 1190 0000 0011 9060 7255 11',
-    swift: 'ARAB20AXTI',
-  },
-  gaifBank: {
-    name: 'Arab Bank - Manama Branch',
-    location: 'Manama - Kingdom of Bahrain',
-    accountNo: '2002 – 104598 – 511 USD',
-    swift: 'ARABBHBMAN',
-    iban: 'BH 31 ARAB 0200 2104 5985 11',
-    accountName: 'General Arab Insurance Federation',
-  },
-
   // Exchange rate
   exchangeRate: 0.708, // USD 1 = JD 0.708
 
   // Conference details
   conferenceNumber: 35,
   conferenceYear: 2026,
-  conferenceLocation: 'Dead Sea/Jordan',
-  conferenceDates: '4-7 Oct 2026',
 };
+
+// Template image path
+const TEMPLATE_PATH = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'invoice-template.jpg',
+);
 
 /**
  * Calculate registration fees
@@ -104,9 +93,7 @@ const calculateFees = registration => {
     const checkOut = moment(registration.deadSeaCheckOut);
     const nights = checkOut.diff(checkIn, 'days') || 1;
     const roomRate =
-      registration.deadSeaRoom.roomRate ||
-      registration.deadSeaRoom.double ||
-      0;
+      registration.deadSeaRoom.roomRate || registration.deadSeaRoom.double || 0;
     accommodationTotal += nights * roomRate;
   }
 
@@ -122,7 +109,18 @@ const calculateFees = registration => {
 };
 
 /**
- * Generate invoice PDF - Single page compact layout
+ * Format number with 2 decimal places and currency
+ * @param {number} value - The value to format
+ * @param {string} currency - Currency suffix (JD, USD)
+ * @returns {string} Formatted string
+ */
+const formatCurrency = (value, currency = 'JD') => {
+  if (!value || value === 0) return '';
+  return `${value.toFixed(2)} ${currency}`;
+};
+
+/**
+ * Generate invoice PDF using image template
  * @param {Object} registration - Full registration data with associations
  * @returns {Promise<Buffer>} PDF buffer
  */
@@ -131,7 +129,7 @@ const generateInvoicePDF = async registration => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 30,
+        margin: 0,
         bufferPages: true,
         info: {
           Title: `GAIF Invoice - ${registration.id}`,
@@ -153,293 +151,148 @@ const generateInvoicePDF = async registration => {
       const registrationDate = moment(registration.createdAt).format(
         'DD/MM/YYYY',
       );
+      const serialNumber = `INV-${registration.id}-${moment().format(
+        'YYYYMMDD',
+      )}`;
 
-      // Colors
-      const primaryColor = '#1a5276';
-      const accentColor = '#f39c12';
+      // Add the template image as background (full page)
+      doc.image(TEMPLATE_PATH, 0, 0, {
+        width: 595.28, // A4 width in points
+        height: 841.89, // A4 height in points
+      });
+
+      // Set font color for all text (dark gray)
       const textColor = '#333333';
-      const lightGray = '#f8f8f8';
+      doc.fillColor(textColor);
 
-      // Page dimensions
-      const pageWidth = doc.page.width;
-      const leftMargin = 30;
-      const rightMargin = 30;
-      const contentWidth = pageWidth - leftMargin - rightMargin;
-      const leftColX = leftMargin;
-      const rightColX = pageWidth / 2 + 10;
-      const colWidth = contentWidth / 2 - 10;
+      // ============================================================
+      // Place dynamic values at specific positions on the template
+      // Coordinates based on A4 size (595.28 x 841.89 points)
+      // Adjusted based on actual template layout
+      // ============================================================
 
-      // ========== HEADER ==========
-      doc.rect(0, 0, pageWidth, 50).fill(primaryColor);
-      doc
-        .fontSize(14)
-        .fillColor('#ffffff')
-        .font('Helvetica-Bold')
-        .text('GAIF', 40, 18)
-        .text('Federation', pageWidth / 2 - 30, 18)
-        .text('JIF', pageWidth - 70, 18);
+      // SERIAL NUMBER value (below "SERIAL NUMBER" label)
+      doc.fontSize(10).font('Helvetica');
+      doc.text(serialNumber, 50, 68, { width: 200 });
 
-      // ========== SERIAL & TAX NUMBER ==========
-      let y = 60;
-      doc
-        .fontSize(8)
-        .fillColor(primaryColor)
-        .font('Helvetica-Bold')
-        .text('SERIAL NUMBER', leftColX, y)
-        .text('TAX NUMBER', pageWidth - rightMargin - 80, y, {
-          width: 80,
+      // PARTICIPANT'S NAME value
+      doc.fontSize(10).font('Helvetica');
+      doc.text(participantName, 50, 118, { width: 180 });
+
+      // REGISTRATION ID value
+      doc.text(registration.id.toString(), 350, 118, { width: 80 });
+
+      // REGISTRATION DATE value
+      doc.text(registrationDate, 480, 118, { width: 100 });
+
+      // ============================================================
+      // REGISTRATION section (left column) - Fee values
+      // Values should appear at the end of each row's line
+      // ============================================================
+      const feeValueX = 245; // X position for fee values (end of line area)
+      const feeStartY = 268; // Starting Y for first fee row (Participation fees)
+      const feeRowHeight = 26; // Height between rows
+
+      doc.fontSize(9).font('Helvetica');
+
+      // Participation fees - row 1
+      if (fees.participationFees > 0) {
+        doc.text(formatCurrency(fees.participationFees), feeValueX, feeStartY, {
+          width: 70,
           align: 'right',
         });
+      }
 
-      y += 12;
-      doc
-        .fontSize(9)
-        .fillColor(textColor)
-        .font('Helvetica')
-        .text(
-          `INV-${registration.id}-${moment().format('YYYYMMDD')}`,
-          leftColX,
-          y,
+      // Spouse fees - row 2
+      if (fees.spouseFees > 0) {
+        doc.text(
+          formatCurrency(fees.spouseFees),
+          feeValueX,
+          feeStartY + feeRowHeight,
+          { width: 70, align: 'right' },
         );
+      }
 
-      // ========== PARTICIPANT INFO ==========
-      y += 20;
-      doc
-        .fontSize(8)
-        .fillColor(primaryColor)
-        .font('Helvetica-Bold')
-        .text("PARTICIPANT'S NAME", leftColX, y)
-        .text('REGISTRATION ID', leftColX + 180, y)
-        .text('REGISTRATION DATE', leftColX + 320, y);
-
-      y += 12;
-      doc
-        .fontSize(9)
-        .fillColor(textColor)
-        .font('Helvetica')
-        .text(participantName, leftColX, y)
-        .text(registration.id.toString(), leftColX + 180, y)
-        .text(registrationDate, leftColX + 320, y);
-
-      // ========== HORIZONTAL LINE ==========
-      y += 20;
-      doc
-        .moveTo(leftColX, y)
-        .lineTo(pageWidth - rightMargin, y)
-        .stroke(primaryColor);
-
-      // ========== REFERENCE TEXT ==========
-      y += 10;
-      doc
-        .fontSize(8)
-        .fillColor(textColor)
-        .font('Helvetica')
-        .text(
-          `Reference to your registration in GAIF ${INVOICE_CONFIG.conferenceNumber} conference, at ${INVOICE_CONFIG.conferenceLocation} dated from ${INVOICE_CONFIG.conferenceDates}, you are kindly requested to arrange payments for the following:`,
-          leftColX,
-          y,
-          { width: contentWidth, lineGap: 2 },
+      // Trip fees - row 3
+      if (fees.tripFees > 0) {
+        doc.text(
+          formatCurrency(fees.tripFees),
+          feeValueX,
+          feeStartY + feeRowHeight * 2,
+          { width: 70, align: 'right' },
         );
+      }
 
-      // ========== TWO COLUMN LAYOUT ==========
-      y += 35;
-      const columnsStartY = y;
+      // Spouse - Trip fees - row 4
+      if (fees.spouseTripFees > 0) {
+        doc.text(
+          formatCurrency(fees.spouseTripFees),
+          feeValueX,
+          feeStartY + feeRowHeight * 3,
+          { width: 70, align: 'right' },
+        );
+      }
 
-      // ----- LEFT COLUMN: REGISTRATION -----
-      doc
-        .fontSize(10)
-        .fillColor(primaryColor)
-        .font('Helvetica-Bold')
-        .text('REGISTRATION', leftColX, y);
+      // Total Participation fees - row 5 (with extra spacing)
+      doc.font('Helvetica-Bold');
+      doc.text(
+        formatCurrency(fees.totalParticipationFees),
+        feeValueX,
+        feeStartY + feeRowHeight * 4 + 8,
+        { width: 70, align: 'right' },
+      );
 
-      y += 18;
+      // ============================================================
+      // TOTAL box values (beige background box)
+      // ============================================================
+      const totalValueX = 175; // X position for values inside TOTAL box
+      const totalBoxStartY = 498; // Y position for first row inside TOTAL box
+      const totalRowHeight = 26; // Height between rows in TOTAL box
 
-      // Fee items function
-      const drawFeeRow = (label, value, xPos) => {
-        doc.fontSize(8).fillColor(textColor).font('Helvetica').text(label, xPos, y);
-        doc.text(value ? `${value.toFixed(2)} JD` : '—', xPos + colWidth - 60, y, {
-          width: 60,
+      doc.fontSize(9).font('Helvetica');
+
+      // Total Discount (JD) - first row in box
+      if (fees.totalDiscount > 0) {
+        doc.text(
+          formatCurrency(fees.totalDiscount),
+          totalValueX,
+          totalBoxStartY,
+          { width: 70, align: 'right' },
+        );
+      }
+
+      // Total Value (JD) - second row in box
+      doc.font('Helvetica-Bold');
+      doc.text(
+        formatCurrency(fees.totalValueJD),
+        totalValueX,
+        totalBoxStartY + totalRowHeight,
+        { width: 70, align: 'right' },
+      );
+
+      // Total Value (USD) - third row in box
+      doc.text(
+        formatCurrency(fees.totalValueUSD, 'USD'),
+        totalValueX,
+        totalBoxStartY + totalRowHeight * 2,
+        { width: 70, align: 'right' },
+      );
+
+      // ============================================================
+      // ACCOMMODATION section (right column)
+      // ============================================================
+      const accomValueX = 555; // X position for accommodation value
+      const accomY = 296; // Y position for Hotel Accommodation value
+
+      doc.fontSize(9).font('Helvetica');
+      if (fees.hotelAccommodation > 0) {
+        doc.text(formatCurrency(fees.hotelAccommodation), accomValueX, accomY, {
+          width: 70,
           align: 'right',
         });
-        y += 14;
-      };
+      }
 
-      drawFeeRow('Participation fees', fees.participationFees, leftColX);
-      drawFeeRow('Spouse fees', fees.spouseFees, leftColX);
-      drawFeeRow('Trip', fees.tripFees, leftColX);
-      drawFeeRow('Spouse – Trip fees', fees.spouseTripFees, leftColX);
-
-      y += 5;
-      doc
-        .moveTo(leftColX, y)
-        .lineTo(leftColX + colWidth - 20, y)
-        .stroke('#ddd');
-      y += 8;
-
-      doc.fontSize(8).fillColor(primaryColor).font('Helvetica-Bold');
-      doc.text('Total Participation fees', leftColX, y);
-      doc.text(`${fees.totalParticipationFees.toFixed(2)} JD`, leftColX + colWidth - 60, y, {
-        width: 60,
-        align: 'right',
-      });
-
-      // ----- TOTAL BOX -----
-      y += 25;
-      const totalBoxY = y;
-      doc.rect(leftColX, totalBoxY, colWidth - 20, 70).fill(lightGray);
-
-      y = totalBoxY + 8;
-      doc.fontSize(10).fillColor(primaryColor).font('Helvetica-Bold').text('TOTAL', leftColX + 10, y);
-
-      y += 16;
-      doc.fontSize(8).fillColor(textColor).font('Helvetica');
-      doc.text('Total Discount (JD)', leftColX + 10, y);
-      doc.text(`${fees.totalDiscount.toFixed(2)} JD`, leftColX + colWidth - 70, y, {
-        width: 60,
-        align: 'right',
-      });
-
-      y += 14;
-      doc.text('Total Value (JD)', leftColX + 10, y);
-      doc.fillColor(primaryColor).font('Helvetica-Bold');
-      doc.text(`${fees.totalValueJD.toFixed(2)} JD`, leftColX + colWidth - 70, y, {
-        width: 60,
-        align: 'right',
-      });
-
-      y += 14;
-      doc.fillColor(textColor).font('Helvetica');
-      doc.text('Total Value (USD)', leftColX + 10, y);
-      doc.fillColor(primaryColor).font('Helvetica-Bold');
-      doc.text(`${fees.totalValueUSD.toFixed(2)} USD`, leftColX + colWidth - 70, y, {
-        width: 60,
-        align: 'right',
-      });
-
-      // ----- RIGHT COLUMN: ACCOMMODATION & NOTES -----
-      y = columnsStartY;
-      doc
-        .fontSize(10)
-        .fillColor(primaryColor)
-        .font('Helvetica-Bold')
-        .text('ACCOMMODATION', rightColX, y);
-      doc.fontSize(6).font('Helvetica').text('(Inclusive of Tax & Service)', rightColX + 95, y + 2);
-
-      y += 18;
-      doc.fontSize(8).fillColor(textColor).font('Helvetica');
-      doc.text('Hotel Accommodation', rightColX, y);
-      doc.text(
-        fees.hotelAccommodation ? `${fees.hotelAccommodation.toFixed(2)} JD` : '—',
-        rightColX + colWidth - 60,
-        y,
-        { width: 60, align: 'right' },
-      );
-
-      // NOTES section
-      y += 25;
-      doc.fontSize(10).fillColor(primaryColor).font('Helvetica-Bold').text('NOTES', rightColX, y);
-
-      y += 14;
-      doc.fontSize(7).fillColor(textColor).font('Helvetica');
-
-      const notesLines = [
-        'Registration & Hotel accommodation fees can be paid by:',
-        '',
-        'A. Credit card (VISA, MASTER).',
-        '   Through the link on received email',
-        '',
-        'B. Bank Transfer',
-        '',
-        'Jordan Insurance Federation Account:',
-        `Bank Name: ${INVOICE_CONFIG.jifBank.name}`,
-        `Account#(JD): ${INVOICE_CONFIG.jifBank.accountJD}`,
-        `IBAN (JD): ${INVOICE_CONFIG.jifBank.ibanJD}`,
-        `Account (USD): ${INVOICE_CONFIG.jifBank.accountUSD}`,
-        `IBAN (USD): ${INVOICE_CONFIG.jifBank.ibanUSD}`,
-        `SWIFT: ${INVOICE_CONFIG.jifBank.swift}`,
-        '',
-        'GAIF Account:',
-        `${INVOICE_CONFIG.gaifBank.name}`,
-        `${INVOICE_CONFIG.gaifBank.location}`,
-        `Account: ${INVOICE_CONFIG.gaifBank.accountNo}`,
-        `SWIFT: ${INVOICE_CONFIG.gaifBank.swift}`,
-        `IBAN: ${INVOICE_CONFIG.gaifBank.iban}`,
-        '',
-        'C. Local bank cheque to JIF',
-      ];
-
-      notesLines.forEach(line => {
-        if (line) {
-          doc.text(line, rightColX, y, { width: colWidth - 10 });
-        }
-        y += 9;
-      });
-
-      // ========== BOTTOM SECTION: POLICIES ==========
-      const bottomY = 480;
-
-      // Important Notes - Left
-      y = bottomY;
-      doc.fontSize(9).fillColor(primaryColor).font('Helvetica-Bold').text('Important Notes', leftColX, y);
-      y += 12;
-
-      const importantNotes = [
-        'Registration fees guaranteed once full payment received.',
-        'Payment deadline: 4th Sept. 2026',
-        'Extra hotel expenses paid directly to hotel.',
-        'Prices include breakfast, service & taxes.',
-      ];
-
-      doc.fontSize(6).fillColor(textColor).font('Helvetica');
-      importantNotes.forEach(note => {
-        doc.text(`• ${note}`, leftColX, y, { width: colWidth - 10 });
-        y += 12;
-      });
-
-      // Refund Policy - Right top
-      y = bottomY;
-      doc.fontSize(9).fillColor(primaryColor).font('Helvetica-Bold').text('Refund Policy', rightColX, y);
-      y += 12;
-
-      doc.fontSize(6).fillColor(textColor).font('Helvetica');
-      doc.text(
-        '• Refunds within 10 working days from cancellation request to registration@GAIF2026.com',
-        rightColX,
-        y,
-        { width: colWidth - 10 },
-      );
-      y += 18;
-      doc.text(
-        '• Force Majeure: Full refund within 10 working days.',
-        rightColX,
-        y,
-        { width: colWidth - 10 },
-      );
-
-      // Cancellation Policy - Right bottom
-      y += 20;
-      doc.fontSize(9).fillColor(primaryColor).font('Helvetica-Bold').text('Cancellation Policy', rightColX, y);
-      y += 12;
-
-      doc.fontSize(6).fillColor(textColor).font('Helvetica');
-      doc.text('• Free cancellation if conference cancelled by GAIF35.', rightColX, y, {
-        width: colWidth - 10,
-      });
-      y += 12;
-      doc.text('• Free cancellation before 11:59 PM, Sept 4, 2026.', rightColX, y, {
-        width: colWidth - 10,
-      });
-      y += 12;
-      doc.text('• No refund after 11:59 PM, Sept 4, 2026.', rightColX, y, {
-        width: colWidth - 10,
-      });
-
-      // ========== EXCHANGE RATE FOOTER ==========
-      y = doc.page.height - 50;
-      doc.fontSize(8).fillColor(accentColor).font('Helvetica-Bold');
-      doc.text('Exchange Rate Is Approximately', leftColX, y);
-      doc.text(`USD 1 = JD ${INVOICE_CONFIG.exchangeRate}`, leftColX, y + 12);
-
+      // Finalize the PDF
       doc.end();
     } catch (error) {
       reject(error);

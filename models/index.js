@@ -432,6 +432,11 @@ const HotelRoom = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    currency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      defaultValue: 'JD',
+    },
     available: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -723,9 +728,13 @@ const Registration = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    ammanPartnerProfileId: {
-      type: DataTypes.STRING(100),
+    ammanRoommateId: {
+      type: DataTypes.INTEGER,
       allowNull: true,
+      references: {
+        model: 'Registrations',
+        key: 'id',
+      },
     },
     // Accommodation Dead Sea
     accommodationInDeadSea: {
@@ -756,9 +765,13 @@ const Registration = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    deadSeaPartnerProfileId: {
-      type: DataTypes.STRING(100),
+    deadSeaRoommateId: {
+      type: DataTypes.INTEGER,
       allowNull: true,
+      references: {
+        model: 'Registrations',
+        key: 'id',
+      },
     },
     // Airport Pickup
     airportPickupOption: {
@@ -1253,6 +1266,16 @@ ParticipationType.hasMany(Registration, {
 Country.hasMany(Registration, {
   foreignKey: 'nationalityId',
   as: 'registrations',
+});
+
+// Roommate associations (self-referencing)
+Registration.belongsTo(Registration, {
+  foreignKey: 'ammanRoommateId',
+  as: 'ammanRoommate',
+});
+Registration.belongsTo(Registration, {
+  foreignKey: 'deadSeaRoommateId',
+  as: 'deadSeaRoommate',
 });
 
 // Spouse associations

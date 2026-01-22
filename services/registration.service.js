@@ -92,6 +92,24 @@ const processRegistrationData = reg => {
 
 // Step 1: Create initial registration (companyId is now required)
 exports.createRegistration = async payload => {
+  // Check WhatsApp uniqueness before creating registration
+  if (payload.whatsapp) {
+    const existingWhatsapp = await Registration.findOne({
+      where: {
+        whatsapp: payload.whatsapp,
+        isActive: true,
+      },
+      attributes: ['id'],
+    });
+
+    if (existingWhatsapp) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'This WhatsApp number is already registered. Please use a different number.',
+      );
+    }
+  }
+
   const result = await Registration.create({
     companyId: payload.companyId,
     participationId: payload.participationId,
@@ -116,6 +134,25 @@ exports.createRegistration = async payload => {
 
 // Step 2: Update personal information
 exports.updatePersonalInfo = async (id, payload) => {
+  // Check WhatsApp uniqueness if being updated
+  if (payload.whatsapp) {
+    const existingWhatsapp = await Registration.findOne({
+      where: {
+        whatsapp: payload.whatsapp,
+        isActive: true,
+        id: { [Op.ne]: id }, // Exclude current registration
+      },
+      attributes: ['id'],
+    });
+
+    if (existingWhatsapp) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'This WhatsApp number is already registered. Please use a different number.',
+      );
+    }
+  }
+
   const registrationData = {
     title: payload.title,
     firstName: payload.firstName,
@@ -257,7 +294,7 @@ exports.updateAccommodation = async (id, payload) => {
       ammanCheckOut: payload.accommodationInAmman
         ? payload.ammanCheckOut
         : null,
-      ammanPartnerProfileId: payload.ammanPartnerProfileId,
+      ammanRoommateId: payload.ammanRoommateId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.accommodationInDeadSea
         ? payload.deadSeaHotelId
@@ -271,7 +308,7 @@ exports.updateAccommodation = async (id, payload) => {
       deadSeaCheckOut: payload.accommodationInDeadSea
         ? payload.deadSeaCheckOut
         : null,
-      deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
+      deadSeaRoommateId: payload.deadSeaRoommateId,
     },
     { where: { id } },
   );
@@ -521,6 +558,7 @@ exports.submitRegistration = async id => {
       },
       { model: HotelRoom, as: 'ammanRoom' },
       { model: HotelRoom, as: 'deadSeaRoom' },
+      { model: Company, as: 'company' },
     ],
   });
 
@@ -529,6 +567,37 @@ exports.submitRegistration = async id => {
   }
 
   const regData = registration.toJSON();
+
+  // Check availability before submitting
+  // 1. Check company available seats
+  if (regData.company && regData.company.available !== null) {
+    if (regData.company.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available seats for this company',
+      );
+    }
+  }
+
+  // 2. Check Amman hotel room availability
+  if (regData.accommodationInAmman && regData.ammanRoom) {
+    if (regData.ammanRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Amman hotel room category',
+      );
+    }
+  }
+
+  // 3. Check Dead Sea hotel room availability
+  if (regData.accommodationInDeadSea && regData.deadSeaRoom) {
+    if (regData.deadSeaRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Dead Sea hotel room category',
+      );
+    }
+  }
 
   // Calculate total price
   let totalPrice = 0;
@@ -569,6 +638,31 @@ exports.submitRegistration = async id => {
     { where: { id } },
   );
 
+  // Decrement available counts after successful submission
+  // 1. Decrement company available seats
+  if (regData.company && regData.company.available !== null) {
+    await Company.update(
+      { available: sequelize.literal('"available" - 1') },
+      { where: { id: regData.companyId } },
+    );
+  }
+
+  // // 2. Decrement Amman hotel room availability
+  if (regData.accommodationInAmman && regData.ammanRoomId) {
+    await HotelRoom.update(
+      { available: sequelize.literal('"available" - 1') },
+      { where: { id: regData.ammanRoomId } },
+    );
+  }
+
+  // // 3. Decrement Dead Sea hotel room availability
+  if (regData.accommodationInDeadSea && regData.deadSeaRoomId) {
+    await HotelRoom.update(
+      { available: sequelize.literal('"available" - 1') },
+      { where: { id: regData.deadSeaRoomId } },
+    );
+  }
+
   // Get full registration data with all associations for email
   const fullRegistration = await Registration.findByPk(id, {
     include: getRegistrationIncludes(),
@@ -592,12 +686,111 @@ exports.deleteRegistration = async id => {
   return result.toJSON();
 };
 
-// Create full registration (all steps at once)
+// Create full registration and submit (all steps at once)
 exports.createFullRegistration = async payload => {
+  // Check WhatsApp uniqueness before creating registration
+  if (payload.whatsapp) {
+    const existingWhatsapp = await Registration.findOne({
+      where: {
+        whatsapp: payload.whatsapp,
+        isActive: true,
+      },
+      attributes: ['id'],
+    });
+
+    if (existingWhatsapp) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'This WhatsApp number is already registered. Please use a different number.',
+      );
+    }
+  }
+
+  // Check availability before creating registration
+  // 1. Check company available seats
+  if (payload.companyId) {
+    const company = await Company.findByPk(payload.companyId);
+    if (company && company.available !== null && company.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available seats for this company',
+      );
+    }
+  }
+
+  // 2. Check Amman hotel room availability
+  if (payload.accommodationInAmman && payload.ammanRoomId) {
+    const ammanRoom = await HotelRoom.findByPk(payload.ammanRoomId);
+    if (ammanRoom && ammanRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Amman hotel room category',
+      );
+    }
+  }
+
+  // 3. Check Dead Sea hotel room availability
+  if (payload.accommodationInDeadSea && payload.deadSeaRoomId) {
+    const deadSeaRoom = await HotelRoom.findByPk(payload.deadSeaRoomId);
+    if (deadSeaRoom && deadSeaRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Dead Sea hotel room category',
+      );
+    }
+  }
+
+  // Get participation type and rooms for price calculation
+  let participationType = null;
+  let ammanRoom = null;
+  let deadSeaRoom = null;
+
+  if (payload.participationId) {
+    participationType = await ParticipationType.findByPk(payload.participationId);
+  }
+  if (payload.ammanRoomId) {
+    ammanRoom = await HotelRoom.findByPk(payload.ammanRoomId);
+  }
+  if (payload.deadSeaRoomId) {
+    deadSeaRoom = await HotelRoom.findByPk(payload.deadSeaRoomId);
+  }
+
+  // Calculate total price
+  let totalPrice = 0;
+
+  // Add participation fee
+  if (participationType && participationType.price) {
+    totalPrice += participationType.price;
+  }
+
+  // Add spouse fee if applicable
+  if (payload.hasSpouse && participationType?.spouse) {
+    totalPrice += participationType.price || 0;
+  }
+
+  // Add trip fees
+  if (payload.trips && payload.trips.length > 0) {
+    for (const tripData of payload.trips) {
+      const trip = await Trip.findByPk(tripData.tripId);
+      if (trip) {
+        totalPrice += parseFloat(trip.price) || 0;
+      }
+    }
+  }
+
+  // Add accommodation fees
+  if (payload.accommodationInAmman && ammanRoom) {
+    totalPrice += ammanRoom.double || ammanRoom.single || 0;
+  }
+
+  if (payload.accommodationInDeadSea && deadSeaRoom) {
+    totalPrice += deadSeaRoom.double || deadSeaRoom.single || 0;
+  }
+
   const transaction = await sequelize.transaction();
 
   try {
-    // Create registration with all data (companyId is now required)
+    // Create registration with all data - status is SUBMITTED
     const registrationData = {
       companyId: payload.companyId,
       participationId: payload.participationId,
@@ -617,13 +810,13 @@ exports.createFullRegistration = async payload => {
       ammanRoomId: payload.ammanRoomId,
       ammanCheckIn: payload.ammanCheckIn,
       ammanCheckOut: payload.ammanCheckOut,
-      ammanPartnerProfileId: payload.ammanPartnerProfileId,
+      ammanRoommateId: payload.ammanRoommateId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.deadSeaHotelId,
       deadSeaRoomId: payload.deadSeaRoomId,
       deadSeaCheckIn: payload.deadSeaCheckIn,
       deadSeaCheckOut: payload.deadSeaCheckOut,
-      deadSeaPartnerProfileId: payload.deadSeaPartnerProfileId,
+      deadSeaRoommateId: payload.deadSeaRoommateId,
       airportPickupOption: payload.airportPickupOption,
       arrivalDate: payload.arrivalDate,
       arrivalAirline: payload.arrivalAirline,
@@ -642,7 +835,8 @@ exports.createFullRegistration = async payload => {
       specialRequest: payload.specialRequest,
       photographyConsent: payload.photographyConsent || false,
       needsVisa: payload.needsVisa || false,
-      registrationStatus: 'DRAFT',
+      totalPrice,
+      registrationStatus: 'SUBMITTED',
     };
 
     if (payload.participantPictureId) {
@@ -697,11 +891,97 @@ exports.createFullRegistration = async payload => {
       );
     }
 
+    // Decrement available counts
+    // 1. Decrement company available seats
+    if (payload.companyId) {
+      await Company.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: payload.companyId }, transaction },
+      );
+    }
+
+    // 2. Decrement Amman hotel room availability
+    if (payload.accommodationInAmman && payload.ammanRoomId) {
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: payload.ammanRoomId }, transaction },
+      );
+    }
+
+    // 3. Decrement Dead Sea hotel room availability
+    if (payload.accommodationInDeadSea && payload.deadSeaRoomId) {
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: payload.deadSeaRoomId }, transaction },
+      );
+    }
+
     await transaction.commit();
 
-    return exports.getRegistrationById(registration.id);
+    // Get full registration data with all associations
+    const fullRegistration = await Registration.findByPk(registration.id, {
+      include: getRegistrationIncludes(),
+    });
+
+    // Send appropriate emails based on participation type
+    // This is done asynchronously - don't wait for it
+    const registrationNotificationService = require('./registrationNotification.service');
+    registrationNotificationService
+      .handleRegistrationComplete(fullRegistration.toJSON())
+      .catch(err => console.error('Error sending registration emails:', err));
+
+    return fullRegistration.toJSON();
   } catch (error) {
     await transaction.rollback();
     throw error;
   }
+};
+
+// Get confirmed registration by ID for roommate selection
+// Returns only firstName and lastName if the registration is confirmed
+exports.getConfirmedRegistrationForRoommate = async id => {
+  const registration = await Registration.findOne({
+    where: {
+      id,
+      registrationStatus: 'CONFIRMED',
+      isActive: true,
+    },
+    attributes: ['id', 'firstName', 'lastName'],
+  });
+
+  if (!registration) {
+    return { exists: false };
+  }
+
+  return {
+    exists: true,
+    id: registration.id,
+    firstName: registration.firstName,
+    lastName: registration.lastName,
+  };
+};
+
+// Check if WhatsApp number is already used by another participant
+exports.checkWhatsappUniqueness = async (
+  whatsapp,
+  excludeRegistrationId = null,
+) => {
+  const where = {
+    whatsapp,
+    isActive: true,
+  };
+
+  // Exclude current registration when updating
+  if (excludeRegistrationId) {
+    where.id = { [Op.ne]: excludeRegistrationId };
+  }
+
+  const existingRegistration = await Registration.findOne({
+    where,
+    attributes: ['id'],
+  });
+
+  return {
+    exists: !!existingRegistration,
+  };
 };

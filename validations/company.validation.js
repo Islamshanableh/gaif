@@ -4,8 +4,8 @@ exports.createCompany = {
   body: Joi.object().keys({
     name: Joi.string().required(),
     email: Joi.string().required(),
-    entryDate: Joi.date().required(),
-    expirationDate: Joi.date().required(),
+    entryDate: Joi.date(),
+    expirationDate: Joi.date(),
     countryId: Joi.number().required(),
     participationId: Joi.number().required(),
     logoId: Joi.number().allow(null).optional(),

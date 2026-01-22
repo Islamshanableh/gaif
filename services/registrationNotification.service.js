@@ -2,7 +2,10 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/config');
-const { sendHtmlEmail, sendEmailWithAttachment } = require('./common/email.service');
+const {
+  sendHtmlEmail,
+  sendEmailWithAttachment,
+} = require('./common/email.service');
 const registrationTokenService = require('./registrationToken.service');
 const invoiceService = require('./invoice.service');
 

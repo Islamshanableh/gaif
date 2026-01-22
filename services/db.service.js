@@ -16,6 +16,7 @@ const {
   Spouse,
   RegistrationTrip,
   File,
+  RegistrationToken,
 } = require('../models');
 
 // Export sequelize instance and all models
@@ -38,4 +39,5 @@ module.exports = {
   Spouse,
   RegistrationTrip,
   File,
+  RegistrationToken,
 };

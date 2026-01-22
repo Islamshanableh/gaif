@@ -14,7 +14,6 @@ const router = express.Router();
 router
   .route('/')
   .post(
-    auth(routePermissions.ADMINISTRATOR.create),
     validate(companyValidation.createCompany),
     companyController.createCompany,
   )
