@@ -746,7 +746,9 @@ exports.createFullRegistration = async payload => {
   let deadSeaRoom = null;
 
   if (payload.participationId) {
-    participationType = await ParticipationType.findByPk(payload.participationId);
+    participationType = await ParticipationType.findByPk(
+      payload.participationId,
+    );
   }
   if (payload.ammanRoomId) {
     ammanRoom = await HotelRoom.findByPk(payload.ammanRoomId);
@@ -967,7 +969,7 @@ exports.checkWhatsappUniqueness = async (
   excludeRegistrationId = null,
 ) => {
   const where = {
-    whatsapp,
+    whatsapp: `+${whatsapp}`,
     isActive: true,
   };
 

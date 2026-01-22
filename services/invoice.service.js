@@ -166,127 +166,106 @@ const generateInvoicePDF = async registration => {
       doc.fillColor(textColor);
 
       // ============================================================
-      // Place dynamic values at specific positions on the template
-      // Coordinates based on A4 size (595.28 x 841.89 points)
-      // Adjusted based on actual template layout
+      // HEADER SECTION - These positions are correct
       // ============================================================
-
-      // SERIAL NUMBER value (below "SERIAL NUMBER" label)
       doc.fontSize(10).font('Helvetica');
-      doc.text(serialNumber, 50, 68, { width: 200 });
+
+      // SERIAL NUMBER value
+      doc.text(serialNumber, 42, 122, { width: 200 });
 
       // PARTICIPANT'S NAME value
-      doc.fontSize(10).font('Helvetica');
-      doc.text(participantName, 50, 118, { width: 180 });
+      doc.text(participantName, 42, 172, { width: 200 });
 
-      // REGISTRATION ID value
-      doc.text(registration.id.toString(), 350, 118, { width: 80 });
+      // REGISTRATION ID value (center column)
+      doc.text(registration.id.toString(), 355, 172, { width: 80 });
 
-      // REGISTRATION DATE value
-      doc.text(registrationDate, 480, 118, { width: 100 });
+      // REGISTRATION DATE value (right column)
+      doc.text(registrationDate, 495, 172, { width: 90 });
 
       // ============================================================
       // REGISTRATION section (left column) - Fee values
-      // Values should appear at the end of each row's line
+      // Values at end of horizontal lines (left column ends ~270)
       // ============================================================
-      const feeValueX = 245; // X position for fee values (end of line area)
-      const feeStartY = 268; // Starting Y for first fee row (Participation fees)
-      const feeRowHeight = 26; // Height between rows
+      const feeValueX = 195; // Start position so values end around X=265
+      const feeWidth = 70;
 
       doc.fontSize(9).font('Helvetica');
 
-      // Participation fees - row 1
+      // Participation fees - same Y as label
       if (fees.participationFees > 0) {
-        doc.text(formatCurrency(fees.participationFees), feeValueX, feeStartY, {
-          width: 70,
+        doc.text(formatCurrency(fees.participationFees), feeValueX, 295, {
+          width: feeWidth,
           align: 'right',
         });
       }
 
-      // Spouse fees - row 2
+      // Spouse fees
       if (fees.spouseFees > 0) {
-        doc.text(
-          formatCurrency(fees.spouseFees),
-          feeValueX,
-          feeStartY + feeRowHeight,
-          { width: 70, align: 'right' },
-        );
+        doc.text(formatCurrency(fees.spouseFees), feeValueX, 335, {
+          width: feeWidth,
+          align: 'right',
+        });
       }
 
-      // Trip fees - row 3
+      // Trip
       if (fees.tripFees > 0) {
-        doc.text(
-          formatCurrency(fees.tripFees),
-          feeValueX,
-          feeStartY + feeRowHeight * 2,
-          { width: 70, align: 'right' },
-        );
+        doc.text(formatCurrency(fees.tripFees), feeValueX, 385, {
+          width: feeWidth,
+          align: 'right',
+        });
       }
 
-      // Spouse - Trip fees - row 4
+      // Spouse – Trip fees
       if (fees.spouseTripFees > 0) {
-        doc.text(
-          formatCurrency(fees.spouseTripFees),
-          feeValueX,
-          feeStartY + feeRowHeight * 3,
-          { width: 70, align: 'right' },
-        );
+        doc.text(formatCurrency(fees.spouseTripFees), feeValueX, 425, {
+          width: feeWidth,
+          align: 'right',
+        });
       }
 
-      // Total Participation fees - row 5 (with extra spacing)
+      // Total Participation fees
       doc.font('Helvetica-Bold');
-      doc.text(
-        formatCurrency(fees.totalParticipationFees),
-        feeValueX,
-        feeStartY + feeRowHeight * 4 + 8,
-        { width: 70, align: 'right' },
-      );
+      doc.text(formatCurrency(fees.totalParticipationFees), feeValueX, 475, {
+        width: feeWidth,
+        align: 'right',
+      });
 
       // ============================================================
-      // TOTAL box values (beige background box)
+      // TOTAL box values (inside the beige box on left side)
       // ============================================================
-      const totalValueX = 175; // X position for values inside TOTAL box
-      const totalBoxStartY = 498; // Y position for first row inside TOTAL box
-      const totalRowHeight = 26; // Height between rows in TOTAL box
+      const totalValueX = 195;
+      const totalWidth = 70;
 
       doc.fontSize(9).font('Helvetica');
 
-      // Total Discount (JD) - first row in box
+      // Total Discount (JD)
       if (fees.totalDiscount > 0) {
-        doc.text(
-          formatCurrency(fees.totalDiscount),
-          totalValueX,
-          totalBoxStartY,
-          { width: 70, align: 'right' },
-        );
+        doc.text(formatCurrency(fees.totalDiscount), totalValueX, 560, {
+          width: totalWidth,
+          align: 'right',
+        });
       }
 
-      // Total Value (JD) - second row in box
+      // Total Value (JD)
       doc.font('Helvetica-Bold');
-      doc.text(
-        formatCurrency(fees.totalValueJD),
-        totalValueX,
-        totalBoxStartY + totalRowHeight,
-        { width: 70, align: 'right' },
-      );
+      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 595, {
+        width: totalWidth,
+        align: 'right',
+      });
 
-      // Total Value (USD) - third row in box
-      doc.text(
-        formatCurrency(fees.totalValueUSD, 'USD'),
-        totalValueX,
-        totalBoxStartY + totalRowHeight * 2,
-        { width: 70, align: 'right' },
-      );
+      // Total Value (USD)
+      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 630, {
+        width: totalWidth,
+        align: 'right',
+      });
 
       // ============================================================
       // ACCOMMODATION section (right column)
+      // Value at end of line (right side of page ~570)
       // ============================================================
-      const accomValueX = 555; // X position for accommodation value
-      const accomY = 296; // Y position for Hotel Accommodation value
-
       doc.fontSize(9).font('Helvetica');
       if (fees.hotelAccommodation > 0) {
-        doc.text(formatCurrency(fees.hotelAccommodation), accomValueX, accomY, {
+        doc.text(formatCurrency(fees.hotelAccommodation), 500, 320, {
           width: 70,
           align: 'right',
         });
