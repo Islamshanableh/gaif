@@ -591,6 +591,7 @@ exports.companyDecline = catchAsync(async (req, res) => {
 /**
  * View registration details via secure token
  * GET /api/v1/registration/view?token=xxx
+ * Returns JSON data with all registration details including files
  */
 exports.viewRegistration = catchAsync(async (req, res) => {
   const { token } = req.query;
@@ -616,8 +617,8 @@ exports.viewRegistration = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
 
-  // Return registration details page
-  res.send(generateRegistrationDetailsPage(registration.toJSON()));
+  // Return registration data as JSON
+  res.status(httpStatus.OK).json(registration.toJSON());
 });
 
 /**

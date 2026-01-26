@@ -92,12 +92,11 @@ const processRegistrationData = reg => {
 
 // Helper function to get next profile ID
 const getNextProfileId = async () => {
-  const maxResult = await Registration.findOne({
-    attributes: [
-      [sequelize.fn('MAX', sequelize.col('profileId')), 'maxProfileId'],
-    ],
-  });
-  const maxProfileId = maxResult?.dataValues?.maxProfileId || 0;
+  const [results] = await sequelize.query(
+    'SELECT MAX("profileId") AS "maxProfileId" FROM "Registrations"',
+    { type: sequelize.QueryTypes.SELECT },
+  );
+  const maxProfileId = results?.maxProfileId || 0;
   return maxProfileId + 1;
 };
 
