@@ -397,6 +397,209 @@
       ]
     },
     {
+      "name": "User Management",
+      "description": "User CRUD APIs - Only ADMINISTRATOR and GAIF_ADMIN can access",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@gaif.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"New User\",\n  \"mobile\": \"+962791234567\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "create"]
+            },
+            "description": "Create a new user. Roles: ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 5,\n  \"email\": \"newuser@gaif.com\",\n  \"fullName\": \"New User\",\n  \"mobile\": \"+962791234567\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true,\n  \"mfaEnabled\": false,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Users List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/list?page=1&limit=10&status=APPROVED&role=GAIF_ADMIN&search=admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "list"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "10"},
+                {"key": "status", "value": "APPROVED", "description": "APPROVED or PENDING"},
+                {"key": "role", "value": "GAIF_ADMIN", "description": "ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"},
+                {"key": "search", "value": "admin", "description": "Search by email or fullName"}
+              ]
+            },
+            "description": "Get paginated list of users with optional filters"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"email\": \"admin@gaif.com\",\n      \"fullName\": \"Admin User\",\n      \"mobile\": \"+962791111111\",\n      \"role\": \"ADMINISTRATOR\",\n      \"status\": \"APPROVED\",\n      \"isActive\": true,\n      \"mfaEnabled\": true,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    },\n    {\n      \"id\": 2,\n      \"email\": \"gaifadmin@gaif.com\",\n      \"fullName\": \"GAIF Admin\",\n      \"mobile\": \"+962792222222\",\n      \"role\": \"GAIF_ADMIN\",\n      \"status\": \"APPROVED\",\n      \"isActive\": true,\n      \"mfaEnabled\": false,\n      \"createdAt\": \"2024-01-02T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 2,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/get?id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "get"],
+              "query": [
+                {"key": "id", "value": "1"}
+              ]
+            },
+            "description": "Get user details by ID"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"email\": \"admin@gaif.com\",\n  \"fullName\": \"Admin User\",\n  \"mobile\": \"+962791111111\",\n  \"role\": \"ADMINISTRATOR\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true,\n  \"mfaEnabled\": true,\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated User Name\",\n  \"mobile\": \"+962793333333\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/update?id=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "update"],
+              "query": [
+                {"key": "id", "value": "2"}
+              ]
+            },
+            "description": "Update user details"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 2,\n  \"email\": \"gaifadmin@gaif.com\",\n  \"fullName\": \"Updated User Name\",\n  \"mobile\": \"+962793333333\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/delete?id=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "delete"],
+              "query": [
+                {"key": "id", "value": "5"}
+              ]
+            },
+            "description": "Delete user - soft delete"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"message\": \"User deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 3,\n  \"role\": \"REGISTRATION_ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "approve"]
+            },
+            "description": "Approve a pending user and assign role"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 3,\n  \"email\": \"pending@example.com\",\n  \"fullName\": \"Pending User\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Own Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"OldPass123!\",\n  \"password\": \"NewSecurePass456!\",\n  \"confirmPassword\": \"NewSecurePass456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user/update-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "update-password"]
+            },
+            "description": "Update own password - any authenticated user"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"email\": \"admin@gaif.com\",\n  \"fullName\": \"Admin User\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Settings",
       "description": "System settings and reference data",
       "item": [
@@ -443,7 +646,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"countryIds\": [1, 2, 3],\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true\n}"
+              "raw": "{\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"countryIds\": [1, 2, 3],\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type",
@@ -457,7 +660,7 @@
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
             }
           ]
         },
@@ -489,7 +692,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"countries\": [\n    {\"id\": 1, \"name\": \"Jordan\"},\n    {\"id\": 2, \"name\": \"UAE\"}\n  ]\n}"
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"isActive\": true,\n  \"countries\": [\n    {\"id\": 1, \"name\": \"Jordan\"},\n    {\"id\": 2, \"name\": \"UAE\"}\n  ]\n}"
             }
           ]
         },
@@ -509,7 +712,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"currency\": \"USD\",\n  \"countryIds\": [1, 2, 3, 4]\n}"
+              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"spousePrice\": 350,\n  \"specialPrice\": 500,\n  \"currency\": \"USD\",\n  \"countryIds\": [1, 2, 3, 4]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
@@ -529,7 +732,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"currency\": \"USD\"\n}"
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"spousePrice\": 350,\n  \"specialPrice\": 500,\n  \"currency\": \"USD\",\n  \"countries\": [{\"id\": 1, \"name\": \"Jordan\"}, {\"id\": 2, \"name\": \"UAE\"}]\n}"
             }
           ]
         },
@@ -594,7 +797,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "[\n  {\n    \"id\": 1,\n    \"title\": \"VIP Delegate\",\n    \"price\": 500,\n    \"currency\": \"JD\",\n    \"allowForRegister\": true,\n    \"spouse\": true,\n    \"petra\": true\n  },\n  {\n    \"id\": 2,\n    \"title\": \"Standard Delegate\",\n    \"price\": 300,\n    \"currency\": \"JD\",\n    \"allowForRegister\": true,\n    \"spouse\": false,\n    \"petra\": false\n  }\n]"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"VIP Delegate\",\n      \"price\": 500,\n      \"spousePrice\": 300,\n      \"specialPrice\": 450,\n      \"currency\": \"JD\",\n      \"allowForRegister\": true,\n      \"spouse\": true,\n      \"petra\": true,\n      \"countries\": [{\"id\": 1, \"name\": \"Jordan\"}]\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Standard Delegate\",\n      \"price\": 300,\n      \"spousePrice\": 200,\n      \"specialPrice\": 250,\n      \"currency\": \"JD\",\n      \"allowForRegister\": true,\n      \"spouse\": false,\n      \"petra\": false,\n      \"countries\": [{\"id\": 1, \"name\": \"Jordan\"}]\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 2,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         }
@@ -968,7 +1171,8 @@
               "mode": "formdata",
               "formdata": [
                 {"key": "hotelName", "value": "Grand Hyatt Amman - Updated", "type": "text"},
-                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant, Business Center", "type": "text"}
+                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant, Business Center", "type": "text"},
+                {"key": "hotelRooms", "value": "[{\"id\": 1, \"roomCategory\": \"Standard Room Updated\", \"roomCategoryInArabic\": \"غرفة عادية محدثة\", \"numberOfRooms\": 55, \"single\": 110, \"double\": 160, \"roomRate\": 130, \"currency\": \"USD\", \"available\": 55}]", "type": "text", "description": "Include id to update existing room, omit id to create new room"}
               ]
             },
             "url": {
@@ -984,7 +1188,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"id\": 1,\n  \"hotelName\": \"Grand Hyatt Amman - Updated\",\n  \"hotelService\": \"Spa, Pool, Gym, Restaurant, Business Center\"\n}"
+              "body": "{\n  \"id\": 1,\n  \"hotelName\": \"Grand Hyatt Amman - Updated\",\n  \"hotelService\": \"Spa, Pool, Gym, Restaurant, Business Center\",\n  \"hotelRooms\": [\n    {\n      \"id\": 1,\n      \"roomCategory\": \"Standard Room Updated\",\n      \"roomCategoryInArabic\": \"غرفة عادية محدثة\",\n      \"numberOfRooms\": 55,\n      \"single\": 110,\n      \"double\": 160,\n      \"roomRate\": 130,\n      \"currency\": \"USD\",\n      \"available\": 55\n    }\n  ],\n  \"hotelImages\": []\n}"
             }
           ]
         },
@@ -1184,7 +1388,7 @@
               "formdata": [
                 {"key": "participationId", "value": "1", "type": "text"},
                 {"key": "companyId", "value": "1", "type": "text"},
-                {"key": "title", "value": "MR", "type": "text", "description": "MR, MRS, MS, DR, PROF"},
+                {"key": "title", "value": "MR", "type": "text", "description": "Any string value (e.g., MR, MRS, MS, DR, PROF, etc.)"},
                 {"key": "firstName", "value": "John", "type": "text"},
                 {"key": "middleName", "value": "William", "type": "text"},
                 {"key": "lastName", "value": "Doe", "type": "text"},
@@ -1195,7 +1399,7 @@
                 {"key": "mobile", "value": "+962791234567", "type": "text"},
                 {"key": "whatsapp", "value": "+962791234567", "type": "text"},
                 {"key": "hasSpouse", "value": "true", "type": "text"},
-                {"key": "spouse", "value": "{\"title\": \"MRS\", \"firstName\": \"Jane\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}", "type": "text"},
+                {"key": "spouse", "value": "{\"title\": \"Mrs.\", \"firstName\": \"Jane\", \"middleName\": \"Marie\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}", "type": "text", "description": "Spouse data - title can be any string"},
                 {"key": "accommodationInAmman", "value": "true", "type": "text"},
                 {"key": "ammanHotelId", "value": "1", "type": "text"},
                 {"key": "ammanRoomId", "value": "1", "type": "text"},
@@ -1237,7 +1441,7 @@
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"id\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"DRAFT\",\n  \"paymentStatus\": \"PENDING\",\n  \"hasSpouse\": true,\n  \"spouse\": {\n    \"id\": 1,\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Doe\"\n  }\n}"
+              "body": "{\n  \"id\": 1,\n  \"profileId\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"SUBMITTED\",\n  \"paymentStatus\": \"PENDING\",\n  \"hasSpouse\": true,\n  \"spouse\": {\n    \"id\": 1,\n    \"spouseId\": 2,\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Doe\"\n  }\n}"
             }
           ]
         },
@@ -1259,7 +1463,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"id\": 1,\n  \"title\": \"MR\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"DRAFT\",\n  \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"},\n  \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n  \"spouse\": {\"id\": 1, \"firstName\": \"Jane\", \"lastName\": \"Doe\"},\n  \"trips\": [{\"id\": 1, \"name\": \"Petra Day Trip\"}],\n  \"ammanHotel\": {\"id\": 1, \"hotelName\": \"Grand Hyatt Amman\"}\n}"
+              "body": "{\n  \"id\": 1,\n  \"profileId\": 1,\n  \"title\": \"MR\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acme.com\",\n  \"status\": \"SUBMITTED\",\n  \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\", \"price\": 500, \"spousePrice\": 300, \"specialPrice\": 450},\n  \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n  \"spouse\": {\"id\": 1, \"spouseId\": 2, \"firstName\": \"Jane\", \"lastName\": \"Doe\"},\n  \"trips\": [{\"id\": 1, \"name\": \"Petra Day Trip\"}],\n  \"ammanHotel\": {\"id\": 1, \"hotelName\": \"Grand Hyatt Amman\"}\n}"
             }
           ]
         },
@@ -1340,7 +1544,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"results\": [\n    {\n      \"id\": 1,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@acme.com\",\n      \"status\": \"DRAFT\",\n      \"paymentStatus\": \"PENDING\",\n      \"company\": {\"name\": \"Acme Corporation\"}\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1,\n  \"totalResults\": 1\n}"
+              "body": "{\n  \"results\": [\n    {\n      \"id\": 1,\n      \"profileId\": 1,\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@acme.com\",\n      \"status\": \"SUBMITTED\",\n      \"paymentStatus\": \"PENDING\",\n      \"hasSpouse\": true,\n      \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n      \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"}\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1,\n  \"totalResults\": 1\n}"
             }
           ]
         },

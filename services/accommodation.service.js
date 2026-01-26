@@ -121,7 +121,7 @@ exports.deleteAccommodation = async id => {
 };
 
 exports.updateAccommodation = async payload => {
-  const { id, hotelImages, ...updateData } = payload;
+  const { id, hotelImages, hotelRooms, ...updateData } = payload;
 
   const transaction = await sequelize.transaction();
 
@@ -130,6 +130,44 @@ exports.updateAccommodation = async payload => {
       where: { id },
       transaction,
     });
+
+    // Update hotel rooms if provided
+    if (hotelRooms && hotelRooms.length > 0) {
+      for (const room of hotelRooms) {
+        if (room.id) {
+          // Update existing room
+          await HotelRoom.update(
+            {
+              roomCategory: room.roomCategory,
+              roomCategoryInArabic: room.roomCategoryInArabic,
+              numberOfRooms: room.numberOfRooms,
+              single: room.single,
+              double: room.double,
+              roomRate: room.roomRate,
+              currency: room.currency,
+              available: room.available,
+            },
+            { where: { id: room.id, accommodationId: id }, transaction },
+          );
+        } else {
+          // Create new room
+          await HotelRoom.create(
+            {
+              roomCategory: room.roomCategory,
+              roomCategoryInArabic: room.roomCategoryInArabic,
+              numberOfRooms: room.numberOfRooms,
+              single: room.single,
+              double: room.double,
+              roomRate: room.roomRate,
+              currency: room.currency || 'JD',
+              available: room.available,
+              accommodationId: id,
+            },
+            { transaction },
+          );
+        }
+      }
+    }
 
     if (hotelImages && hotelImages.length > 0) {
       await HotelImages.bulkCreate(
@@ -143,7 +181,12 @@ exports.updateAccommodation = async payload => {
 
     await transaction.commit();
 
-    const result = await Accommodation.findByPk(id);
+    const result = await Accommodation.findByPk(id, {
+      include: [
+        { model: HotelImages, as: 'hotelImages' },
+        { model: HotelRoom, as: 'hotelRooms' },
+      ],
+    });
     return result ? result.toJSON() : null;
   } catch (e) {
     await transaction.rollback();

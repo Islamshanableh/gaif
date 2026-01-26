@@ -4,6 +4,8 @@ exports.createParticipationType = {
   body: Joi.object().keys({
     title: Joi.string().required(),
     price: Joi.number().required(),
+    spousePrice: Joi.number().allow(null).optional(),
+    specialPrice: Joi.number().allow(null).optional(),
     currency: Joi.string().max(10).allow('', null).optional(),
     allowForRegister: Joi.boolean().optional(),
     allowCreateCompany: Joi.boolean().optional(),
@@ -28,6 +30,8 @@ exports.updateParticipationType = {
   body: Joi.object().keys({
     title: Joi.string(),
     price: Joi.number(),
+    spousePrice: Joi.number().allow(null).optional(),
+    specialPrice: Joi.number().allow(null).optional(),
     currency: Joi.string().max(10).allow('', null).optional(),
     allowForRegister: Joi.boolean().optional(),
     allowCreateCompany: Joi.boolean().optional(),

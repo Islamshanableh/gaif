@@ -37,7 +37,7 @@ const sequelize = new Sequelize(
 // ============================================================================
 const ENUMS = {
   UserStatus: ['APPROVED', 'PENDING'],
-  UserRole: ['ADMINISTRATOR', 'USER'],
+  UserRole: ['ADMINISTRATOR', 'GAIF_ADMIN', 'REGISTRATION_ADMIN', 'USER'],
   TicketStatus: ['INPROGRESS', 'PENDING', 'DONE'],
   Title: ['MR', 'MRS', 'MS', 'DR', 'PROF'],
   AirportPickupOption: ['NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER'],
@@ -132,6 +132,14 @@ const ParticipationType = sequelize.define(
       unique: true,
     },
     price: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    spousePrice: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    specialPrice: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
@@ -630,6 +638,11 @@ const Registration = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    profileId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      unique: true,
+    },
     companyId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -648,11 +661,8 @@ const Registration = sequelize.define(
     },
     // Personal Information
     title: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING(50),
       allowNull: true,
-      validate: {
-        isIn: [ENUMS.Title],
-      },
     },
     firstName: {
       type: DataTypes.STRING(100),
@@ -938,6 +948,11 @@ const Spouse = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    spouseId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      unique: true,
+    },
     registrationId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -947,11 +962,8 @@ const Spouse = sequelize.define(
       },
     },
     title: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING(50),
       allowNull: true,
-      validate: {
-        isIn: [ENUMS.Title],
-      },
     },
     firstName: {
       type: DataTypes.STRING(100),

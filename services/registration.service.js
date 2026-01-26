@@ -90,6 +90,17 @@ const processRegistrationData = reg => {
   return reg;
 };
 
+// Helper function to get next profile ID
+const getNextProfileId = async () => {
+  const maxResult = await Registration.findOne({
+    attributes: [
+      [sequelize.fn('MAX', sequelize.col('profileId')), 'maxProfileId'],
+    ],
+  });
+  const maxProfileId = maxResult?.dataValues?.maxProfileId || 0;
+  return maxProfileId + 1;
+};
+
 // Step 1: Create initial registration (companyId is now required)
 exports.createRegistration = async payload => {
   // Check WhatsApp uniqueness before creating registration
@@ -110,6 +121,9 @@ exports.createRegistration = async payload => {
     }
   }
 
+  // Get the next profile ID
+  const profileId = await getNextProfileId();
+
   const result = await Registration.create({
     companyId: payload.companyId,
     participationId: payload.participationId,
@@ -120,6 +134,7 @@ exports.createRegistration = async payload => {
     mobile: payload.mobile || '',
     whatsapp: payload.whatsapp || '',
     registrationStatus: 'DRAFT',
+    profileId,
   });
 
   const registration = await Registration.findByPk(result.id, {
@@ -223,10 +238,12 @@ exports.updateSpouseInfo = async (id, payload) => {
         where: { registrationId: id },
       });
     } else {
-      // Create new spouse
+      // Create new spouse with spouseId = profileId + 1
+      const spouseId = registration.profileId + 1;
       await Spouse.create({
         ...spouseData,
         registrationId: id,
+        spouseId,
       });
     }
   } else if (!payload.hasSpouse && registration.spouse) {
@@ -285,11 +302,40 @@ exports.updateTrips = async (id, payload) => {
 
 // Step 5: Update accommodation
 exports.updateAccommodation = async (id, payload) => {
+  // Get the current registration to track room changes
+  const currentRegistration = await Registration.findByPk(id, {
+    attributes: [
+      'registrationStatus',
+      'ammanRoomId',
+      'deadSeaRoomId',
+      'accommodationInAmman',
+      'accommodationInDeadSea',
+    ],
+  });
+
+  if (!currentRegistration) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
+  }
+
+  const isSubmitted =
+    currentRegistration.registrationStatus === 'SUBMITTED' ||
+    currentRegistration.registrationStatus === 'CONFIRMED';
+
+  // Track old and new room IDs for availability updates
+  const oldAmmanRoomId = currentRegistration.ammanRoomId;
+  const oldDeadSeaRoomId = currentRegistration.deadSeaRoomId;
+  const newAmmanRoomId = payload.accommodationInAmman
+    ? payload.ammanRoomId
+    : null;
+  const newDeadSeaRoomId = payload.accommodationInDeadSea
+    ? payload.deadSeaRoomId
+    : null;
+
   await Registration.update(
     {
       accommodationInAmman: payload.accommodationInAmman || false,
       ammanHotelId: payload.accommodationInAmman ? payload.ammanHotelId : null,
-      ammanRoomId: payload.accommodationInAmman ? payload.ammanRoomId : null,
+      ammanRoomId: newAmmanRoomId,
       ammanCheckIn: payload.accommodationInAmman ? payload.ammanCheckIn : null,
       ammanCheckOut: payload.accommodationInAmman
         ? payload.ammanCheckOut
@@ -299,9 +345,7 @@ exports.updateAccommodation = async (id, payload) => {
       deadSeaHotelId: payload.accommodationInDeadSea
         ? payload.deadSeaHotelId
         : null,
-      deadSeaRoomId: payload.accommodationInDeadSea
-        ? payload.deadSeaRoomId
-        : null,
+      deadSeaRoomId: newDeadSeaRoomId,
       deadSeaCheckIn: payload.accommodationInDeadSea
         ? payload.deadSeaCheckIn
         : null,
@@ -312,6 +356,45 @@ exports.updateAccommodation = async (id, payload) => {
     },
     { where: { id } },
   );
+
+  // Update room availability only for submitted/confirmed registrations
+  if (isSubmitted) {
+    // Handle Amman room availability changes
+    if (oldAmmanRoomId !== newAmmanRoomId) {
+      // Increment availability for old room (if it existed)
+      if (oldAmmanRoomId) {
+        await HotelRoom.update(
+          { available: sequelize.literal('"available" + 1') },
+          { where: { id: oldAmmanRoomId } },
+        );
+      }
+      // Decrement availability for new room (if selected)
+      if (newAmmanRoomId) {
+        await HotelRoom.update(
+          { available: sequelize.literal('"available" - 1') },
+          { where: { id: newAmmanRoomId } },
+        );
+      }
+    }
+
+    // Handle Dead Sea room availability changes
+    if (oldDeadSeaRoomId !== newDeadSeaRoomId) {
+      // Increment availability for old room (if it existed)
+      if (oldDeadSeaRoomId) {
+        await HotelRoom.update(
+          { available: sequelize.literal('"available" + 1') },
+          { where: { id: oldDeadSeaRoomId } },
+        );
+      }
+      // Decrement availability for new room (if selected)
+      if (newDeadSeaRoomId) {
+        await HotelRoom.update(
+          { available: sequelize.literal('"available" - 1') },
+          { where: { id: newDeadSeaRoomId } },
+        );
+      }
+    }
+  }
 
   const result = await Registration.findByPk(id, {
     include: [
@@ -569,8 +652,12 @@ exports.submitRegistration = async id => {
   const regData = registration.toJSON();
 
   // Check availability before submitting
-  // 1. Check company available seats
-  if (regData.company && regData.company.available !== null) {
+  // 1. Check company available seats (only if allowFreeSeats is true)
+  if (
+    regData.company &&
+    regData.company.allowFreeSeats &&
+    regData.company.available !== null
+  ) {
     if (regData.company.available <= 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -639,8 +726,12 @@ exports.submitRegistration = async id => {
   );
 
   // Decrement available counts after successful submission
-  // 1. Decrement company available seats
-  if (regData.company && regData.company.available !== null) {
+  // 1. Decrement company available seats (only if allowFreeSeats is true)
+  if (
+    regData.company &&
+    regData.company.allowFreeSeats &&
+    regData.company.available !== null
+  ) {
     await Company.update(
       { available: sequelize.literal('"available" - 1') },
       { where: { id: regData.companyId } },
@@ -707,10 +798,16 @@ exports.createFullRegistration = async payload => {
   }
 
   // Check availability before creating registration
-  // 1. Check company available seats
+  // 1. Check company available seats (only if allowFreeSeats is true)
+  let companyData = null;
   if (payload.companyId) {
-    const company = await Company.findByPk(payload.companyId);
-    if (company && company.available !== null && company.available <= 0) {
+    companyData = await Company.findByPk(payload.companyId);
+    if (
+      companyData &&
+      companyData.allowFreeSeats &&
+      companyData.available !== null &&
+      companyData.available <= 0
+    ) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
         'No available seats for this company',
@@ -789,6 +886,9 @@ exports.createFullRegistration = async payload => {
     totalPrice += deadSeaRoom.double || deadSeaRoom.single || 0;
   }
 
+  // Get the next profile ID
+  const profileId = await getNextProfileId();
+
   const transaction = await sequelize.transaction();
 
   try {
@@ -796,6 +896,7 @@ exports.createFullRegistration = async payload => {
     const registrationData = {
       companyId: payload.companyId,
       participationId: payload.participationId,
+      profileId,
       title: payload.title,
       firstName: payload.firstName,
       middleName: payload.middleName,
@@ -861,11 +962,12 @@ exports.createFullRegistration = async payload => {
       transaction,
     });
 
-    // Create spouse if provided
+    // Create spouse if provided with spouseId = profileId + 1
     if (payload.hasSpouse && payload.spouse) {
       await Spouse.create(
         {
           registrationId: registration.id,
+          spouseId: profileId + 1,
           title: payload.spouse.title,
           firstName: payload.spouse.firstName,
           middleName: payload.spouse.middleName,
@@ -894,8 +996,8 @@ exports.createFullRegistration = async payload => {
     }
 
     // Decrement available counts
-    // 1. Decrement company available seats
-    if (payload.companyId) {
+    // 1. Decrement company available seats (only if allowFreeSeats is true)
+    if (payload.companyId && companyData && companyData.allowFreeSeats) {
       await Company.update(
         { available: sequelize.literal('"available" - 1') },
         { where: { id: payload.companyId }, transaction },

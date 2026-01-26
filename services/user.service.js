@@ -44,7 +44,7 @@ exports.approveUserById = async payload => {
     {
       where: { id: payload?.id },
       returning: true,
-    }
+    },
   );
 
   // Fetch the updated user
@@ -83,10 +83,7 @@ exports.updateUserPassword = async (id, payload) => {
 
   const password = bcrypt.hashSync(payload.password, hash.secret);
 
-  await User.update(
-    { password },
-    { where: { id } }
-  );
+  await User.update({ password }, { where: { id } });
 
   const result = await User.findByPk(id);
   return result ? result.toJSON() : null;
@@ -102,18 +99,49 @@ exports.deleteUserById = async id => {
         email: `${userInfo.email}-${Date.now()}`,
         mobile: userInfo.mobile ? `${userInfo.mobile}-${Date.now()}` : null,
       },
-      { where: { id } }
+      { where: { id } },
     );
   }
 };
 
-exports.getUserList = async status => {
-  const result = await User.findAll({
-    where: {
-      isActive: true,
-      ...(status && { status }),
-    },
+exports.getUserList = async query => {
+  const { page = 1, limit = 10, status, role, search } = query || {};
+  const offset = (page - 1) * limit;
+
+  const where = {
+    isActive: true,
+  };
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (role) {
+    where.role = role;
+  }
+
+  if (search) {
+    where[Op.or] = [
+      { email: { [Op.like]: `%${search}%` } },
+      { fullName: { [Op.like]: `%${search}%` } },
+    ];
+  }
+
+  const { count: total, rows: users } = await User.findAndCountAll({
+    where,
+    offset,
+    limit,
+    order: [['createdAt', 'DESC']],
+    attributes: { exclude: ['password', 'mfaSecret'] },
   });
 
-  return result.map(user => user.toJSON());
+  return {
+    data: users.map(user => user.toJSON()),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };

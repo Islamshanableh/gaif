@@ -8,3 +8,4 @@ module.exports.tripController = require('./trip.controller');
 module.exports.transportationScheduleController = require('./transportationSchedule.controller');
 module.exports.fileController = require('./file.controller');
 module.exports.mfaController = require('./mfa.controller');
+module.exports.userController = require('./user.controller');

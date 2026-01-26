@@ -1,7 +1,6 @@
 const Joi = require('joi');
 
 // Enum values
-const titleEnum = ['MR', 'MRS', 'MS', 'DR', 'PROF'];
 const airportPickupOptions = ['NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER'];
 const transportationTypes = ['BY_COACH', 'OWN_TRANSPORTATION'];
 
@@ -16,9 +15,7 @@ exports.createRegistrationStep1 = {
 // Step 2: Personal Information
 exports.updateRegistrationStep2 = {
   body: Joi.object().keys({
-    title: Joi.string()
-      .valid(...titleEnum)
-      .optional(),
+    title: Joi.string().max(50).allow('', null).optional(),
     firstName: Joi.string().max(100).required(),
     middleName: Joi.string().max(100).allow('', null).optional(),
     lastName: Joi.string().max(100).required(),
@@ -43,9 +40,7 @@ exports.updateRegistrationStep3 = {
       is: true,
       then: Joi.object()
         .keys({
-          title: Joi.string()
-            .valid(...titleEnum)
-            .optional(),
+          title: Joi.string().max(50).allow('', null).optional(),
           firstName: Joi.string().max(100).required(),
           middleName: Joi.string().max(100).allow('', null).optional(),
           lastName: Joi.string().max(100).required(),
@@ -258,9 +253,7 @@ exports.createFullRegistration = {
     participationId: Joi.number().required(),
     companyId: Joi.number().required(),
     // Step 2 - Personal Information
-    title: Joi.string()
-      .valid(...titleEnum)
-      .optional(),
+    title: Joi.string().max(50).allow('', null).optional(),
     firstName: Joi.string().max(100).required(),
     middleName: Joi.string().max(100).allow('', null).optional(),
     lastName: Joi.string().max(100).required(),
@@ -274,9 +267,7 @@ exports.createFullRegistration = {
     hasSpouse: Joi.boolean().optional(),
     spouse: Joi.object()
       .keys({
-        title: Joi.string()
-          .valid(...titleEnum)
-          .optional(),
+        title: Joi.string().max(50).allow('', null).optional(),
         firstName: Joi.string().max(100).required(),
         middleName: Joi.string().max(100).allow('', null).optional(),
         lastName: Joi.string().max(100).required(),

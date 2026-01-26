@@ -51,6 +51,7 @@ exports.updateAccommodation = {
     entryDate: Joi.date(),
     expirationDate: Joi.date(),
     hotelRooms: Joi.array().items({
+      id: Joi.number().optional(), // Include id for updating existing rooms
       roomCategory: Joi.string(),
       roomCategoryInArabic: Joi.string(),
       numberOfRooms: Joi.number(),
