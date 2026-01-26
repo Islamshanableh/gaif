@@ -1,7 +1,12 @@
 const Joi = require('joi');
 
 // Valid user roles
-const validRoles = ['ADMINISTRATOR', 'GAIF_ADMIN', 'REGISTRATION_ADMIN', 'USER'];
+const validRoles = [
+  'ADMINISTRATOR',
+  'GAIF_ADMIN',
+  'REGISTRATION_ADMIN',
+  'USER',
+];
 
 exports.createUser = {
   body: Joi.object().keys({
@@ -12,7 +17,9 @@ exports.createUser = {
     }),
     fullName: Joi.string().max(320).required(),
     mobile: Joi.string().max(20).allow('', null).optional(),
-    role: Joi.string().valid(...validRoles).required(),
+    role: Joi.string()
+      .valid(...validRoles)
+      .required(),
     status: Joi.string().valid('APPROVED', 'PENDING').default('APPROVED'),
   }),
 };
@@ -22,7 +29,9 @@ exports.updateUser = {
     email: Joi.string().email().optional(),
     fullName: Joi.string().max(320).optional(),
     mobile: Joi.string().max(20).allow('', null).optional(),
-    role: Joi.string().valid(...validRoles).optional(),
+    role: Joi.string()
+      .valid(...validRoles)
+      .optional(),
     status: Joi.string().valid('APPROVED', 'PENDING').optional(),
     isActive: Joi.boolean().optional(),
   }),
@@ -34,7 +43,9 @@ exports.updateUser = {
 exports.userList = {
   query: Joi.object().keys({
     status: Joi.string().optional(),
-    role: Joi.string().valid(...validRoles).optional(),
+    role: Joi.string()
+      .valid(...validRoles)
+      .optional(),
     page: Joi.number().min(1).default(1),
     limit: Joi.number().min(1).max(100).default(10),
     search: Joi.string().allow('', null).optional(),
@@ -73,6 +84,8 @@ exports.updatePassword = {
 exports.approveUser = {
   body: Joi.object().keys({
     id: Joi.number().required(),
-    role: Joi.string().required().valid(...validRoles),
+    role: Joi.string()
+      .required()
+      .valid(...validRoles),
   }),
 };
