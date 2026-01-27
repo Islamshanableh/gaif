@@ -7,7 +7,7 @@ const { companyController } = require('../../controllers');
 
 const { companyValidation } = require('../../validations');
 
-const { routePermissions } = require('../../constants');
+// const { routePermissions } = require('../../constants');
 
 const router = express.Router();
 
@@ -19,12 +19,12 @@ router
   )
   .get(validate(companyValidation.getById), companyController.getCompanyById)
   .put(
-    auth(routePermissions.ADMINISTRATOR.update),
+    auth(),
     validate(companyValidation.updateCompany),
     companyController.updateCompany,
   )
   .delete(
-    auth(routePermissions.ADMINISTRATOR.update),
+    auth(),
     validate(companyValidation.getById),
     companyController.deleteCompany,
   );

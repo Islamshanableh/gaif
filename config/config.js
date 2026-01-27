@@ -60,6 +60,9 @@ const envVarsSchema = Joi.object()
     VISA_FORM_URL: Joi.string().allow('').default('').description('Visa form URL'),
     PARTNERS_URL: Joi.string().allow('').default('').description('Partners page URL'),
     PARTNERSHIP_OPPORTUNITIES_URL: Joi.string().allow('').default('').description('Partnership opportunities URL'),
+
+    // Invoice
+    TAX_NUMBER: Joi.string().default('4024443').description('Tax number for invoices'),
   })
   .unknown();
 
@@ -114,6 +117,8 @@ module.exports = {
     password: envVars.EMAIL_PASSWORD,
     fromName: envVars.EMAIL_FROM_NAME,
   },
+
+  taxNumber: envVars.TAX_NUMBER,
 
   urls: {
     frontend: envVars.FRONTEND_URL,

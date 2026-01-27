@@ -9,6 +9,14 @@ const { hash } = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
 exports.register = async payload => {
+  // Check email uniqueness before creating
+  const existingUser = await User.findOne({
+    where: { email: payload.email, isActive: true },
+  });
+  if (existingUser) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already exists');
+  }
+
   payload.password = bcrypt.hashSync(payload.password, hash.secret);
 
   try {
@@ -55,12 +63,36 @@ exports.approveUserById = async payload => {
 exports.updateUserById = async payload => {
   const { id, ...updateData } = payload;
 
+  // Ensure email uniqueness if email is being updated
+  if (updateData.email) {
+    const existingUser = await User.findOne({
+      where: {
+        email: updateData.email,
+        id: { [Op.ne]: id },
+        isActive: true,
+      },
+    });
+    if (existingUser) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Email already exists');
+    }
+  }
+
+  // Hash password if provided
+  if (updateData.password) {
+    updateData.password = bcrypt.hashSync(updateData.password, hash.secret);
+  }
+
   await User.update(updateData, {
     where: { id },
   });
 
   const result = await User.findByPk(id);
-  return result ? result.toJSON() : null;
+  if (result) {
+    const userData = result.toJSON();
+    delete userData.password;
+    return userData;
+  }
+  return null;
 };
 
 exports.updateUserPassword = async (id, payload) => {

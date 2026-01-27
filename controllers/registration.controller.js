@@ -262,6 +262,23 @@ exports.updateRegistration = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send({ result });
 });
 
+// Admin update registration (supports all fields)
+exports.adminUpdateRegistration = catchAsync(async (req, res) => {
+  const id = parseInt(req?.query?.id, 10);
+  const payload = req?.body;
+
+  // Parse JSON fields if they come as strings (for multipart/form-data)
+  if (typeof payload.spouse === 'string') {
+    payload.spouse = JSON.parse(payload.spouse);
+  }
+  if (typeof payload.trips === 'string') {
+    payload.trips = JSON.parse(payload.trips);
+  }
+
+  const result = await registrationService.adminUpdateRegistration(id, payload);
+  res.status(httpStatus.OK).send({ result });
+});
+
 // Get registration by ID
 exports.getRegistrationById = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);

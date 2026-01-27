@@ -43,6 +43,15 @@ router
     registrationController.getRegistrations,
   );
 
+// Admin update registration (supports all fields)
+router
+  .route('/admin-update')
+  .put(
+    auth(routePermissions.ADMINISTRATOR.read),
+    validate(registrationValidation.adminUpdateRegistration),
+    registrationController.adminUpdateRegistration,
+  );
+
 // Submit registration (final step)
 router
   .route('/submit')

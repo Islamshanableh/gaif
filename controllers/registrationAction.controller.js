@@ -520,9 +520,16 @@ exports.companyConfirm = catchAsync(async (req, res) => {
 
   // Send approved email to participant
   const updatedRegistration = await getFullRegistration(registrationId);
-  await registrationNotificationService.handleCompanyConfirm(
-    updatedRegistration.toJSON(),
-  );
+  const regData = updatedRegistration.toJSON();
+
+  // Create invoice on confirmation
+  try {
+    await invoiceService.createInvoice(regData);
+  } catch (invoiceError) {
+    console.error('Error creating invoice on confirm:', invoiceError);
+  }
+
+  await registrationNotificationService.handleCompanyConfirm(regData);
 
   // Return success page
   res.send(generateResultPage('confirmed', updatedRegistration));
@@ -650,10 +657,17 @@ exports.viewInvoice = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
 
-  // Generate PDF
-  const pdfBuffer = await invoiceService.generateInvoicePDF(
-    registration.toJSON(),
+  // Fetch stored invoice, or create on-demand if missing
+  const regData = registration.toJSON();
+  let invoice = await invoiceService.getInvoiceByRegistrationId(
+    registrationId,
   );
+  if (!invoice) {
+    invoice = await invoiceService.createInvoice(regData);
+  }
+
+  // Generate PDF with stored invoice data
+  const pdfBuffer = await invoiceService.generateInvoicePDF(regData, invoice);
 
   // Set headers
   const filename = `GAIF_Invoice_${registration.id}.pdf`;

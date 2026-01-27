@@ -410,21 +410,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@gaif.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"New User\",\n  \"mobile\": \"+962791234567\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\"\n}"
+              "raw": "{\n  \"email\": \"newuser@gaif.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"New User\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/user/create",
               "host": ["{{baseUrl}}"],
               "path": ["user", "create"]
             },
-            "description": "Create a new user. Roles: ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"
+            "description": "Create a new user. Email must be unique. Roles: ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"
           },
           "response": [
             {
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"id\": 5,\n  \"email\": \"newuser@gaif.com\",\n  \"fullName\": \"New User\",\n  \"mobile\": \"+962791234567\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true,\n  \"mfaEnabled\": false,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": 5,\n  \"email\": \"newuser@gaif.com\",\n  \"fullName\": \"New User\",\n  \"role\": \"REGISTRATION_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true,\n  \"mfaEnabled\": false,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\"\n}"
             }
           ]
         },
@@ -494,7 +494,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Updated User Name\",\n  \"mobile\": \"+962793333333\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
+              "raw": "{\n  \"fullName\": \"Updated User Name\",\n  \"email\": \"updated@gaif.com\",\n  \"password\": \"NewPassword123!\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/user/update?id=2",
@@ -504,14 +504,14 @@
                 {"key": "id", "value": "2"}
               ]
             },
-            "description": "Update user details"
+            "description": "Update user details - supports fullName, email, password, role, status, isActive. Email must be unique."
           },
           "response": [
             {
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"id\": 2,\n  \"email\": \"gaifadmin@gaif.com\",\n  \"fullName\": \"Updated User Name\",\n  \"mobile\": \"+962793333333\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
+              "body": "{\n  \"id\": 2,\n  \"email\": \"updated@gaif.com\",\n  \"fullName\": \"Updated User Name\",\n  \"role\": \"GAIF_ADMIN\",\n  \"status\": \"APPROVED\",\n  \"isActive\": true\n}"
             }
           ]
         },
@@ -1498,6 +1498,35 @@
           ]
         },
         {
+          "name": "Admin Update Registration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John Updated\",\n  \"middleName\": \"William\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.updated@acme.com\",\n  \"title\": \"DR\",\n  \"position\": \"Director\",\n  \"nationalityId\": 1,\n  \"telephone\": \"+962-6-9999999\",\n  \"mobile\": \"+962799999999\",\n  \"whatsapp\": \"+962799999999\",\n  \"participationId\": 2,\n  \"companyId\": 1,\n  \"hasSpouse\": true,\n  \"spouse\": {\n    \"title\": \"Mrs.\",\n    \"firstName\": \"Jane Updated\",\n    \"middleName\": \"Marie\",\n    \"lastName\": \"Doe\",\n    \"nationalityId\": 1,\n    \"whatsapp\": \"+962799999998\",\n    \"needsVisaHelp\": false\n  },\n  \"trips\": [\n    {\"tripId\": 1, \"forSpouse\": false},\n    {\"tripId\": 1, \"forSpouse\": true}\n  ],\n  \"accommodationInAmman\": true,\n  \"ammanHotelId\": 1,\n  \"ammanRoomId\": 1,\n  \"ammanCheckIn\": \"2026-10-03\",\n  \"ammanCheckOut\": \"2026-10-04\",\n  \"accommodationInDeadSea\": true,\n  \"deadSeaHotelId\": 2,\n  \"deadSeaRoomId\": 3,\n  \"deadSeaCheckIn\": \"2026-10-04\",\n  \"deadSeaCheckOut\": \"2026-10-07\",\n  \"airportPickupOption\": \"NEED_PICKUP\",\n  \"arrivalDate\": \"2026-10-03\",\n  \"arrivalAirline\": \"Royal Jordanian\",\n  \"arrivalFlightNumber\": \"RJ115\",\n  \"arrivalTime\": \"14:30\",\n  \"departureDate\": \"2026-10-08\",\n  \"departureAirline\": \"Royal Jordanian\",\n  \"departureFlightNumber\": \"RJ116\",\n  \"departureTime\": \"10:00\",\n  \"flightDetailsForSpouse\": true,\n  \"needsVenueTransportation\": true,\n  \"specialRequest\": \"Vegetarian meals please\",\n  \"photographyConsent\": true,\n  \"needsVisa\": true,\n  \"registrationStatus\": \"CONFIRMED\",\n  \"paymentStatus\": \"PAID\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/registration/admin-update?id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "admin-update"],
+              "query": [{"key": "id", "value": "1"}]
+            },
+            "description": "Admin update registration - supports ALL fields including status, participation, company, spouse, trips, accommodation, flights, transportation, visa, and payment status. Requires admin authentication."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"result\": {\n    \"id\": 1,\n    \"profileId\": 1001,\n    \"title\": \"DR\",\n    \"firstName\": \"John Updated\",\n    \"middleName\": \"William\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.updated@acme.com\",\n    \"position\": \"Director\",\n    \"registrationStatus\": \"CONFIRMED\",\n    \"paymentStatus\": \"PAID\",\n    \"hasSpouse\": true,\n    \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n    \"participation\": {\"id\": 2, \"title\": \"Standard Delegate\"},\n    \"spouse\": {\"firstName\": \"Jane Updated\", \"lastName\": \"Doe\"},\n    \"trips\": [{\"id\": 1, \"name\": \"Petra Day Trip\"}]\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Delete Registration",
           "request": {
             "method": "DELETE",
@@ -1525,26 +1554,32 @@
             "method": "GET",
             "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
-              "raw": "{{baseUrl}}/registration/list?page=1&limit=10&companyId=1&status=DRAFT",
+              "raw": "{{baseUrl}}/registration/list?page=1&limit=10&companyId=1&status=CONFIRMED",
               "host": ["{{baseUrl}}"],
               "path": ["registration", "list"],
               "query": [
                 {"key": "page", "value": "1"},
                 {"key": "limit", "value": "10"},
-                {"key": "companyId", "value": "1"},
-                {"key": "participationId", "value": "1", "disabled": true},
-                {"key": "status", "value": "DRAFT", "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"},
-                {"key": "paymentStatus", "value": "PENDING", "disabled": true, "description": "PENDING, PAID, PARTIAL, REFUNDED"}
+                {"key": "companyId", "value": "1", "description": "Filter by company ID"},
+                {"key": "participationId", "value": "1", "disabled": true, "description": "Filter by participation type ID"},
+                {"key": "status", "value": "CONFIRMED", "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"},
+                {"key": "paymentStatus", "value": "PENDING", "disabled": true, "description": "PENDING, PAID, PARTIAL, REFUNDED"},
+                {"key": "search", "value": "john", "disabled": true, "description": "Search by first name, last name, email, or mobile"},
+                {"key": "profileId", "value": "1001", "disabled": true, "description": "Filter by exact profile ID"},
+                {"key": "firstName", "value": "John", "disabled": true, "description": "Filter by first name (partial match)"},
+                {"key": "middleName", "value": "William", "disabled": true, "description": "Filter by middle name (partial match)"},
+                {"key": "lastName", "value": "Doe", "disabled": true, "description": "Filter by last name (partial match)"},
+                {"key": "countryId", "value": "1", "disabled": true, "description": "Filter by nationality/country ID"}
               ]
             },
-            "description": "Get paginated list of registrations (Admin only)"
+            "description": "Get paginated list of registrations with filters, tokens, invoice data, and summary stats (Admin only)"
           },
           "response": [
             {
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"results\": [\n    {\n      \"id\": 1,\n      \"profileId\": 1,\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@acme.com\",\n      \"status\": \"SUBMITTED\",\n      \"paymentStatus\": \"PENDING\",\n      \"hasSpouse\": true,\n      \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n      \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"}\n    }\n  ],\n  \"page\": 1,\n  \"limit\": 10,\n  \"totalPages\": 1,\n  \"totalResults\": 1\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"profileId\": 1001,\n      \"title\": \"MR\",\n      \"firstName\": \"John\",\n      \"middleName\": \"William\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john.doe@acme.com\",\n      \"registrationStatus\": \"CONFIRMED\",\n      \"paymentStatus\": \"PENDING\",\n      \"hasSpouse\": true,\n      \"company\": {\"id\": 1, \"name\": \"Acme Corporation\"},\n      \"participation\": {\"id\": 1, \"title\": \"VIP Delegate\"},\n      \"tokens\": [\n        {\n          \"id\": 1,\n          \"token\": \"abc123def456\",\n          \"tokenType\": \"VIEW_REGISTRATION\",\n          \"used\": false,\n          \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n        },\n        {\n          \"id\": 2,\n          \"token\": \"xyz789ghi012\",\n          \"tokenType\": \"VIEW_INVOICE\",\n          \"used\": false,\n          \"expiresAt\": \"2026-12-31T23:59:59.000Z\"\n        }\n      ],\n      \"invoice\": {\n        \"id\": 1,\n        \"serialNumber\": \"G260001\",\n        \"totalValueJD\": 1250.00,\n        \"totalValueUSD\": 1765.54\n      }\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 1,\n    \"totalPages\": 1\n  },\n  \"summary\": {\n    \"totalRegistrations\": 55,\n    \"totalSpouses\": 12,\n    \"totalWithRooms\": 38\n  }\n}"
             }
           ]
         },

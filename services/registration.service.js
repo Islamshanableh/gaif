@@ -14,6 +14,8 @@ const {
   HotelImages,
   TransportationSchedule,
   File,
+  RegistrationToken,
+  Invoice,
   Op,
   sequelize,
 } = require('./db.service');
@@ -569,6 +571,11 @@ exports.getRegistrations = async query => {
     status,
     paymentStatus,
     search,
+    profileId,
+    firstName,
+    middleName,
+    lastName,
+    countryId,
   } = query;
   const offset = (page - 1) * limit;
 
@@ -592,6 +599,29 @@ exports.getRegistrations = async query => {
     where.paymentStatus = paymentStatus;
   }
 
+  // Filter by profileId
+  if (profileId) {
+    where.profileId = profileId;
+  }
+
+  // Filter by name fields
+  if (firstName) {
+    where.firstName = { [Op.like]: `%${firstName}%` };
+  }
+
+  if (middleName) {
+    where.middleName = { [Op.like]: `%${middleName}%` };
+  }
+
+  if (lastName) {
+    where.lastName = { [Op.like]: `%${lastName}%` };
+  }
+
+  // Filter by country (nationality)
+  if (countryId) {
+    where.nationalityId = countryId;
+  }
+
   // Search by name or email
   if (search) {
     where[Op.or] = [
@@ -602,19 +632,54 @@ exports.getRegistrations = async query => {
     ];
   }
 
+  // Build includes with tokens and invoice
+  const includes = [
+    ...getRegistrationIncludes(),
+    {
+      model: RegistrationToken,
+      as: 'tokens',
+      attributes: ['id', 'token', 'tokenType', 'used', 'expiresAt'],
+      required: false,
+    },
+    {
+      model: Invoice,
+      as: 'invoice',
+      attributes: ['id', 'serialNumber', 'totalValueJD', 'totalValueUSD'],
+      required: false,
+    },
+  ];
+
   const { count: total, rows: registrations } =
     await Registration.findAndCountAll({
       where,
       offset,
       limit,
       order: [['createdAt', 'DESC']],
-      include: getRegistrationIncludes(),
+      include: includes,
+      distinct: true,
     });
 
   const data = registrations.map(reg => {
     const regData = reg.toJSON();
     return processRegistrationData(regData);
   });
+
+  // Summary stats: total registrations, total spouses, total double rooms
+  const [summaryResults] = await sequelize.query(
+    `SELECT
+      COUNT(*) AS "totalRegistrations",
+      SUM(CASE WHEN "hasSpouse" = 1 THEN 1 ELSE 0 END) AS "totalSpouses",
+      SUM(CASE WHEN "ammanRoomId" IS NOT NULL OR "deadSeaRoomId" IS NOT NULL THEN 1 ELSE 0 END) AS "totalWithRooms"
+    FROM "Registrations"
+    WHERE "isActive" = 1`,
+    { raw: true },
+  );
+
+  const summary = {
+    totalRegistrations: parseInt(summaryResults?.[0]?.totalRegistrations, 10) || 0,
+    totalSpouses: parseInt(summaryResults?.[0]?.totalSpouses, 10) || 0,
+    totalWithRooms: parseInt(summaryResults?.[0]?.totalWithRooms, 10) || 0,
+  };
 
   return {
     data,
@@ -624,7 +689,134 @@ exports.getRegistrations = async query => {
       total,
       totalPages: Math.ceil(total / limit),
     },
+    summary,
   };
+};
+
+// Admin update: update any fields on the registration
+exports.adminUpdateRegistration = async (id, payload) => {
+  const registration = await Registration.findByPk(id);
+  if (!registration) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
+  }
+
+  // Build update data from all possible fields
+  const updateData = {};
+  const directFields = [
+    'companyId',
+    'participationId',
+    'title',
+    'firstName',
+    'middleName',
+    'lastName',
+    'position',
+    'nationalityId',
+    'email',
+    'telephone',
+    'mobile',
+    'whatsapp',
+    'hasSpouse',
+    'accommodationInAmman',
+    'ammanHotelId',
+    'ammanRoomId',
+    'ammanCheckIn',
+    'ammanCheckOut',
+    'ammanRoommateId',
+    'accommodationInDeadSea',
+    'deadSeaHotelId',
+    'deadSeaRoomId',
+    'deadSeaCheckIn',
+    'deadSeaCheckOut',
+    'deadSeaRoommateId',
+    'airportPickupOption',
+    'arrivalDate',
+    'arrivalAirline',
+    'arrivalFlightNumber',
+    'arrivalTime',
+    'departureDate',
+    'departureAirline',
+    'departureFlightNumber',
+    'departureTime',
+    'flightDetailsForSpouse',
+    'needsVenueTransportation',
+    'transportationToDeadSea',
+    'toDeadSeaScheduleId',
+    'transportationFromDeadSea',
+    'fromDeadSeaScheduleId',
+    'specialRequest',
+    'photographyConsent',
+    'needsVisa',
+    'registrationStatus',
+    'paymentStatus',
+    'totalPrice',
+    'participantPictureId',
+    'passportCopyId',
+    'residencyId',
+    'visaFormId',
+  ];
+
+  directFields.forEach(field => {
+    if (payload[field] !== undefined) {
+      updateData[field] = payload[field];
+    }
+  });
+
+  if (Object.keys(updateData).length > 0) {
+    await Registration.update(updateData, { where: { id } });
+  }
+
+  // Handle spouse update
+  if (payload.spouse !== undefined) {
+    if (payload.hasSpouse && payload.spouse) {
+      const spouseData = {
+        title: payload.spouse.title,
+        firstName: payload.spouse.firstName,
+        middleName: payload.spouse.middleName,
+        lastName: payload.spouse.lastName,
+        nationalityId: payload.spouse.nationalityId,
+        whatsapp: payload.spouse.whatsapp,
+        needsVisaHelp: payload.spouse.needsVisaHelp || false,
+      };
+
+      const existingSpouse = await Spouse.findOne({
+        where: { registrationId: id },
+      });
+      if (existingSpouse) {
+        await Spouse.update(spouseData, { where: { registrationId: id } });
+      } else {
+        const reg = await Registration.findByPk(id, {
+          attributes: ['profileId'],
+        });
+        await Spouse.create({
+          ...spouseData,
+          registrationId: id,
+          spouseId: (reg.profileId || 0) + 1,
+        });
+      }
+    } else if (payload.hasSpouse === false) {
+      await Spouse.destroy({ where: { registrationId: id } });
+    }
+  }
+
+  // Handle trips update
+  if (payload.trips !== undefined) {
+    await RegistrationTrip.destroy({ where: { registrationId: id } });
+    if (payload.trips && payload.trips.length > 0) {
+      await RegistrationTrip.bulkCreate(
+        payload.trips.map(trip => ({
+          registrationId: id,
+          tripId: trip.tripId,
+          forSpouse: trip.forSpouse || false,
+        })),
+      );
+    }
+  }
+
+  const result = await Registration.findByPk(id, {
+    include: getRegistrationIncludes(),
+  });
+
+  return result.toJSON();
 };
 
 // Submit registration (final step)

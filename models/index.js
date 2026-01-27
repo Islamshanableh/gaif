@@ -1118,6 +1118,158 @@ const File = sequelize.define(
   },
 );
 
+// Invoice Model
+const Invoice = sequelize.define(
+  'Invoice',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    registrationId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Registrations',
+        key: 'id',
+      },
+    },
+    serialNumber: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      unique: true,
+    },
+    taxNumber: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    // Fee breakdown
+    participationFees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    spouseFees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    tripFees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    spouseTripFees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    totalParticipationFees: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    // Per-field currency
+    participationCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    spouseCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    tripCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    spouseTripCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    // Amman accommodation breakdown
+    ammanAccommodation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    ammanTax: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    ammanService: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    ammanTotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    ammanCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    // Dead Sea accommodation breakdown
+    deadSeaAccommodation: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    deadSeaTax: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    deadSeaService: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    deadSeaTotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    deadSeaCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    // Hotel accommodation total
+    hotelAccommodationTotal: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    // Totals
+    totalDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    totalValueJD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    totalValueUSD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    exchangeRate: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'Invoices',
+    timestamps: true,
+  },
+);
+
 // Token Types for Registration Actions
 const TOKEN_TYPES = [
   'COMPANY_CONFIRM',
@@ -1384,6 +1536,16 @@ Registration.hasMany(RegistrationToken, {
   as: 'tokens',
 });
 
+// Invoice associations
+Invoice.belongsTo(Registration, {
+  foreignKey: 'registrationId',
+  as: 'registration',
+});
+Registration.hasOne(Invoice, {
+  foreignKey: 'registrationId',
+  as: 'invoice',
+});
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -1407,4 +1569,5 @@ module.exports = {
   File,
   RegistrationTrip,
   RegistrationToken,
+  Invoice,
 };

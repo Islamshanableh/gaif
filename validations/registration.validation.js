@@ -243,6 +243,99 @@ exports.getRegistrations = {
     paymentStatus: Joi.string()
       .valid('PENDING', 'PAID', 'PARTIAL', 'REFUNDED')
       .optional(),
+    search: Joi.string().allow('', null).optional(),
+    profileId: Joi.number().optional(),
+    firstName: Joi.string().allow('', null).optional(),
+    middleName: Joi.string().allow('', null).optional(),
+    lastName: Joi.string().allow('', null).optional(),
+    countryId: Joi.number().optional(),
+  }),
+};
+
+// Admin update registration (supports all fields)
+exports.adminUpdateRegistration = {
+  body: Joi.object().keys({
+    participationId: Joi.number().optional(),
+    companyId: Joi.number().optional(),
+    title: Joi.string().max(50).allow('', null).optional(),
+    firstName: Joi.string().max(100).optional(),
+    middleName: Joi.string().max(100).allow('', null).optional(),
+    lastName: Joi.string().max(100).optional(),
+    position: Joi.string().max(200).allow('', null).optional(),
+    nationalityId: Joi.number().allow(null).optional(),
+    email: Joi.string().email().max(320).optional(),
+    telephone: Joi.string().max(20).allow('', null).optional(),
+    mobile: Joi.string().max(20).allow('', null).optional(),
+    whatsapp: Joi.string().max(20).allow('', null).optional(),
+    hasSpouse: Joi.boolean().optional(),
+    spouse: Joi.object()
+      .keys({
+        title: Joi.string().max(50).allow('', null).optional(),
+        firstName: Joi.string().max(100).optional(),
+        middleName: Joi.string().max(100).allow('', null).optional(),
+        lastName: Joi.string().max(100).optional(),
+        nationalityId: Joi.number().allow(null).optional(),
+        whatsapp: Joi.string().max(20).allow('', null).optional(),
+        needsVisaHelp: Joi.boolean().optional(),
+      })
+      .optional(),
+    trips: Joi.array()
+      .items(
+        Joi.object().keys({
+          tripId: Joi.number().required(),
+          forSpouse: Joi.boolean().default(false),
+        }),
+      )
+      .optional(),
+    accommodationInAmman: Joi.boolean().optional(),
+    ammanHotelId: Joi.number().allow(null).optional(),
+    ammanRoomId: Joi.number().allow(null).optional(),
+    ammanCheckIn: Joi.date().allow(null).optional(),
+    ammanCheckOut: Joi.date().allow(null).optional(),
+    ammanRoommateId: Joi.number().allow(null).optional(),
+    accommodationInDeadSea: Joi.boolean().optional(),
+    deadSeaHotelId: Joi.number().allow(null).optional(),
+    deadSeaRoomId: Joi.number().allow(null).optional(),
+    deadSeaCheckIn: Joi.date().allow(null).optional(),
+    deadSeaCheckOut: Joi.date().allow(null).optional(),
+    deadSeaRoommateId: Joi.number().allow(null).optional(),
+    airportPickupOption: Joi.string()
+      .valid(...airportPickupOptions)
+      .allow(null)
+      .optional(),
+    arrivalDate: Joi.date().allow(null).optional(),
+    arrivalAirline: Joi.string().max(100).allow('', null).optional(),
+    arrivalFlightNumber: Joi.string().max(50).allow('', null).optional(),
+    arrivalTime: Joi.string().max(10).allow('', null).optional(),
+    departureDate: Joi.date().allow(null).optional(),
+    departureAirline: Joi.string().max(100).allow('', null).optional(),
+    departureFlightNumber: Joi.string().max(50).allow('', null).optional(),
+    departureTime: Joi.string().max(10).allow('', null).optional(),
+    flightDetailsForSpouse: Joi.boolean().optional(),
+    needsVenueTransportation: Joi.boolean().optional(),
+    transportationToDeadSea: Joi.string()
+      .valid(...transportationTypes)
+      .allow(null)
+      .optional(),
+    toDeadSeaScheduleId: Joi.number().allow(null).optional(),
+    transportationFromDeadSea: Joi.string()
+      .valid(...transportationTypes)
+      .allow(null)
+      .optional(),
+    fromDeadSeaScheduleId: Joi.number().allow(null).optional(),
+    specialRequest: Joi.string().max(2000).allow('', null).optional(),
+    photographyConsent: Joi.boolean().optional(),
+    needsVisa: Joi.boolean().optional(),
+    registrationStatus: Joi.string()
+      .valid('DRAFT', 'SUBMITTED', 'CONFIRMED', 'CANCELLED')
+      .optional(),
+    paymentStatus: Joi.string()
+      .valid('PENDING', 'PAID', 'PARTIAL', 'REFUNDED')
+      .optional(),
+    totalPrice: Joi.number().allow(null).optional(),
+  }),
+  query: Joi.object().keys({
+    id: Joi.number().required(),
   }),
 };
 

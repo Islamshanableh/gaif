@@ -2,19 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/config');
-const {
-  sendHtmlEmail,
-  sendEmailWithAttachment,
-} = require('./common/email.service');
+const { sendEmailWithAttachment } = require('./common/email.service');
 const registrationTokenService = require('./registrationToken.service');
 const invoiceService = require('./invoice.service');
 
 // Get email configuration from config
 const getEmailConfig = () => ({
-  // Logo URLs
-  gaifLogoUrl: config.urls.gaifLogo,
-  jifLogoUrl: config.urls.jifLogo,
-
   // Base URLs for actions
   baseUrl: config.urls.frontend,
   apiBaseUrl: config.urls.api,
@@ -25,6 +18,16 @@ const getEmailConfig = () => ({
   visaFormUrl: config.urls.visaForm,
   partnersUrl: config.urls.partners,
   partnershipOpportunitiesUrl: config.urls.partnershipOpportunities,
+});
+
+/**
+ * Get the email header image attachment for CID embedding
+ * @returns {Object} Nodemailer attachment object
+ */
+const getEmailHeaderAttachment = () => ({
+  filename: 'email2026.jpg',
+  path: path.join(__dirname, '..', 'templates', 'email2026.jpg'),
+  cid: 'emailHeader',
 });
 
 /**
@@ -95,8 +98,6 @@ const sendCompanyConfirmationEmail = async registration => {
     } ${registration.lastName || ''}`.trim();
 
     const variables = {
-      gaifLogoUrl: emailConfig.gaifLogoUrl,
-      jifLogoUrl: emailConfig.jifLogoUrl,
       participantName,
       participantPosition: registration.position || '',
       participantNationality: registration.nationality?.name || '',
@@ -110,10 +111,11 @@ const sendCompanyConfirmationEmail = async registration => {
 
     const html = processTemplate(template, variables);
 
-    await sendHtmlEmail(
+    await sendEmailWithAttachment(
       registration.company.email,
       'GAIF 2026 - New Registration Confirmation Request',
       html,
+      [getEmailHeaderAttachment()],
     );
 
     console.log(
@@ -140,20 +142,14 @@ const sendRegistrationDeclinedEmail = async registration => {
       return;
     }
 
-    const emailConfig = getEmailConfig();
     const template = loadTemplate('registrationDeclined');
+    const html = processTemplate(template, {});
 
-    const variables = {
-      gaifLogoUrl: emailConfig.gaifLogoUrl,
-      jifLogoUrl: emailConfig.jifLogoUrl,
-    };
-
-    const html = processTemplate(template, variables);
-
-    await sendHtmlEmail(
+    await sendEmailWithAttachment(
       registration.email,
       'GAIF 2026 - Registration Status Update',
       html,
+      [getEmailHeaderAttachment()],
     );
 
     console.log(
@@ -207,10 +203,8 @@ const sendRegistrationApprovedEmail = async registration => {
     }`.trim();
 
     const variables = {
-      gaifLogoUrl: emailConfig.gaifLogoUrl,
-      jifLogoUrl: emailConfig.jifLogoUrl,
       participantName,
-      registrationId: registration.id,
+      registrationId: registration.profileId || registration.id,
       viewRegistrationUrl,
       viewInvoiceUrl,
       updateRegistrationUrl,
@@ -223,17 +217,19 @@ const sendRegistrationApprovedEmail = async registration => {
 
     const html = processTemplate(template, variables);
 
-    // Generate invoice PDF to attach
-    let attachments = [];
+    // Generate invoice PDF to attach (use stored invoice if available)
+    let attachments = [getEmailHeaderAttachment()];
     try {
-      const invoicePdf = await invoiceService.generateInvoicePDF(registration);
-      attachments = [
-        {
-          filename: `GAIF_Invoice_${registration.id}.pdf`,
-          content: invoicePdf,
-          contentType: 'application/pdf',
-        },
-      ];
+      let invoice = await invoiceService.getInvoiceByRegistrationId(registration.id);
+      if (!invoice) {
+        invoice = await invoiceService.createInvoice(registration);
+      }
+      const invoicePdf = await invoiceService.generateInvoicePDF(registration, invoice);
+      attachments.push({
+        filename: `GAIF_Invoice_${registration.id}.pdf`,
+        content: invoicePdf,
+        contentType: 'application/pdf',
+      });
       console.log(`Invoice PDF generated for registration ${registration.id}`);
     } catch (pdfError) {
       console.error('Error generating invoice PDF:', pdfError);
@@ -271,7 +267,12 @@ const handleRegistrationComplete = async registration => {
       // Flow 1: Send email to company for confirmation
       await sendCompanyConfirmationEmail(registration);
     } else {
-      // Flow 2: Send approval email directly to participant
+      // Flow 2: Auto-confirmed — create invoice before sending approval email
+      try {
+        await invoiceService.createInvoice(registration);
+      } catch (invoiceError) {
+        console.error('Error creating invoice for auto-confirmed registration:', invoiceError);
+      }
       await sendRegistrationApprovedEmail(registration);
     }
   } catch (error) {

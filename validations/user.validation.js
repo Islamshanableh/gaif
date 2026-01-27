@@ -16,7 +16,6 @@ exports.createUser = {
       'any.required': 'Password is required',
     }),
     fullName: Joi.string().max(320).required(),
-    mobile: Joi.string().max(20).allow('', null).optional(),
     role: Joi.string()
       .valid(...validRoles)
       .required(),
@@ -28,7 +27,9 @@ exports.updateUser = {
   body: Joi.object().keys({
     email: Joi.string().email().optional(),
     fullName: Joi.string().max(320).optional(),
-    mobile: Joi.string().max(20).allow('', null).optional(),
+    password: Joi.string().min(8).optional().messages({
+      'string.min': 'Password must be at least 8 characters long',
+    }),
     role: Joi.string()
       .valid(...validRoles)
       .optional(),
