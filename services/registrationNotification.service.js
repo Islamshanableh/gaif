@@ -191,7 +191,7 @@ const sendRegistrationApprovedEmail = async registration => {
       );
 
     // Build secure URLs
-    const viewRegistrationUrl = `${emailConfig.apiBaseUrl}/registration/view?token=${viewRegistrationToken}`;
+    const viewRegistrationUrl = `https://gaif.vercel.app/display-info?token=${viewRegistrationToken}`;
     const viewInvoiceUrl = `${emailConfig.apiBaseUrl}/registration/invoice?token=${viewInvoiceToken}`;
     const updateRegistrationUrl =
       emailConfig.updateRegistrationUrl ||
@@ -218,13 +218,18 @@ const sendRegistrationApprovedEmail = async registration => {
     const html = processTemplate(template, variables);
 
     // Generate invoice PDF to attach (use stored invoice if available)
-    let attachments = [getEmailHeaderAttachment()];
+    const attachments = [getEmailHeaderAttachment()];
     try {
-      let invoice = await invoiceService.getInvoiceByRegistrationId(registration.id);
+      let invoice = await invoiceService.getInvoiceByRegistrationId(
+        registration.id,
+      );
       if (!invoice) {
         invoice = await invoiceService.createInvoice(registration);
       }
-      const invoicePdf = await invoiceService.generateInvoicePDF(registration, invoice);
+      const invoicePdf = await invoiceService.generateInvoicePDF(
+        registration,
+        invoice,
+      );
       attachments.push({
         filename: `GAIF_Invoice_${registration.id}.pdf`,
         content: invoicePdf,
@@ -271,7 +276,10 @@ const handleRegistrationComplete = async registration => {
       try {
         await invoiceService.createInvoice(registration);
       } catch (invoiceError) {
-        console.error('Error creating invoice for auto-confirmed registration:', invoiceError);
+        console.error(
+          'Error creating invoice for auto-confirmed registration:',
+          invoiceError,
+        );
       }
       await sendRegistrationApprovedEmail(registration);
     }
