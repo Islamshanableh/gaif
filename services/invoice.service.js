@@ -115,6 +115,10 @@ const calculateFees = registration => {
     fees.spouseTripFees;
 
   // Amman accommodation: charge only if accommodationAmman flag is NOT true
+  // Formula: base = nightPrice * days
+  //          service = base * service%
+  //          tax = (base + service) * tax%
+  //          total = base + service + tax
   if (
     registration.accommodationInAmman &&
     registration.ammanRoom &&
@@ -132,19 +136,24 @@ const calculateFees = registration => {
     const taxPercent = hotel ? parseFloat(hotel.hotelTax) || 0 : 0;
     const servicePercent = hotel ? parseFloat(hotel.hotelService) || 0 : 0;
 
-    const taxAmount = Math.round(baseAmount * (taxPercent / 100) * 100) / 100;
     const serviceAmount =
       Math.round(baseAmount * (servicePercent / 100) * 100) / 100;
+    const subtotal = baseAmount + serviceAmount;
+    const taxAmount = Math.round(subtotal * (taxPercent / 100) * 100) / 100;
 
     fees.ammanAccommodation = baseAmount;
-    fees.ammanTax = taxAmount;
     fees.ammanService = serviceAmount;
-    fees.ammanTotal = baseAmount + taxAmount + serviceAmount;
+    fees.ammanTax = taxAmount;
+    fees.ammanTotal = subtotal + taxAmount;
     fees.ammanCurrency = registration.ammanRoom.currency || 'JD';
   }
 
   // Dead Sea accommodation: charge only if accommodationAqaba flag is NOT true
   // (accommodationAqaba maps to Dead Sea)
+  // Formula: base = nightPrice * days
+  //          service = base * service%
+  //          tax = (base + service) * tax%
+  //          total = base + service + tax
   if (
     registration.accommodationInDeadSea &&
     registration.deadSeaRoom &&
@@ -162,14 +171,15 @@ const calculateFees = registration => {
     const taxPercent = hotel ? parseFloat(hotel.hotelTax) || 0 : 0;
     const servicePercent = hotel ? parseFloat(hotel.hotelService) || 0 : 0;
 
-    const taxAmount = Math.round(baseAmount * (taxPercent / 100) * 100) / 100;
     const serviceAmount =
       Math.round(baseAmount * (servicePercent / 100) * 100) / 100;
+    const subtotal = baseAmount + serviceAmount;
+    const taxAmount = Math.round(subtotal * (taxPercent / 100) * 100) / 100;
 
     fees.deadSeaAccommodation = baseAmount;
-    fees.deadSeaTax = taxAmount;
     fees.deadSeaService = serviceAmount;
-    fees.deadSeaTotal = baseAmount + taxAmount + serviceAmount;
+    fees.deadSeaTax = taxAmount;
+    fees.deadSeaTotal = subtotal + taxAmount;
     fees.deadSeaCurrency = registration.deadSeaRoom.currency || 'JD';
   }
 
@@ -427,12 +437,23 @@ const generateInvoicePDF = async (registration, invoice) => {
         { width: feeWidth, align: 'right' },
       );
 
-      // Total Participation fees
+      // Total Participation fees — use same currency as participation
       doc.font('Helvetica-Bold');
-      doc.text(formatCurrency(fees.totalParticipationFees), feeValueX, 422, {
-        width: feeWidth,
-        align: 'right',
-      });
+      const partCurrency =
+        fees.participationCurrency ||
+        fees.spouseCurrency ||
+        fees.tripCurrency ||
+        fees.spouseTripCurrency ||
+        'JD';
+      doc.text(
+        formatCurrency(fees.totalParticipationFees, partCurrency),
+        feeValueX,
+        422,
+        {
+          width: feeWidth,
+          align: 'right',
+        },
+      );
 
       // ============================================================
       // ACCOMMODATION section (right column)
@@ -443,72 +464,35 @@ const generateInvoicePDF = async (registration, invoice) => {
       const accomWidth = 70;
       let accomY = 300;
 
-      // Amman accommodation breakdown
-      if (fees.ammanAccommodation > 0 || fees.ammanTotal > 0) {
+      // Determine accommodation currency (use whichever is set)
+      const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || 'JD';
+
+      // Amman accommodation — show total inclusive of tax & service
+      if (fees.ammanTotal > 0) {
         doc.text(
-          formatCurrency(fees.ammanAccommodation, fees.ammanCurrency || 'JD'),
+          formatCurrency(fees.ammanTotal, accomCurrency),
           accomValueX,
           accomY,
           { width: accomWidth, align: 'right' },
         );
-        accomY += 15;
-        doc.text(
-          `Tax: ${formatCurrency(fees.ammanTax, fees.ammanCurrency || 'JD')}`,
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 15;
-        doc.text(
-          `Svc: ${formatCurrency(
-            fees.ammanService,
-            fees.ammanCurrency || 'JD',
-          )}`,
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 20;
+        accomY += 30;
       }
 
-      // Dead Sea accommodation breakdown
-      if (fees.deadSeaAccommodation > 0 || fees.deadSeaTotal > 0) {
+      // Dead Sea accommodation — show total inclusive of tax & service
+      if (fees.deadSeaTotal > 0) {
         doc.text(
-          formatCurrency(
-            fees.deadSeaAccommodation,
-            fees.deadSeaCurrency || 'JD',
-          ),
+          formatCurrency(fees.deadSeaTotal, accomCurrency),
           accomValueX,
           accomY,
           { width: accomWidth, align: 'right' },
         );
-        accomY += 15;
-        doc.text(
-          `Tax: ${formatCurrency(
-            fees.deadSeaTax,
-            fees.deadSeaCurrency || 'JD',
-          )}`,
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 15;
-        doc.text(
-          `Svc: ${formatCurrency(
-            fees.deadSeaService,
-            fees.deadSeaCurrency || 'JD',
-          )}`,
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 20;
+        accomY += 30;
       }
 
       // Hotel accommodation total
       doc.font('Helvetica-Bold');
       doc.text(
-        formatCurrency(fees.hotelAccommodationTotal),
+        formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
         accomValueX,
         accomY,
         { width: accomWidth, align: 'right' },

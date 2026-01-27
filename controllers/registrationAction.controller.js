@@ -18,6 +18,7 @@ const {
   TransportationSchedule,
   File,
 } = require('../services/db.service');
+const { fileService } = require('../services');
 
 // File attributes for includes
 const fileAttributes = ['id', 'fileKey', 'fileName', 'fileType', 'fileSize'];
@@ -659,9 +660,7 @@ exports.viewInvoice = catchAsync(async (req, res) => {
 
   // Fetch stored invoice, or create on-demand if missing
   const regData = registration.toJSON();
-  let invoice = await invoiceService.getInvoiceByRegistrationId(
-    registrationId,
-  );
+  let invoice = await invoiceService.getInvoiceByRegistrationId(registrationId);
   if (!invoice) {
     invoice = await invoiceService.createInvoice(regData);
   }
@@ -681,4 +680,92 @@ exports.viewInvoice = catchAsync(async (req, res) => {
   });
 
   res.send(pdfBuffer);
+});
+
+/**
+ * View a file belonging to a registration via secure token
+ * GET /api/v1/registration/file/:fileId?token=xxx
+ * Validates the view-registration token and serves the file
+ * only if it belongs to that registration.
+ */
+exports.viewFile = catchAsync(async (req, res) => {
+  const { token } = req.query;
+  const fileId = parseInt(req.params.fileId, 10);
+
+  if (!token) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Token is required');
+  }
+
+  if (!fileId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'File ID is required');
+  }
+
+  // Verify the view-registration token
+  let decoded;
+  try {
+    decoded = await registrationTokenService.verifyViewRegistrationToken(token);
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, error.message);
+  }
+
+  const { registrationId } = decoded;
+
+  // Get the registration to check which files belong to it
+  const registration = await Registration.findByPk(registrationId, {
+    attributes: [
+      'id',
+      'participantPictureId',
+      'passportCopyId',
+      'residencyId',
+      'visaFormId',
+    ],
+    include: [
+      {
+        model: Spouse,
+        as: 'spouse',
+        attributes: ['passportCopyId', 'residencyId', 'visaFormId'],
+        required: false,
+      },
+    ],
+  });
+
+  if (!registration) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
+  }
+
+  // Collect all file IDs that belong to this registration
+  const allowedFileIds = [
+    registration.participantPictureId,
+    registration.passportCopyId,
+    registration.residencyId,
+    registration.visaFormId,
+  ];
+
+  if (registration.spouse) {
+    allowedFileIds.push(
+      registration.spouse.passportCopyId,
+      registration.spouse.residencyId,
+      registration.spouse.visaFormId,
+    );
+  }
+
+  // Check that the requested file belongs to this registration
+  if (!allowedFileIds.includes(fileId)) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      'File does not belong to this registration',
+    );
+  }
+
+  // Serve the file
+  const file = await fileService.getFileById(fileId);
+
+  res.set({
+    'Content-Type': file.fileType,
+    'Content-Disposition': `inline; filename="${file.fileName}"`,
+    'Content-Length': file.fileSize,
+    'Cache-Control': 'public, max-age=31536000',
+  });
+
+  res.send(file.fileContent);
 });

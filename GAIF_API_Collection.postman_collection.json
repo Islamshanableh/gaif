@@ -1783,6 +1783,35 @@
           ]
         },
         {
+          "name": "View File (Public Token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/registration/file/1?token=view-token-abc123",
+              "host": ["{{baseUrl}}"],
+              "path": ["registration", "file", "1"],
+              "query": [{"key": "token", "value": "view-token-abc123"}]
+            },
+            "description": "View a file (participant picture, passport, residency, visa form, or spouse documents) using the same view-registration token. The file must belong to the registration associated with the token. Returns the file binary content inline."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [{"key": "Content-Type", "value": "image/jpeg"}],
+              "body": "[File Binary Content]"
+            },
+            {
+              "name": "Forbidden",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"code\": 403,\n  \"message\": \"File does not belong to this registration\"\n}"
+            }
+          ]
+        },
+        {
           "name": "View/Download Invoice (Public Token)",
           "request": {
             "method": "GET",

@@ -102,4 +102,7 @@ router.get('/view', registrationActionController.viewRegistration);
 // View/Download invoice via secure token
 router.get('/invoice', registrationActionController.viewInvoice);
 
+// View file belonging to a registration via secure token
+router.get('/file/:fileId', registrationActionController.viewFile);
+
 module.exports = router;
