@@ -112,9 +112,15 @@ exports.createRegistration = catchAsync(async (req, res) => {
   if (payload.toDeadSeaScheduleId) {
     payload.toDeadSeaScheduleId = parseInt(payload.toDeadSeaScheduleId, 10);
   }
-  if (payload.fromDeadSeaScheduleId) {
-    payload.fromDeadSeaScheduleId = parseInt(payload.fromDeadSeaScheduleId, 10);
+  if (payload.ammanPartnerProfileId) {
+    payload.ammanRoommateId = parseInt(payload.ammanPartnerProfileId, 10);
   }
+  if (payload.deadSeaPartnerProfileId) {
+    payload.deadSeaRoommateId = parseInt(payload.deadSeaPartnerProfileId, 10);
+  }
+
+  if (payload.ammanHotelId)
+    payload.ammanHotelId = parseInt(payload.ammanHotelId, 10);
 
   // Convert string booleans
   if (typeof payload.hasSpouse === 'string') {

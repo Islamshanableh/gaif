@@ -24,9 +24,15 @@ const envVarsSchema = Joi.object()
 
     // Oracle Database
     ORACLE_USER: Joi.string().required().description('Oracle database user'),
-    ORACLE_PASSWORD: Joi.string().required().description('Oracle database password'),
-    ORACLE_CONNECTION_STRING: Joi.string().required().description('Oracle connection string'),
-    ORACLE_WALLET_LOCATION: Joi.string().allow('').description('Oracle wallet location for ADB'),
+    ORACLE_PASSWORD: Joi.string()
+      .required()
+      .description('Oracle database password'),
+    ORACLE_CONNECTION_STRING: Joi.string()
+      .required()
+      .description('Oracle connection string'),
+    ORACLE_WALLET_LOCATION: Joi.string()
+      .allow('')
+      .description('Oracle wallet location for ADB'),
 
     // AWS
     AWS_ACCESS_KEY_ID: Joi.string().allow(''),
@@ -38,31 +44,62 @@ const envVarsSchema = Joi.object()
     CDN_PREFIX: Joi.string().required(),
 
     // Email Configuration
-    EMAIL_SERVICE: Joi.string().default('gmail').description('Email service provider'),
+    EMAIL_SERVICE: Joi.string()
+      .default('gmail')
+      .description('Email service provider'),
     EMAIL_HOST: Joi.string().allow('').description('SMTP host'),
     EMAIL_PORT: Joi.number().default(587).description('SMTP port'),
     EMAIL_SECURE: Joi.boolean().default(false).description('Use TLS'),
     EMAIL_USER: Joi.string().required().description('Email username'),
     EMAIL_PASSWORD: Joi.string().required().description('Email password'),
-    EMAIL_FROM_NAME: Joi.string().default('GAIF 2026').description('Email from name'),
+    EMAIL_FROM_NAME: Joi.string()
+      .default('GAIF 2026')
+      .description('Email from name'),
 
     // URLs
-    FRONTEND_URL: Joi.string().default('https://gaif2026.com').description('Frontend base URL'),
-    API_URL: Joi.string().default('https://api.gaif2026.com/api/v1').description('API base URL'),
+    FRONTEND_URL: Joi.string()
+      .default('https://gaif2026.com')
+      .description('Frontend base URL'),
+    API_URL: Joi.string()
+      .default('https://api.gaif2026.com/api/v1')
+      .description('API base URL'),
 
     // Logo URLs
-    GAIF_LOGO_URL: Joi.string().allow('').default('').description('GAIF logo URL'),
-    JIF_LOGO_URL: Joi.string().allow('').default('').description('JIF logo URL'),
+    GAIF_LOGO_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('GAIF logo URL'),
+    JIF_LOGO_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('JIF logo URL'),
 
     // External Links
-    UPDATE_REGISTRATION_URL: Joi.string().allow('').default('').description('Update registration URL'),
+    UPDATE_REGISTRATION_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('Update registration URL'),
     PAYMENT_URL: Joi.string().allow('').default('').description('Payment URL'),
-    VISA_FORM_URL: Joi.string().allow('').default('').description('Visa form URL'),
-    PARTNERS_URL: Joi.string().allow('').default('').description('Partners page URL'),
-    PARTNERSHIP_OPPORTUNITIES_URL: Joi.string().allow('').default('').description('Partnership opportunities URL'),
+    VISA_FORM_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('Visa form URL'),
+    PARTNERS_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('Partners page URL'),
+    PARTNERSHIP_OPPORTUNITIES_URL: Joi.string()
+      .allow('')
+      .default('')
+      .description('Partnership opportunities URL'),
 
     // Invoice
-    TAX_NUMBER: Joi.string().default('4024443').description('Tax number for invoices'),
+    TAX_NUMBER: Joi.string()
+      .default('4024443')
+      .description('Tax number for invoices'),
+    FEES_TAX_PERCENTAGE: Joi.number()
+      .default(16)
+      .description('Tax percentage applied to participation fees'),
   })
   .unknown();
 
@@ -119,6 +156,7 @@ module.exports = {
   },
 
   taxNumber: envVars.TAX_NUMBER,
+  feesTaxPercentage: envVars.FEES_TAX_PERCENTAGE,
 
   urls: {
     frontend: envVars.FRONTEND_URL,

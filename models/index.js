@@ -739,11 +739,11 @@ const Registration = sequelize.define(
       },
     },
     ammanCheckIn: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     ammanCheckOut: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     ammanRoommateId: {
@@ -776,11 +776,11 @@ const Registration = sequelize.define(
       },
     },
     deadSeaCheckIn: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     deadSeaCheckOut: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     deadSeaRoommateId: {
@@ -800,7 +800,7 @@ const Registration = sequelize.define(
       },
     },
     arrivalDate: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     arrivalAirline: {
@@ -816,7 +816,7 @@ const Registration = sequelize.define(
       allowNull: true,
     },
     departureDate: {
-      type: DataTypes.DATE,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     departureAirline: {
@@ -1236,6 +1236,17 @@ const Invoice = sequelize.define(
     deadSeaCurrency: {
       type: DataTypes.STRING(10),
       allowNull: true,
+    },
+    // Fees tax
+    feesTaxPercentage: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    feesTaxAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
     },
     // Hotel accommodation total
     hotelAccommodationTotal: {

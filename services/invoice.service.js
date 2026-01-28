@@ -32,12 +32,15 @@ const TEMPLATE_PATH = path.join(
 const calculateFees = registration => {
   const participation = registration.participation;
   const company = registration.company;
+  const feesTaxPercentage = config.feesTaxPercentage || 0;
 
   const fees = {
     participationFees: 0,
     spouseFees: 0,
     tripFees: 0,
     spouseTripFees: 0,
+    feesTaxPercentage,
+    feesTaxAmount: 0,
     totalParticipationFees: 0,
     participationCurrency: null,
     spouseCurrency: null,
@@ -65,10 +68,15 @@ const calculateFees = registration => {
 
   if (!participation) return fees;
 
+  // Helper: apply tax to a base amount (e.g. 16%)
+  const applyTax = base =>
+    Math.round(base * (1 + feesTaxPercentage / 100) * 100) / 100;
+
   // Participation fees: charge only if fees flag is NOT true (not exempt)
   if (participation.fees !== true) {
-    fees.participationFees = participation.price || 0;
-    fees.participationCurrency = participation.currency || 'JD';
+    const base = participation.price || 0;
+    fees.participationFees = applyTax(base);
+    fees.participationCurrency = participation.currency || 'USD';
   }
 
   // Spouse fees: charge only if spouse flag is NOT true (not exempt)
@@ -76,12 +84,11 @@ const calculateFees = registration => {
     // Jordan company uses specialPrice, otherwise spousePrice
     const isJordan =
       company && company.country && company.country.name === 'Jordan';
-    if (isJordan) {
-      fees.spouseFees = participation.specialPrice || 0;
-    } else {
-      fees.spouseFees = participation.spousePrice || 0;
-    }
-    fees.spouseCurrency = participation.currency || 'JD';
+    const base = isJordan
+      ? participation.specialPrice || 0
+      : participation.spousePrice || 0;
+    fees.spouseFees = applyTax(base);
+    fees.spouseCurrency = participation.currency || 'USD';
   }
 
   // Trip fees: charge participant trips only if petra flag is NOT true
@@ -89,17 +96,17 @@ const calculateFees = registration => {
     registration.trips.forEach(regTrip => {
       if (regTrip.trip) {
         const tripPrice = parseFloat(regTrip.trip.price) || 0;
-        const tripCurrency = regTrip.trip.currency || 'JD';
+        const tripCurrency = regTrip.trip.currency || 'USD';
         if (regTrip.forSpouse) {
           // Spouse trips: charge only if petraSpouse flag is NOT true
           if (participation.petraSpouse !== true) {
-            fees.spouseTripFees += tripPrice;
+            fees.spouseTripFees += applyTax(tripPrice);
             fees.spouseTripCurrency = tripCurrency;
           }
         } else {
           // Participant trips: charge only if petra flag is NOT true
           if (participation.petra !== true) {
-            fees.tripFees += tripPrice;
+            fees.tripFees += applyTax(tripPrice);
             fees.tripCurrency = tripCurrency;
           }
         }
@@ -107,7 +114,7 @@ const calculateFees = registration => {
     });
   }
 
-  // Total participation fees
+  // Total participation fees = sum of all fees (tax already included in each)
   fees.totalParticipationFees =
     fees.participationFees +
     fees.spouseFees +
@@ -115,7 +122,7 @@ const calculateFees = registration => {
     fees.spouseTripFees;
 
   // Amman accommodation: charge only if accommodationAmman flag is NOT true
-  // Formula: base = nightPrice * days
+  // Formula: base = nightPrice * nights (checkout day not counted)
   //          service = base * service%
   //          tax = (base + service) * tax%
   //          total = base + service + tax
@@ -145,12 +152,12 @@ const calculateFees = registration => {
     fees.ammanService = serviceAmount;
     fees.ammanTax = taxAmount;
     fees.ammanTotal = subtotal + taxAmount;
-    fees.ammanCurrency = registration.ammanRoom.currency || 'JD';
+    fees.ammanCurrency = registration.ammanRoom.currency || 'USD';
   }
 
   // Dead Sea accommodation: charge only if accommodationAqaba flag is NOT true
   // (accommodationAqaba maps to Dead Sea)
-  // Formula: base = nightPrice * days
+  // Formula: base = nightPrice * nights (checkout day not counted)
   //          service = base * service%
   //          tax = (base + service) * tax%
   //          total = base + service + tax
@@ -180,16 +187,39 @@ const calculateFees = registration => {
     fees.deadSeaService = serviceAmount;
     fees.deadSeaTax = taxAmount;
     fees.deadSeaTotal = subtotal + taxAmount;
-    fees.deadSeaCurrency = registration.deadSeaRoom.currency || 'JD';
+    fees.deadSeaCurrency = registration.deadSeaRoom.currency || 'USD';
   }
 
   fees.hotelAccommodationTotal = fees.ammanTotal + fees.deadSeaTotal;
 
-  // Calculate totals
+  // Calculate totals with proper currency conversion
+  // Determine the currency of participation fees and accommodation fees
+  const partCurrency =
+    fees.participationCurrency ||
+    fees.spouseCurrency ||
+    fees.tripCurrency ||
+    fees.spouseTripCurrency ||
+    null;
+  const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || null;
+
+  // Convert participation fees to JD if in USD
+  const partFeesInJD =
+    partCurrency === 'USD'
+      ? Math.round(
+          fees.totalParticipationFees * INVOICE_CONFIG.exchangeRate * 100,
+        ) / 100
+      : fees.totalParticipationFees;
+
+  // Convert accommodation fees to JD if in USD
+  const accomFeesInJD =
+    accomCurrency === 'USD'
+      ? Math.round(
+          fees.hotelAccommodationTotal * INVOICE_CONFIG.exchangeRate * 100,
+        ) / 100
+      : fees.hotelAccommodationTotal;
+
   fees.totalValueJD =
-    fees.totalParticipationFees +
-    fees.hotelAccommodationTotal -
-    fees.totalDiscount;
+    Math.round((partFeesInJD + accomFeesInJD - fees.totalDiscount) * 100) / 100;
   fees.totalValueUSD =
     Math.round((fees.totalValueJD / INVOICE_CONFIG.exchangeRate) * 100) / 100;
 
@@ -205,6 +235,7 @@ const calculateFees = registration => {
  */
 const formatCurrency = (value, currency = 'JD') => {
   const num = parseFloat(value) || 0;
+  if (num === 0) return '0.00';
   return `${num.toFixed(2)} ${currency}`;
 };
 
@@ -252,6 +283,8 @@ const createInvoice = async registration => {
     spouseFees: fees.spouseFees,
     tripFees: fees.tripFees,
     spouseTripFees: fees.spouseTripFees,
+    feesTaxPercentage: fees.feesTaxPercentage,
+    feesTaxAmount: fees.feesTaxAmount,
     totalParticipationFees: fees.totalParticipationFees,
     participationCurrency: fees.participationCurrency,
     spouseCurrency: fees.spouseCurrency,
@@ -323,22 +356,24 @@ const generateInvoicePDF = async (registration, invoice) => {
           spouseFees: parseFloat(invoice.spouseFees) || 0,
           tripFees: parseFloat(invoice.tripFees) || 0,
           spouseTripFees: parseFloat(invoice.spouseTripFees) || 0,
+          feesTaxPercentage: parseFloat(invoice.feesTaxPercentage) || 0,
+          feesTaxAmount: parseFloat(invoice.feesTaxAmount) || 0,
           totalParticipationFees:
             parseFloat(invoice.totalParticipationFees) || 0,
-          participationCurrency: invoice.participationCurrency || 'JD',
-          spouseCurrency: invoice.spouseCurrency || 'JD',
-          tripCurrency: invoice.tripCurrency || 'JD',
-          spouseTripCurrency: invoice.spouseTripCurrency || 'JD',
+          participationCurrency: invoice.participationCurrency || 'USD',
+          spouseCurrency: invoice.spouseCurrency || 'USD',
+          tripCurrency: invoice.tripCurrency || 'USD',
+          spouseTripCurrency: invoice.spouseTripCurrency || 'USD',
           ammanAccommodation: parseFloat(invoice.ammanAccommodation) || 0,
           ammanTax: parseFloat(invoice.ammanTax) || 0,
           ammanService: parseFloat(invoice.ammanService) || 0,
           ammanTotal: parseFloat(invoice.ammanTotal) || 0,
-          ammanCurrency: invoice.ammanCurrency || 'JD',
+          ammanCurrency: invoice.ammanCurrency || 'USD',
           deadSeaAccommodation: parseFloat(invoice.deadSeaAccommodation) || 0,
           deadSeaTax: parseFloat(invoice.deadSeaTax) || 0,
           deadSeaService: parseFloat(invoice.deadSeaService) || 0,
           deadSeaTotal: parseFloat(invoice.deadSeaTotal) || 0,
-          deadSeaCurrency: invoice.deadSeaCurrency || 'JD',
+          deadSeaCurrency: invoice.deadSeaCurrency || 'USD',
           hotelAccommodationTotal:
             parseFloat(invoice.hotelAccommodationTotal) || 0,
           totalDiscount: parseFloat(invoice.totalDiscount) || 0,
@@ -406,7 +441,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(
           fees.participationFees,
-          fees.participationCurrency || 'JD',
+          fees.participationCurrency || 'USD',
         ),
         feeValueX,
         300,
@@ -415,7 +450,7 @@ const generateInvoicePDF = async (registration, invoice) => {
 
       // Spouse fees
       doc.text(
-        formatCurrency(fees.spouseFees, fees.spouseCurrency || 'JD'),
+        formatCurrency(fees.spouseFees, fees.spouseCurrency || 'USD'),
         feeValueX,
         330,
         { width: feeWidth, align: 'right' },
@@ -423,7 +458,7 @@ const generateInvoicePDF = async (registration, invoice) => {
 
       // Trip fees
       doc.text(
-        formatCurrency(fees.tripFees, fees.tripCurrency || 'JD'),
+        formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
         feeValueX,
         360,
         { width: feeWidth, align: 'right' },
@@ -431,20 +466,20 @@ const generateInvoicePDF = async (registration, invoice) => {
 
       // Spouse – Trip fees
       doc.text(
-        formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'JD'),
+        formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
         feeValueX,
         391,
         { width: feeWidth, align: 'right' },
       );
 
-      // Total Participation fees — use same currency as participation
-      doc.font('Helvetica-Bold');
+      // Total Participation fees (tax included in each fee)
       const partCurrency =
         fees.participationCurrency ||
         fees.spouseCurrency ||
         fees.tripCurrency ||
         fees.spouseTripCurrency ||
-        'JD';
+        'USD';
+      doc.font('Helvetica-Bold');
       doc.text(
         formatCurrency(fees.totalParticipationFees, partCurrency),
         feeValueX,
@@ -464,24 +499,25 @@ const generateInvoicePDF = async (registration, invoice) => {
       const accomWidth = 70;
       let accomY = 300;
 
-      // Determine accommodation currency (use whichever is set)
-      const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || 'JD';
+      const hasAmman = fees.ammanTotal > 0;
+      const hasDeadSea = fees.deadSeaTotal > 0;
+      const hasBothHotels = hasAmman && hasDeadSea;
 
-      // Amman accommodation — show total inclusive of tax & service
-      if (fees.ammanTotal > 0) {
+      // Only show individual hotel lines when BOTH hotels have values
+      // to avoid showing the same value twice (individual + total)
+      if (hasBothHotels) {
+        // Amman accommodation (inclusive of tax & service)
         doc.text(
-          formatCurrency(fees.ammanTotal, accomCurrency),
+          formatCurrency(fees.ammanTotal, fees.ammanCurrency || 'USD'),
           accomValueX,
           accomY,
           { width: accomWidth, align: 'right' },
         );
         accomY += 30;
-      }
 
-      // Dead Sea accommodation — show total inclusive of tax & service
-      if (fees.deadSeaTotal > 0) {
+        // Dead Sea accommodation (inclusive of tax & service)
         doc.text(
-          formatCurrency(fees.deadSeaTotal, accomCurrency),
+          formatCurrency(fees.deadSeaTotal, fees.deadSeaCurrency || 'USD'),
           accomValueX,
           accomY,
           { width: accomWidth, align: 'right' },
@@ -490,6 +526,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       }
 
       // Hotel accommodation total
+      const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || 'USD';
       doc.font('Helvetica-Bold');
       doc.text(
         formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
