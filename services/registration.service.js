@@ -341,6 +341,9 @@ exports.updateAccommodation = async (id, payload) => {
       ammanCheckOut: payload.accommodationInAmman
         ? payload.ammanCheckOut
         : null,
+      ammanRoomType: payload.accommodationInAmman
+        ? payload.ammanRoomType
+        : null,
       ammanRoommateId: payload.ammanRoommateId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.accommodationInDeadSea
@@ -352,6 +355,9 @@ exports.updateAccommodation = async (id, payload) => {
         : null,
       deadSeaCheckOut: payload.accommodationInDeadSea
         ? payload.deadSeaCheckOut
+        : null,
+      deadSeaRoomType: payload.accommodationInDeadSea
+        ? payload.deadSeaRoomType
         : null,
       deadSeaRoommateId: payload.deadSeaRoommateId,
     },
@@ -721,12 +727,14 @@ exports.adminUpdateRegistration = async (id, payload) => {
     'ammanRoomId',
     'ammanCheckIn',
     'ammanCheckOut',
+    'ammanRoomType',
     'ammanRoommateId',
     'accommodationInDeadSea',
     'deadSeaHotelId',
     'deadSeaRoomId',
     'deadSeaCheckIn',
     'deadSeaCheckOut',
+    'deadSeaRoomType',
     'deadSeaRoommateId',
     'airportPickupOption',
     'arrivalDate',
@@ -1104,12 +1112,14 @@ exports.createFullRegistration = async payload => {
       ammanRoomId: payload.ammanRoomId,
       ammanCheckIn: payload.ammanCheckIn,
       ammanCheckOut: payload.ammanCheckOut,
+      ammanRoomType: payload.ammanRoomType,
       ammanRoommateId: payload.ammanRoommateId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.deadSeaHotelId,
       deadSeaRoomId: payload.deadSeaRoomId,
       deadSeaCheckIn: payload.deadSeaCheckIn,
       deadSeaCheckOut: payload.deadSeaCheckOut,
+      deadSeaRoomType: payload.deadSeaRoomType,
       deadSeaRoommateId: payload.deadSeaRoommateId,
       airportPickupOption: payload.airportPickupOption,
       arrivalDate: payload.arrivalDate,

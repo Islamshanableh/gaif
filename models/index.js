@@ -746,6 +746,10 @@ const Registration = sequelize.define(
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+    ammanRoomType: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
     ammanRoommateId: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -781,6 +785,10 @@ const Registration = sequelize.define(
     },
     deadSeaCheckOut: {
       type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    deadSeaRoomType: {
+      type: DataTypes.STRING(10),
       allowNull: true,
     },
     deadSeaRoommateId: {

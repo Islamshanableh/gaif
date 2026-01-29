@@ -98,6 +98,11 @@ exports.updateRegistrationStep5 = {
       then: Joi.string().required(),
       otherwise: Joi.string().allow('', null).optional(),
     }),
+    ammanRoomType: Joi.when('accommodationInAmman', {
+      is: true,
+      then: Joi.string().valid('single', 'double').required(),
+      otherwise: Joi.string().valid('single', 'double').allow(null).optional(),
+    }),
     ammanPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
     accommodationInDeadSea: Joi.boolean().optional(),
     deadSeaHotelId: Joi.when('accommodationInDeadSea', {
@@ -119,6 +124,11 @@ exports.updateRegistrationStep5 = {
       is: true,
       then: Joi.string().required(),
       otherwise: Joi.string().allow('', null).optional(),
+    }),
+    deadSeaRoomType: Joi.when('accommodationInDeadSea', {
+      is: true,
+      then: Joi.string().valid('single', 'double').required(),
+      otherwise: Joi.string().valid('single', 'double').allow(null).optional(),
     }),
     deadSeaPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
   }),
@@ -292,12 +302,20 @@ exports.adminUpdateRegistration = {
     ammanRoomId: Joi.number().allow(null).optional(),
     ammanCheckIn: Joi.string().allow('', null).optional(),
     ammanCheckOut: Joi.string().allow('', null).optional(),
+    ammanRoomType: Joi.string()
+      .valid('single', 'double')
+      .allow(null)
+      .optional(),
     ammanRoommateId: Joi.number().allow(null).optional(),
     accommodationInDeadSea: Joi.boolean().optional(),
     deadSeaHotelId: Joi.number().allow(null).optional(),
     deadSeaRoomId: Joi.number().allow(null).optional(),
     deadSeaCheckIn: Joi.string().allow('', null).optional(),
     deadSeaCheckOut: Joi.string().allow('', null).optional(),
+    deadSeaRoomType: Joi.string()
+      .valid('single', 'double')
+      .allow(null)
+      .optional(),
     deadSeaRoommateId: Joi.number().allow(null).optional(),
     airportPickupOption: Joi.string()
       .valid(...airportPickupOptions)
@@ -379,12 +397,20 @@ exports.createFullRegistration = {
     ammanRoomId: Joi.number().allow(null).optional(),
     ammanCheckIn: Joi.string().allow('', null).optional(),
     ammanCheckOut: Joi.string().allow('', null).optional(),
+    ammanRoomType: Joi.string()
+      .valid('single', 'double')
+      .allow(null)
+      .optional(),
     ammanPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
     accommodationInDeadSea: Joi.boolean().optional(),
     deadSeaHotelId: Joi.number().allow(null).optional(),
     deadSeaRoomId: Joi.number().allow(null).optional(),
     deadSeaCheckIn: Joi.string().allow('', null).optional(),
     deadSeaCheckOut: Joi.string().allow('', null).optional(),
+    deadSeaRoomType: Joi.string()
+      .valid('single', 'double')
+      .allow(null)
+      .optional(),
     deadSeaPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
     // Step 4 - Trips
     trips: Joi.array()

@@ -134,8 +134,11 @@ const calculateFees = registration => {
     const checkIn = moment(registration.ammanCheckIn);
     const checkOut = moment(registration.ammanCheckOut);
     const nights = checkOut.diff(checkIn, 'days') || 1;
+    // Use single or double rate based on ammanRoomType
     const roomRate =
-      registration.ammanRoom.roomRate || registration.ammanRoom.double || 0;
+      registration.ammanRoomType === 'single'
+        ? registration.ammanRoom.single || 0
+        : registration.ammanRoom.double || 0;
     const baseAmount = nights * roomRate;
 
     // Get tax and service percentages from the hotel (Accommodation model)
@@ -169,8 +172,11 @@ const calculateFees = registration => {
     const checkIn = moment(registration.deadSeaCheckIn);
     const checkOut = moment(registration.deadSeaCheckOut);
     const nights = checkOut.diff(checkIn, 'days') || 1;
+    // Use single or double rate based on deadSeaRoomType
     const roomRate =
-      registration.deadSeaRoom.roomRate || registration.deadSeaRoom.double || 0;
+      registration.deadSeaRoomType === 'single'
+        ? registration.deadSeaRoom.single || 0
+        : registration.deadSeaRoom.double || 0;
     const baseAmount = nights * roomRate;
 
     // Get tax and service percentages from the hotel (Accommodation model)
@@ -497,41 +503,14 @@ const generateInvoicePDF = async (registration, invoice) => {
 
       const accomValueX = 450;
       const accomWidth = 70;
-      let accomY = 300;
 
-      const hasAmman = fees.ammanTotal > 0;
-      const hasDeadSea = fees.deadSeaTotal > 0;
-      const hasBothHotels = hasAmman && hasDeadSea;
-
-      // Only show individual hotel lines when BOTH hotels have values
-      // to avoid showing the same value twice (individual + total)
-      if (hasBothHotels) {
-        // Amman accommodation (inclusive of tax & service)
-        doc.text(
-          formatCurrency(fees.ammanTotal, fees.ammanCurrency || 'USD'),
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 30;
-
-        // Dead Sea accommodation (inclusive of tax & service)
-        doc.text(
-          formatCurrency(fees.deadSeaTotal, fees.deadSeaCurrency || 'USD'),
-          accomValueX,
-          accomY,
-          { width: accomWidth, align: 'right' },
-        );
-        accomY += 30;
-      }
-
-      // Hotel accommodation total
+      // Single line: combined total of Amman + Dead Sea accommodation
       const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || 'USD';
       doc.font('Helvetica-Bold');
       doc.text(
         formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
         accomValueX,
-        accomY,
+        300,
         { width: accomWidth, align: 'right' },
       );
 

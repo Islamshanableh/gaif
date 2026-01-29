@@ -1,7 +1,13 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const httpStatus = require('http-status');
-const { ParticipationType, ParticipationTypeCountry, Country, Op, sequelize } = require('./db.service');
+const {
+  ParticipationType,
+  ParticipationTypeCountry,
+  Country,
+  Op,
+  sequelize,
+} = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
 exports.createParticipationType = async payload => {
@@ -9,7 +15,9 @@ exports.createParticipationType = async payload => {
   const transaction = await sequelize.transaction();
 
   try {
-    const result = await ParticipationType.create(participationData, { transaction });
+    const result = await ParticipationType.create(participationData, {
+      transaction,
+    });
 
     // Add countries if provided
     if (countryIds && countryIds.length > 0) {
@@ -18,7 +26,7 @@ exports.createParticipationType = async payload => {
           participationTypeId: result.id,
           countryId,
         })),
-        { transaction }
+        { transaction },
       );
     }
 
@@ -42,7 +50,13 @@ exports.createParticipationType = async payload => {
 };
 
 exports.getParticipationTypeList = async query => {
-  const { page = 1, limit = 10, search, allowForRegister, countryId } = query || {};
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    allowForRegister,
+    countryId,
+  } = query || {};
   const offset = (page - 1) * limit;
 
   const where = {
@@ -84,14 +98,15 @@ exports.getParticipationTypeList = async query => {
     }
   }
 
-  const { count: total, rows: participationTypes } = await ParticipationType.findAndCountAll({
-    where,
-    offset,
-    limit,
-    order: [['createdAt', 'DESC']],
-    include,
-    distinct: true,
-  });
+  const { count: total, rows: participationTypes } =
+    await ParticipationType.findAndCountAll({
+      where,
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']],
+      include,
+      distinct: true,
+    });
 
   return {
     data: participationTypes.map(p => p.toJSON()),
@@ -114,10 +129,7 @@ exports.getParticipationTypeById = async id => {
 };
 
 exports.deleteParticipationType = async id => {
-  await ParticipationType.update(
-    { isActive: false },
-    { where: { id } }
-  );
+  await ParticipationType.update({ isActive: false }, { where: { id } });
 
   const result = await ParticipationType.findByPk(id);
   return result ? result.toJSON() : null;
@@ -148,7 +160,7 @@ exports.updateParticipationType = async payload => {
             participationTypeId: id,
             countryId,
           })),
-          { transaction }
+          { transaction },
         );
       }
     }
