@@ -1,30 +1,114 @@
-const nodemailer = require('nodemailer');
+const axios = require('axios');
+const fs = require('fs');
 const config = require('../../config/config');
 
-// Create reusable transporter
-const createTransporter = () => {
-  const transportConfig = {
-    auth: {
-      user: config.email.user,
-      pass: config.email.password,
-    },
-  };
+// Cache access token to avoid refreshing on every email
+let cachedToken = null;
+let tokenExpiry = 0;
 
-  // Use service if provided, otherwise use host/port
-  if (config.email.service) {
-    transportConfig.service = config.email.service;
-  } else if (config.email.host) {
-    transportConfig.host = config.email.host;
-    transportConfig.port = config.email.port;
-    transportConfig.secure = config.email.secure;
+/**
+ * Get a valid access token using the refresh token
+ * Caches the token until it expires
+ */
+const getAccessToken = async () => {
+  // Return cached token if still valid (with 60s buffer)
+  if (cachedToken && Date.now() < tokenExpiry - 60000) {
+    return cachedToken;
   }
 
-  return nodemailer.createTransport(transportConfig);
+  const tenantId = config.email.tenantId || 'common';
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+  const params = new URLSearchParams({
+    client_id: config.email.clientId,
+    client_secret: config.email.clientSecret,
+    refresh_token: config.email.refreshToken,
+    grant_type: 'refresh_token',
+    scope: 'https://graph.microsoft.com/Mail.Send',
+  });
+
+  const response = await axios.post(tokenUrl, params);
+  cachedToken = response.data.access_token;
+  tokenExpiry = Date.now() + response.data.expires_in * 1000;
+
+  return cachedToken;
 };
 
-// Get the from address
-const getFromAddress = () => {
-  return `"${config.email.fromName}" <${config.email.user}>`;
+/**
+ * Send email via Microsoft Graph API
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} [options.text] - Plain text body
+ * @param {string} [options.html] - HTML body
+ * @param {Array} [options.attachments] - Attachments array
+ */
+const sendViaGraph = async ({ to, subject, text, html, attachments = [] }) => {
+  const accessToken = await getAccessToken();
+
+  const message = {
+    subject,
+    body: {
+      contentType: html ? 'HTML' : 'Text',
+      content: html || text || '',
+    },
+    from: {
+      emailAddress: {
+        name: config.email.fromName,
+        address: config.email.user,
+      },
+    },
+    toRecipients: [
+      {
+        emailAddress: { address: to },
+      },
+    ],
+  };
+
+  // Add attachments if provided
+  if (attachments.length > 0) {
+    message.attachments = attachments.map(att => {
+      let contentBytes;
+
+      if (att.content && Buffer.isBuffer(att.content)) {
+        // Buffer content (e.g. generated PDF)
+        contentBytes = att.content.toString('base64');
+      } else if (att.content) {
+        contentBytes = Buffer.from(att.content).toString('base64');
+      } else if (att.path) {
+        // File path (e.g. nodemailer-style attachment)
+        contentBytes = fs.readFileSync(att.path).toString('base64');
+      }
+
+      const graphAttachment = {
+        '@odata.type': '#microsoft.graph.fileAttachment',
+        name: att.filename || att.name || 'attachment',
+        contentType: att.contentType || att.type || 'application/octet-stream',
+        contentBytes,
+      };
+
+      // Handle inline/CID attachments for embedded images
+      if (att.cid) {
+        graphAttachment.contentId = att.cid;
+        graphAttachment.isInline = true;
+      }
+
+      return graphAttachment;
+    });
+  }
+
+  const response = await axios.post(
+    `https://graph.microsoft.com/v1.0/users/${config.email.user}/sendMail`,
+    { message, saveToSentItems: true },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  return response;
 };
 
 /**
@@ -35,26 +119,18 @@ const getFromAddress = () => {
  * @returns {Promise}
  */
 exports.sendEmail = async (email, message, subject) => {
-  const transporter = createTransporter();
-
-  const mailOptions = {
-    from: getFromAddress(),
-    to: email,
-    subject,
-    text: message,
-  };
-
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log('Error sending email:', error);
-        reject(error);
-      } else {
-        console.log('Email sent:', info.response);
-        resolve(info);
-      }
+  try {
+    const result = await sendViaGraph({
+      to: email,
+      subject,
+      text: message,
     });
-  });
+    console.log('Email sent via Graph API to:', email);
+    return result;
+  } catch (error) {
+    console.log('Error sending email:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 /**
@@ -66,27 +142,22 @@ exports.sendEmail = async (email, message, subject) => {
  * @returns {Promise}
  */
 exports.sendHtmlEmail = async (email, subject, html, text = '') => {
-  const transporter = createTransporter();
-
-  const mailOptions = {
-    from: getFromAddress(),
-    to: email,
-    subject,
-    html,
-    text: text || subject,
-  };
-
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log('Error sending HTML email:', error);
-        reject(error);
-      } else {
-        console.log('HTML email sent:', info.response);
-        resolve(info);
-      }
+  try {
+    const result = await sendViaGraph({
+      to: email,
+      subject,
+      html,
+      text: text || subject,
     });
-  });
+    console.log('HTML email sent via Graph API to:', email);
+    return result;
+  } catch (error) {
+    console.log(
+      'Error sending HTML email:',
+      error.response?.data || error.message,
+    );
+    throw error;
+  }
 };
 
 /**
@@ -103,25 +174,20 @@ exports.sendEmailWithAttachment = async (
   html,
   attachments = [],
 ) => {
-  const transporter = createTransporter();
-
-  const mailOptions = {
-    from: getFromAddress(),
-    to: email,
-    subject,
-    html,
-    attachments,
-  };
-
-  return new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log('Error sending email with attachment:', error);
-        reject(error);
-      } else {
-        console.log('Email with attachment sent:', info.response);
-        resolve(info);
-      }
+  try {
+    const result = await sendViaGraph({
+      to: email,
+      subject,
+      html,
+      attachments,
     });
-  });
+    console.log('Email with attachment sent via Graph API to:', email);
+    return result;
+  } catch (error) {
+    console.log(
+      'Error sending email with attachment:',
+      error.response?.data || error.message,
+    );
+    throw error;
+  }
 };

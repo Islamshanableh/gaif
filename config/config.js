@@ -51,10 +51,18 @@ const envVarsSchema = Joi.object()
     EMAIL_PORT: Joi.number().default(587).description('SMTP port'),
     EMAIL_SECURE: Joi.boolean().default(false).description('Use TLS'),
     EMAIL_USER: Joi.string().required().description('Email username'),
-    EMAIL_PASSWORD: Joi.string().required().description('Email password'),
+    EMAIL_PASSWORD: Joi.string().allow('').description('Email password'),
     EMAIL_FROM_NAME: Joi.string()
       .default('GAIF 2026')
       .description('Email from name'),
+    EMAIL_CLIENT_ID: Joi.string().allow('').description('OAuth2 client ID'),
+    EMAIL_CLIENT_SECRET: Joi.string()
+      .allow('')
+      .description('OAuth2 client secret'),
+    EMAIL_REFRESH_TOKEN: Joi.string()
+      .allow('')
+      .description('OAuth2 refresh token'),
+    EMAIL_TENANT_ID: Joi.string().allow('').description('Microsoft tenant ID'),
 
     // URLs
     FRONTEND_URL: Joi.string()
@@ -153,6 +161,10 @@ module.exports = {
     user: envVars.EMAIL_USER,
     password: envVars.EMAIL_PASSWORD,
     fromName: envVars.EMAIL_FROM_NAME,
+    clientId: envVars.EMAIL_CLIENT_ID,
+    clientSecret: envVars.EMAIL_CLIENT_SECRET,
+    refreshToken: envVars.EMAIL_REFRESH_TOKEN,
+    tenantId: envVars.EMAIL_TENANT_ID,
   },
 
   taxNumber: envVars.TAX_NUMBER,

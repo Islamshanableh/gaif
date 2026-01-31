@@ -78,6 +78,17 @@ const getFullRegistration = async id => {
       { model: HotelRoom, as: 'deadSeaRoom' },
       { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
       { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
+      // Roommate associations
+      {
+        model: Registration,
+        as: 'ammanRoommate',
+        attributes: ['id', 'firstName', 'middleName', 'lastName'],
+      },
+      {
+        model: Registration,
+        as: 'deadSeaRoommate',
+        attributes: ['id', 'firstName', 'middleName', 'lastName'],
+      },
       { model: File, as: 'participantPicture', attributes: fileAttributes },
       { model: File, as: 'passportCopy', attributes: fileAttributes },
       { model: File, as: 'residency', attributes: fileAttributes },

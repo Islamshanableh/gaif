@@ -77,6 +77,17 @@ const getRegistrationIncludes = () => [
   { model: HotelRoom, as: 'deadSeaRoom' },
   { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
   { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
+  // Roommate associations (self-referencing)
+  {
+    model: Registration,
+    as: 'ammanRoommate',
+    attributes: ['id', 'firstName', 'middleName', 'lastName'],
+  },
+  {
+    model: Registration,
+    as: 'deadSeaRoommate',
+    attributes: ['id', 'firstName', 'middleName', 'lastName'],
+  },
   // Registration file associations
   { model: File, as: 'participantPicture', attributes: fileAttributes },
   { model: File, as: 'passportCopy', attributes: fileAttributes },
@@ -92,14 +103,18 @@ const processRegistrationData = reg => {
   return reg;
 };
 
-// Helper function to get next profile ID
-const getNextProfileId = async () => {
+// Helper function to get next shared ID (used for both profileId and spouseId)
+// Looks at MAX across both Registrations.profileId and Spouses.spouseId
+const getNextSharedId = async () => {
   const [results] = await sequelize.query(
-    'SELECT MAX("profileId") AS "maxProfileId" FROM "Registrations"',
+    `SELECT GREATEST(
+      COALESCE((SELECT MAX("profileId") FROM "Registrations"), 0),
+      COALESCE((SELECT MAX("spouseId") FROM "Spouses"), 0)
+    ) AS "maxId" FROM DUAL`,
     { type: sequelize.QueryTypes.SELECT },
   );
-  const maxProfileId = results?.maxProfileId || 0;
-  return maxProfileId + 1;
+  const maxId = results?.maxId || 0;
+  return maxId + 1;
 };
 
 // Step 1: Create initial registration (companyId is now required)
@@ -122,8 +137,8 @@ exports.createRegistration = async payload => {
     }
   }
 
-  // Get the next profile ID
-  const profileId = await getNextProfileId();
+  // Get the next shared ID (shared counter across profileId and spouseId)
+  const profileId = await getNextSharedId();
 
   const result = await Registration.create({
     companyId: payload.companyId,
@@ -239,8 +254,8 @@ exports.updateSpouseInfo = async (id, payload) => {
         where: { registrationId: id },
       });
     } else {
-      // Create new spouse with spouseId = profileId + 1
-      const spouseId = registration.profileId + 1;
+      // Create new spouse with next available shared ID
+      const spouseId = await getNextSharedId();
       await Spouse.create({
         ...spouseData,
         registrationId: id,
@@ -792,13 +807,11 @@ exports.adminUpdateRegistration = async (id, payload) => {
       if (existingSpouse) {
         await Spouse.update(spouseData, { where: { registrationId: id } });
       } else {
-        const reg = await Registration.findByPk(id, {
-          attributes: ['profileId'],
-        });
+        const spouseId = await getNextSharedId();
         await Spouse.create({
           ...spouseData,
           registrationId: id,
-          spouseId: (reg.profileId || 0) + 1,
+          spouseId,
         });
       }
     } else if (payload.hasSpouse === false) {
@@ -1085,8 +1098,8 @@ exports.createFullRegistration = async payload => {
     totalPrice += deadSeaRoom.double || deadSeaRoom.single || 0;
   }
 
-  // Get the next profile ID
-  const profileId = await getNextProfileId();
+  // Get the next shared ID for profileId
+  const profileId = await getNextSharedId();
 
   const transaction = await sequelize.transaction();
 
@@ -1163,12 +1176,13 @@ exports.createFullRegistration = async payload => {
       transaction,
     });
 
-    // Create spouse if provided with spouseId = profileId + 1
+    // Create spouse if provided with next available shared ID
     if (payload.hasSpouse && payload.spouse) {
+      const spouseId = await getNextSharedId();
       await Spouse.create(
         {
           registrationId: registration.id,
-          spouseId: profileId + 1,
+          spouseId,
           title: payload.spouse.title,
           firstName: payload.spouse.firstName,
           middleName: payload.spouse.middleName,
