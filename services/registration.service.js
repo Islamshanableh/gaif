@@ -597,6 +597,7 @@ exports.getRegistrations = async query => {
     middleName,
     lastName,
     countryId,
+    exportAll,
   } = query;
   const offset = (page - 1) * limit;
 
@@ -670,15 +671,21 @@ exports.getRegistrations = async query => {
     },
   ];
 
+  const queryOptions = {
+    where,
+    order: [['createdAt', 'DESC']],
+    include: includes,
+    distinct: true,
+  };
+
+  // Skip pagination when exporting all data
+  if (exportAll !== 'true') {
+    queryOptions.offset = offset;
+    queryOptions.limit = limit;
+  }
+
   const { count: total, rows: registrations } =
-    await Registration.findAndCountAll({
-      where,
-      offset,
-      limit,
-      order: [['createdAt', 'DESC']],
-      include: includes,
-      distinct: true,
-    });
+    await Registration.findAndCountAll(queryOptions);
 
   const data = registrations.map(reg => {
     const regData = reg.toJSON();
@@ -791,15 +798,24 @@ exports.adminUpdateRegistration = async (id, payload) => {
   // Handle spouse update
   if (payload.spouse !== undefined) {
     if (payload.hasSpouse && payload.spouse) {
-      const spouseData = {
-        title: payload.spouse.title,
-        firstName: payload.spouse.firstName,
-        middleName: payload.spouse.middleName,
-        lastName: payload.spouse.lastName,
-        nationalityId: payload.spouse.nationalityId,
-        whatsapp: payload.spouse.whatsapp,
-        needsVisaHelp: payload.spouse.needsVisaHelp || false,
-      };
+      const spouseFields = [
+        'title',
+        'firstName',
+        'middleName',
+        'lastName',
+        'nationalityId',
+        'whatsapp',
+        'needsVisaHelp',
+        'passportCopyId',
+        'residencyId',
+        'visaFormId',
+      ];
+      const spouseData = {};
+      spouseFields.forEach(field => {
+        if (payload.spouse[field] !== undefined) {
+          spouseData[field] = payload.spouse[field];
+        }
+      });
 
       const existingSpouse = await Spouse.findOne({
         where: { registrationId: id },

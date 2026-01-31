@@ -259,6 +259,7 @@ exports.getRegistrations = {
     middleName: Joi.string().allow('', null).optional(),
     lastName: Joi.string().allow('', null).optional(),
     countryId: Joi.number().optional(),
+    exportAll: Joi.string().valid('true', 'false').optional(),
   }),
 };
 
@@ -287,6 +288,9 @@ exports.adminUpdateRegistration = {
         nationalityId: Joi.number().allow(null).optional(),
         whatsapp: Joi.string().max(20).allow('', null).optional(),
         needsVisaHelp: Joi.boolean().optional(),
+        passportCopyId: Joi.number().allow(null).optional(),
+        residencyId: Joi.number().allow(null).optional(),
+        visaFormId: Joi.number().allow(null).optional(),
       })
       .optional(),
     trips: Joi.array()
