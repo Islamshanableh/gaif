@@ -278,6 +278,10 @@ exports.adminUpdateRegistration = {
     telephone: Joi.string().max(20).allow('', null).optional(),
     mobile: Joi.string().max(20).allow('', null).optional(),
     whatsapp: Joi.string().max(20).allow('', null).optional(),
+    participantPictureId: Joi.number().allow(null).optional(),
+    passportCopyId: Joi.number().allow(null).optional(),
+    residencyId: Joi.number().allow(null).optional(),
+    visaFormId: Joi.number().allow(null).optional(),
     hasSpouse: Joi.boolean().optional(),
     spouse: Joi.object()
       .keys({
