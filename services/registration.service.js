@@ -665,8 +665,14 @@ exports.getRegistrations = async query => {
     },
     {
       model: Invoice,
-      as: 'invoice',
-      attributes: ['id', 'serialNumber', 'totalValueJD', 'totalValueUSD'],
+      as: 'invoices',
+      attributes: [
+        'id',
+        'serialNumber',
+        'totalValueJD',
+        'totalValueUSD',
+        'createdAt',
+      ],
       required: false,
     },
   ];
@@ -727,6 +733,13 @@ exports.adminUpdateRegistration = async (id, payload) => {
   if (!registration) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
+
+  // Capture old values for availability adjustments
+  const oldAmmanRoomId = registration.ammanRoomId;
+  const oldDeadSeaRoomId = registration.deadSeaRoomId;
+  const oldAccommodationInAmman = registration.accommodationInAmman;
+  const oldAccommodationInDeadSea = registration.accommodationInDeadSea;
+  const oldHasSpouse = registration.hasSpouse;
 
   // Build update data from all possible fields
   const updateData = {};
@@ -849,11 +862,118 @@ exports.adminUpdateRegistration = async (id, payload) => {
     }
   }
 
+  // Reload updated registration with full associations
   const result = await Registration.findByPk(id, {
     include: getRegistrationIncludes(),
   });
+  const updatedReg = result.toJSON();
 
-  return result.toJSON();
+  // --- Availability adjustments (only for SUBMITTED/CONFIRMED registrations) ---
+  const activeStatuses = ['SUBMITTED', 'CONFIRMED'];
+  if (activeStatuses.includes(updatedReg.registrationStatus)) {
+    // Amman room availability
+    const newAmmanRoomId = updatedReg.ammanRoomId;
+    const newAmmanAccom = updatedReg.accommodationInAmman;
+    if (
+      oldAccommodationInAmman &&
+      oldAmmanRoomId &&
+      (!newAmmanAccom || oldAmmanRoomId !== newAmmanRoomId)
+    ) {
+      // Old room freed: increment availability
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" + 1') },
+        { where: { id: oldAmmanRoomId } },
+      );
+    }
+    if (
+      newAmmanAccom &&
+      newAmmanRoomId &&
+      (!oldAccommodationInAmman || oldAmmanRoomId !== newAmmanRoomId)
+    ) {
+      // New room taken: decrement availability
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: newAmmanRoomId } },
+      );
+    }
+
+    // Dead Sea room availability
+    const newDeadSeaRoomId = updatedReg.deadSeaRoomId;
+    const newDeadSeaAccom = updatedReg.accommodationInDeadSea;
+    if (
+      oldAccommodationInDeadSea &&
+      oldDeadSeaRoomId &&
+      (!newDeadSeaAccom || oldDeadSeaRoomId !== newDeadSeaRoomId)
+    ) {
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" + 1') },
+        { where: { id: oldDeadSeaRoomId } },
+      );
+    }
+    if (
+      newDeadSeaAccom &&
+      newDeadSeaRoomId &&
+      (!oldAccommodationInDeadSea || oldDeadSeaRoomId !== newDeadSeaRoomId)
+    ) {
+      await HotelRoom.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: newDeadSeaRoomId } },
+      );
+    }
+
+    // Company seats: if spouse was removed, increment; if spouse was added, decrement
+    const newHasSpouse = updatedReg.hasSpouse;
+    if (
+      oldHasSpouse &&
+      !newHasSpouse &&
+      updatedReg.company &&
+      updatedReg.company.allowFreeSeats
+    ) {
+      await Company.update(
+        { available: sequelize.literal('"available" + 1') },
+        { where: { id: updatedReg.companyId } },
+      );
+    }
+    if (
+      !oldHasSpouse &&
+      newHasSpouse &&
+      updatedReg.company &&
+      updatedReg.company.allowFreeSeats
+    ) {
+      await Company.update(
+        { available: sequelize.literal('"available" - 1') },
+        { where: { id: updatedReg.companyId } },
+      );
+    }
+  }
+
+  // --- Recalculate invoice if any fee-related fields changed ---
+  const feeRelatedFields = [
+    'participationId',
+    'hasSpouse',
+    'accommodationInAmman',
+    'ammanHotelId',
+    'ammanRoomId',
+    'ammanCheckIn',
+    'ammanCheckOut',
+    'ammanRoomType',
+    'accommodationInDeadSea',
+    'deadSeaHotelId',
+    'deadSeaRoomId',
+    'deadSeaCheckIn',
+    'deadSeaCheckOut',
+    'deadSeaRoomType',
+  ];
+  const feeFieldChanged = feeRelatedFields.some(f => payload[f] !== undefined);
+  const tripsChanged = payload.trips !== undefined;
+  const spouseRemoved = payload.hasSpouse === false;
+
+  if (feeFieldChanged || tripsChanged || spouseRemoved) {
+    const invoiceService = require('./invoice.service');
+    await invoiceService.createVersionedInvoice(updatedReg);
+  }
+
+  return updatedReg;
 };
 
 // Submit registration (final step)

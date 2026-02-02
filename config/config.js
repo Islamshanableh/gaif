@@ -101,6 +101,22 @@ const envVarsSchema = Joi.object()
       .default('')
       .description('Partnership opportunities URL'),
 
+    // MEPS Payment Gateway
+    MEPS_MERCHANT_ID: Joi.string()
+      .allow('')
+      .default('')
+      .description('MEPS merchant ID'),
+    MEPS_API_PASSWORD: Joi.string()
+      .allow('')
+      .default('')
+      .description('MEPS API password'),
+    MEPS_GATEWAY_URL: Joi.string()
+      .allow('')
+      .default('https://mepspay.gateway.mastercard.com')
+      .description('MEPS gateway base URL'),
+    MEPS_API_VERSION: Joi.number().default(100).description('MEPS API version'),
+    MEPS_CURRENCY: Joi.string().default('USD').description('Payment currency'),
+
     // Invoice
     TAX_NUMBER: Joi.string()
       .default('4024443')
@@ -165,6 +181,14 @@ module.exports = {
     clientSecret: envVars.EMAIL_CLIENT_SECRET,
     refreshToken: envVars.EMAIL_REFRESH_TOKEN,
     tenantId: envVars.EMAIL_TENANT_ID,
+  },
+
+  meps: {
+    merchantId: envVars.MEPS_MERCHANT_ID,
+    apiPassword: envVars.MEPS_API_PASSWORD,
+    gatewayUrl: envVars.MEPS_GATEWAY_URL,
+    apiVersion: envVars.MEPS_API_VERSION,
+    currency: envVars.MEPS_CURRENCY,
   },
 
   taxNumber: envVars.TAX_NUMBER,

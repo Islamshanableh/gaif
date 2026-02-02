@@ -30,8 +30,8 @@ const TEMPLATE_PATH = path.join(
  * @returns {Object} Fee breakdown matching Invoice model fields
  */
 const calculateFees = registration => {
-  const participation = registration.participation;
-  const company = registration.company;
+  const participation = registration?.participation;
+  const company = registration?.company;
   const feesTaxPercentage = config.feesTaxPercentage || 0;
 
   const fees = {
@@ -196,38 +196,64 @@ const calculateFees = registration => {
     fees.deadSeaCurrency = registration.deadSeaRoom.currency || 'USD';
   }
 
-  fees.hotelAccommodationTotal = fees.ammanTotal + fees.deadSeaTotal;
+  // Convert any JD fees to USD so all line items are in USD
+  const rate = INVOICE_CONFIG.exchangeRate; // USD 1 = JD 0.708
+  const jdToUsd = val => Math.round((val / rate) * 100) / 100;
 
-  // Calculate totals with proper currency conversion
-  // Determine the currency of participation fees and accommodation fees
-  const partCurrency =
-    fees.participationCurrency ||
-    fees.spouseCurrency ||
-    fees.tripCurrency ||
-    fees.spouseTripCurrency ||
-    null;
-  const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || null;
+  // Participation-related fees: convert if in JD
+  if (fees.participationCurrency === 'JD') {
+    fees.participationFees = jdToUsd(fees.participationFees);
+    fees.participationCurrency = 'USD';
+  }
+  if (fees.spouseCurrency === 'JD') {
+    fees.spouseFees = jdToUsd(fees.spouseFees);
+    fees.spouseCurrency = 'USD';
+  }
+  if (fees.tripCurrency === 'JD') {
+    fees.tripFees = jdToUsd(fees.tripFees);
+    fees.tripCurrency = 'USD';
+  }
+  if (fees.spouseTripCurrency === 'JD') {
+    fees.spouseTripFees = jdToUsd(fees.spouseTripFees);
+    fees.spouseTripCurrency = 'USD';
+  }
 
-  // Convert participation fees to JD if in USD
-  const partFeesInJD =
-    partCurrency === 'USD'
-      ? Math.round(
-          fees.totalParticipationFees * INVOICE_CONFIG.exchangeRate * 100,
-        ) / 100
-      : fees.totalParticipationFees;
+  // Recalculate total participation fees after conversion
+  fees.totalParticipationFees =
+    Math.round(
+      (fees.participationFees +
+        fees.spouseFees +
+        fees.tripFees +
+        fees.spouseTripFees) *
+        100,
+    ) / 100;
 
-  // Convert accommodation fees to JD if in USD
-  const accomFeesInJD =
-    accomCurrency === 'USD'
-      ? Math.round(
-          fees.hotelAccommodationTotal * INVOICE_CONFIG.exchangeRate * 100,
-        ) / 100
-      : fees.hotelAccommodationTotal;
+  // Accommodation fees: convert if in JD
+  if (fees.ammanCurrency === 'JD') {
+    fees.ammanAccommodation = jdToUsd(fees.ammanAccommodation);
+    fees.ammanService = jdToUsd(fees.ammanService);
+    fees.ammanTax = jdToUsd(fees.ammanTax);
+    fees.ammanTotal = jdToUsd(fees.ammanTotal);
+    fees.ammanCurrency = 'USD';
+  }
+  if (fees.deadSeaCurrency === 'JD') {
+    fees.deadSeaAccommodation = jdToUsd(fees.deadSeaAccommodation);
+    fees.deadSeaService = jdToUsd(fees.deadSeaService);
+    fees.deadSeaTax = jdToUsd(fees.deadSeaTax);
+    fees.deadSeaTotal = jdToUsd(fees.deadSeaTotal);
+    fees.deadSeaCurrency = 'USD';
+  }
 
-  fees.totalValueJD =
-    Math.round((partFeesInJD + accomFeesInJD - fees.totalDiscount) * 100) / 100;
-  fees.totalValueUSD =
-    Math.round((fees.totalValueJD / INVOICE_CONFIG.exchangeRate) * 100) / 100;
+  fees.hotelAccommodationTotal =
+    Math.round((fees.ammanTotal + fees.deadSeaTotal) * 100) / 100;
+
+  // Calculate grand totals — all fees are now in USD
+  const allFeesUSD =
+    fees.totalParticipationFees +
+    fees.hotelAccommodationTotal -
+    fees.totalDiscount;
+  fees.totalValueUSD = Math.round(allFeesUSD * 100) / 100;
+  fees.totalValueJD = Math.round(allFeesUSD * rate * 100) / 100;
 
   return fees;
 };
@@ -317,12 +343,84 @@ const createInvoice = async registration => {
 };
 
 /**
- * Get invoice by registration ID
+ * Create a new versioned invoice for a registration.
+ * Keeps old invoices and creates a new one with serial like G260001/2, G260001/3, etc.
+ * @param {Object} registration - Full registration data with associations (plain object)
+ * @returns {Promise<Object|null>} New versioned invoice, or null if no invoice exists
+ */
+const createVersionedInvoice = async registration => {
+  // Find all invoices for this registration, ordered by creation
+  const invoices = await Invoice.findAll({
+    where: { registrationId: registration.id },
+    order: [['createdAt', 'ASC']],
+  });
+  if (!invoices || invoices.length === 0) return null;
+
+  // The base serial is from the first invoice (e.g. G260001)
+  const baseSerial = invoices[0].serialNumber;
+  // Next version number = total invoices + 1
+  const nextVersion = invoices.length + 1;
+  const newSerial = `${baseSerial}/${nextVersion}`;
+
+  const fees = calculateFees(registration);
+
+  const invoice = await Invoice.create({
+    registrationId: registration.id,
+    serialNumber: newSerial,
+    taxNumber: config.taxNumber,
+    participationFees: fees.participationFees,
+    spouseFees: fees.spouseFees,
+    tripFees: fees.tripFees,
+    spouseTripFees: fees.spouseTripFees,
+    feesTaxPercentage: fees.feesTaxPercentage,
+    feesTaxAmount: fees.feesTaxAmount,
+    totalParticipationFees: fees.totalParticipationFees,
+    participationCurrency: fees.participationCurrency,
+    spouseCurrency: fees.spouseCurrency,
+    tripCurrency: fees.tripCurrency,
+    spouseTripCurrency: fees.spouseTripCurrency,
+    ammanAccommodation: fees.ammanAccommodation,
+    ammanTax: fees.ammanTax,
+    ammanService: fees.ammanService,
+    ammanTotal: fees.ammanTotal,
+    ammanCurrency: fees.ammanCurrency,
+    deadSeaAccommodation: fees.deadSeaAccommodation,
+    deadSeaTax: fees.deadSeaTax,
+    deadSeaService: fees.deadSeaService,
+    deadSeaTotal: fees.deadSeaTotal,
+    deadSeaCurrency: fees.deadSeaCurrency,
+    hotelAccommodationTotal: fees.hotelAccommodationTotal,
+    totalDiscount: fees.totalDiscount,
+    totalValueJD: fees.totalValueJD,
+    totalValueUSD: fees.totalValueUSD,
+    exchangeRate: fees.exchangeRate,
+  });
+
+  return invoice;
+};
+
+/**
+ * Get the latest invoice by registration ID
  * @param {number} registrationId
  * @returns {Promise<Object|null>}
  */
 const getInvoiceByRegistrationId = async registrationId => {
-  return Invoice.findOne({ where: { registrationId } });
+  return Invoice.findOne({
+    where: { registrationId },
+    order: [['createdAt', 'DESC']],
+  });
+};
+
+/**
+ * Get all invoices for a registration (all versions)
+ * @param {number} registrationId
+ * @returns {Promise<Array>}
+ */
+const getInvoicesByRegistrationId = async registrationId => {
+  return Invoice.findAll({
+    where: { registrationId },
+    order: [['createdAt', 'ASC']],
+  });
 };
 
 /**
@@ -433,7 +531,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.text(registrationDisplayId.toString(), 346, 183, { width: 80 });
 
       // REGISTRATION DATE value (right column)
-      doc.text(registrationDate, 470, 183, { width: 90 });
+      doc.text(registrationDate, 450, 183, { width: 90 });
 
       // ============================================================
       // REGISTRATION section (left column) - Fee values
@@ -510,7 +608,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
         accomValueX,
-        300,
+        308,
         { width: accomWidth, align: 'right' },
       );
 
@@ -555,6 +653,8 @@ module.exports = {
   formatCurrency,
   getNextSerialNumber,
   createInvoice,
+  createVersionedInvoice,
   getInvoiceByRegistrationId,
+  getInvoicesByRegistrationId,
   generateInvoicePDF,
 };

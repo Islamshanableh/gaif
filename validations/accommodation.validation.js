@@ -12,7 +12,7 @@ exports.createAccommodation = {
     time: Joi.string(),
     hotelRooms: Joi.array().items({
       roomCategory: Joi.string().required(),
-      roomCategoryInArabic: Joi.string().required(),
+      roomCategoryInArabic: Joi.string(),
       numberOfRooms: Joi.number().required(),
       single: Joi.number(),
       double: Joi.number(),

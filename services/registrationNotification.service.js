@@ -25,8 +25,8 @@ const getEmailConfig = () => ({
  * @returns {Object} Nodemailer attachment object
  */
 const getEmailHeaderAttachment = () => ({
-  filename: 'email2026.jpg',
-  path: path.join(__dirname, '..', 'templates', 'email2026.jpg'),
+  filename: 'emailHeader.png',
+  path: path.join(__dirname, '..', 'templates', 'emailHeader.png'),
   cid: 'emailHeader',
 });
 
@@ -202,13 +202,16 @@ const sendRegistrationApprovedEmail = async registration => {
       registration.lastName || ''
     }`.trim();
 
+    // Build payment URL pointing to the checkout endpoint
+    const paymentUrl = `${emailConfig.apiBaseUrl}/payment/checkout?registrationId=${registration.id}`;
+
     const variables = {
       participantName,
       registrationId: registration.profileId || registration.id,
       viewRegistrationUrl,
       viewInvoiceUrl,
       updateRegistrationUrl,
-      paymentUrl: emailConfig.paymentUrl || '#',
+      paymentUrl,
       visaFormUrl: emailConfig.visaFormUrl || '#',
       partnersUrl: emailConfig.partnersUrl || '#',
       partnershipOpportunitiesUrl:

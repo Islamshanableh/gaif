@@ -1144,7 +1144,7 @@ const Invoice = sequelize.define(
       },
     },
     serialNumber: {
-      type: DataTypes.STRING(10),
+      type: DataTypes.STRING(20),
       allowNull: false,
       unique: true,
     },
@@ -1560,9 +1560,9 @@ Invoice.belongsTo(Registration, {
   foreignKey: 'registrationId',
   as: 'registration',
 });
-Registration.hasOne(Invoice, {
+Registration.hasMany(Invoice, {
   foreignKey: 'registrationId',
-  as: 'invoice',
+  as: 'invoices',
 });
 
 // ============================================================================
