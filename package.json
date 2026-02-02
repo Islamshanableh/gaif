@@ -56,7 +56,8 @@
     "sequelize": "^6.37.0",
     "speakeasy": "^2.0.0",
     "twilio": "^3.71.1",
-    "xlsx": "^0.17.0"
+    "xlsx": "^0.17.0",
+    "xmlbuilder2": "^4.0.3"
   },
   "devDependencies": {
     "cz-conventional-changelog": "^3.0.1",
