@@ -8,7 +8,7 @@ const { Invoice } = require('./db.service');
 // Configuration for invoice
 const INVOICE_CONFIG = {
   // Exchange rate
-  exchangeRate: 0.708, // USD 1 = JD 0.708
+  exchangeRate: 0.7, // USD 1 = JD 0.70
 
   // Conference details
   conferenceNumber: 35,
@@ -197,7 +197,7 @@ const calculateFees = registration => {
   }
 
   // Convert any JD/JOD fees to USD so all line items are in USD
-  const rate = INVOICE_CONFIG.exchangeRate; // USD 1 = JD 0.708
+  const rate = INVOICE_CONFIG.exchangeRate; // USD 1 = JD 0.70
   const jdToUsd = val => Math.round((val / rate) * 100) / 100;
   // Helper to check if currency is Jordanian Dinar (JD or JOD)
   const isJordanianDinar = currency =>
