@@ -1402,7 +1402,10 @@ exports.getConfirmedRegistrationForRoommate = async id => {
   const registration = await Registration.findOne({
     where: {
       profileId: id,
-      registrationStatus: 'CONFIRMED',
+      [Op.or]: [
+        { registrationStatus: 'CONFIRMED' },
+        { registrationStatus: 'SUBMITTED' },
+      ],
       isActive: true,
     },
     attributes: ['id', 'firstName', 'lastName'],

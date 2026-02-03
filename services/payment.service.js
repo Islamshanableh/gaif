@@ -74,7 +74,9 @@ const createCheckoutSession = async registrationId => {
   if (parsed.result !== 'SUCCESS') {
     console.error('MEPS session creation failed:', parsed);
     throw new Error(
-      `Failed to create checkout session: ${parsed['error.explanation'] || parsed.result}`,
+      `Failed to create checkout session: ${
+        parsed['error.explanation'] || parsed.result
+      }`,
     );
   }
 
