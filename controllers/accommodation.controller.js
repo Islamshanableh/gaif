@@ -23,7 +23,7 @@ exports.createAccommodation = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logCreate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Accommodation',
     entityId: result.id,
     entityName: result.hotelName,
@@ -60,7 +60,7 @@ exports.updateAccommodation = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Accommodation',
     entityId: parseInt(id, 10),
     entityName: result?.hotelName || oldData?.hotelName,
@@ -82,7 +82,7 @@ exports.deleteAccommodation = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Accommodation',
     entityId: parseInt(id, 10),
     entityName: oldData?.hotelName,

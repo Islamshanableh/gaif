@@ -20,14 +20,16 @@ exports.createCompany = catchAsync(async (req, res) => {
   const result = await companyService.createCompany(payload);
 
   // Audit log
-  await auditService.logCreate({
-    userId: req.user.id,
-    entityType: 'Company',
-    entityId: result.id,
-    entityName: result.name,
-    newData: result,
-    req,
-  });
+  if (req?.user?.sub?.id) {
+    await auditService.logCreate({
+      userId: req.user.sub.id,
+      entityType: 'Company',
+      entityId: result.id,
+      entityName: result.name,
+      newData: result,
+      req,
+    });
+  }
 
   res.status(httpStatus.OK).send({ result });
 });
@@ -56,7 +58,7 @@ exports.updateCompany = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Company',
     entityId: parseInt(id, 10),
     entityName: result?.name || oldData?.name,
@@ -78,7 +80,7 @@ exports.deleteCompany = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Company',
     entityId: parseInt(id, 10),
     entityName: oldData?.name,

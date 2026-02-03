@@ -11,7 +11,7 @@ exports.createParticipationType = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logCreate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'ParticipationType',
     entityId: result.id,
     entityName: result.title,
@@ -36,7 +36,7 @@ exports.updateParticipationType = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'ParticipationType',
     entityId: parseInt(id, 10),
     entityName: result?.title || oldData?.title,
@@ -58,7 +58,7 @@ exports.deleteParticipationType = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'ParticipationType',
     entityId: parseInt(id, 10),
     entityName: oldData?.title,

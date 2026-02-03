@@ -289,7 +289,7 @@ exports.adminUpdateRegistration = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Registration',
     entityId: id,
     entityName: `${result?.firstName} ${result?.lastName} (${result?.profileId})`,
@@ -333,7 +333,7 @@ exports.deleteRegistration = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Registration',
     entityId: id,
     entityName: `${oldData?.firstName} ${oldData?.lastName} (${oldData?.profileId})`,

@@ -48,9 +48,9 @@ const createCheckoutSession = async registrationId => {
   const orderId = `${registrationId}-${invoice.id}`;
   const returnUrl = `${config.urls.api}/payment/result?registrationId=${registrationId}&invoiceId=${invoice.id}`;
 
-  // Build NVP POST body (same format as client's proven PHP code)
+  // Build NVP POST body for MEPS Hosted Checkout
   const postData = querystring.stringify({
-    apiOperation: 'CREATE_CHECKOUT_SESSION',
+    apiOperation: 'INITIATE_CHECKOUT',
     apiUsername: `merchant.${meps.merchantId}`,
     apiPassword: meps.apiPassword,
     merchant: meps.merchantId,
@@ -58,7 +58,7 @@ const createCheckoutSession = async registrationId => {
     'interaction.returnUrl': returnUrl,
     'order.id': orderId,
     'order.amount': amount.toFixed(2),
-    'order.currency': meps.currency || 'JOD',
+    'order.currency': meps.currency || 'USD',
   });
 
   const url = `${meps.gatewayUrl}/api/nvp/version/${meps.apiVersion}`;
@@ -85,7 +85,7 @@ const createCheckoutSession = async registrationId => {
     successIndicator: parsed.successIndicator,
     orderId,
     amount,
-    currency: meps.currency || 'JOD',
+    currency: meps.currency || 'USD',
     serialNumber: invoice.serialNumber,
   };
 };

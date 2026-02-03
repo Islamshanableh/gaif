@@ -10,7 +10,7 @@ exports.createTransportationSchedule = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logCreate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'TransportationSchedule',
     entityId: result.id,
     entityName: `${result.fromLocation} to ${result.toLocation}`,
@@ -37,7 +37,7 @@ exports.updateTransportationSchedule = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'TransportationSchedule',
     entityId: id,
     entityName: `${result?.fromLocation || oldData?.fromLocation} to ${result?.toLocation || oldData?.toLocation}`,
@@ -77,7 +77,7 @@ exports.deleteTransportationSchedule = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'TransportationSchedule',
     entityId: id,
     entityName: `${oldData?.fromLocation} to ${oldData?.toLocation}`,

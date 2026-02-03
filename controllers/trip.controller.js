@@ -16,7 +16,7 @@ exports.createTrip = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logCreate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Trip',
     entityId: result.id,
     entityName: result.name,
@@ -43,7 +43,7 @@ exports.updateTrip = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Trip',
     entityId: id,
     entityName: result?.name || oldData?.name,
@@ -78,7 +78,7 @@ exports.deleteTrip = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'Trip',
     entityId: id,
     entityName: oldData?.name,

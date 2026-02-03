@@ -8,7 +8,7 @@ exports.createUser = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logCreate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'User',
     entityId: result.user.id,
     entityName: result.user.email,
@@ -48,7 +48,7 @@ exports.updateUser = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'User',
     entityId: parseInt(id, 10),
     entityName: result?.email || oldData?.email,
@@ -70,7 +70,7 @@ exports.deleteUser = catchAsync(async (req, res) => {
 
   // Audit log
   await auditService.logDelete({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'User',
     entityId: parseInt(id, 10),
     entityName: oldData?.email,
@@ -97,7 +97,7 @@ exports.approveUser = catchAsync(async (req, res) => {
 
   // Audit log (approve is an update action)
   await auditService.logUpdate({
-    userId: req.user.id,
+    userId: req.user.sub.id,
     entityType: 'User',
     entityId: parseInt(id, 10),
     entityName: result?.email || oldData?.email,
