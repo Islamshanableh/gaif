@@ -1171,6 +1171,49 @@ exports.submitRegistration = async id => {
 
 // Delete registration (soft delete)
 exports.deleteRegistration = async id => {
+  // Get registration data before deleting to restore availability
+  const registration = await Registration.findByPk(id);
+  if (!registration) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
+  }
+
+  // Only restore availability if the registration was active
+  if (registration.isActive) {
+    // Restore company available seats (if applicable)
+    if (registration.companyId) {
+      const company = await Company.findByPk(registration.companyId);
+      if (company && company.allowFreeSeats && company.available !== null) {
+        await Company.update(
+          { available: company.available + 1 },
+          { where: { id: registration.companyId } },
+        );
+      }
+    }
+
+    // Restore Amman hotel room availability
+    if (registration.accommodationInAmman && registration.ammanRoomId) {
+      const ammanRoom = await HotelRoom.findByPk(registration.ammanRoomId);
+      if (ammanRoom) {
+        await HotelRoom.update(
+          { available: ammanRoom.available + 1 },
+          { where: { id: registration.ammanRoomId } },
+        );
+      }
+    }
+
+    // Restore Dead Sea hotel room availability
+    if (registration.accommodationInDeadSea && registration.deadSeaRoomId) {
+      const deadSeaRoom = await HotelRoom.findByPk(registration.deadSeaRoomId);
+      if (deadSeaRoom) {
+        await HotelRoom.update(
+          { available: deadSeaRoom.available + 1 },
+          { where: { id: registration.deadSeaRoomId } },
+        );
+      }
+    }
+  }
+
+  // Soft delete the registration
   await Registration.update({ isActive: false }, { where: { id } });
 
   const result = await Registration.findByPk(id);

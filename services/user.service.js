@@ -125,11 +125,13 @@ exports.deleteUserById = async id => {
   const userInfo = await User.findByPk(id);
 
   if (userInfo) {
+    // Use short suffix to avoid exceeding column length limits
+    const suffix = Date.now().toString().slice(-8);
     await User.update(
       {
         isActive: false,
-        email: `${userInfo.email}-${Date.now()}`,
-        mobile: userInfo.mobile ? `${userInfo.mobile}-${Date.now()}` : null,
+        email: `${userInfo.email}-${suffix}`,
+        mobile: userInfo.mobile ? `del-${suffix}` : null,
       },
       { where: { id } },
     );
