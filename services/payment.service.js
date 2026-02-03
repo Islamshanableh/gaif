@@ -49,6 +49,7 @@ const createCheckoutSession = async registrationId => {
   const returnUrl = `${config.urls.api}/payment/result?registrationId=${registrationId}&invoiceId=${invoice.id}`;
 
   // Build NVP POST body for MEPS Hosted Checkout
+  // For MPGS version 67+, all interaction/display settings must be in INITIATE_CHECKOUT
   const postData = querystring.stringify({
     apiOperation: 'INITIATE_CHECKOUT',
     apiUsername: `merchant.${meps.merchantId}`,
@@ -56,9 +57,14 @@ const createCheckoutSession = async registrationId => {
     merchant: meps.merchantId,
     'interaction.operation': 'PURCHASE',
     'interaction.returnUrl': returnUrl,
+    'interaction.merchant.name': 'GAIF 2026',
+    'interaction.displayControl.billingAddress': 'HIDE',
+    'interaction.displayControl.customerEmail': 'HIDE',
+    'interaction.displayControl.shipping': 'HIDE',
     'order.id': orderId,
     'order.amount': amount.toFixed(2),
     'order.currency': meps.currency || 'USD',
+    'order.description': `GAIF 2026 Conference Registration - Invoice ${invoice.serialNumber}`,
   });
 
   const url = `${meps.gatewayUrl}/api/nvp/version/${meps.apiVersion}`;
@@ -85,7 +91,7 @@ const createCheckoutSession = async registrationId => {
     successIndicator: parsed.successIndicator,
     orderId,
     amount,
-    currency: meps.currency || 'USD',
+    currency: meps.currency || 'JOD',
     serialNumber: invoice.serialNumber,
   };
 };

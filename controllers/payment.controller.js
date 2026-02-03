@@ -23,7 +23,8 @@ exports.initiateCheckout = catchAsync(async (req, res) => {
 
   // Return an HTML page that loads the MEPS checkout JS and opens the payment page
   const { meps } = config;
-  const checkoutJsUrl = `${meps.gatewayUrl}/checkout/version/${meps.apiVersion}/checkout.js`;
+  // For MPGS version 63+, use the new static checkout URL
+  const checkoutJsUrl = `${meps.gatewayUrl}/static/checkout/checkout.min.js`;
 
   const html = `
 <!DOCTYPE html>
@@ -73,7 +74,9 @@ exports.initiateCheckout = catchAsync(async (req, res) => {
   <div class="container">
     <h2>GAIF 2026 - Conference Payment</h2>
     <p>Invoice: <strong>${session.serialNumber}</strong></p>
-    <p>Amount: <strong>${session.amount.toFixed(2)} ${session.currency}</strong></p>
+    <p>Amount: <strong>${session.amount.toFixed(2)} ${
+    session.currency
+  }</strong></p>
     <div class="spinner" id="spinner"></div>
     <p id="loading">Redirecting to payment page...</p>
     <p class="error" id="error">An error occurred. Please try again or contact support.</p>
@@ -86,20 +89,11 @@ exports.initiateCheckout = catchAsync(async (req, res) => {
       console.error('Checkout error:', error);
     }
 
+    // For MPGS version 67+, only session object is allowed in configure()
+    // All order/interaction fields must be set via INITIATE_CHECKOUT API
     Checkout.configure({
-      merchant: '${meps.merchantId}',
       session: {
         id: '${session.sessionId}'
-      },
-      interaction: {
-        merchant: {
-          name: 'GAIF 2026'
-        },
-        displayControl: {
-          billingAddress: 'HIDE',
-          customerEmail: 'HIDE',
-          shipping: 'HIDE'
-        }
       }
     });
 
