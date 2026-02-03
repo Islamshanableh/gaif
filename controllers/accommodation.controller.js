@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { accommodationService } = require('../services');
 const { uploadFile } = require('../utils/fileUpload');
+const auditService = require('../services/audit.service');
 
 exports.createAccommodation = catchAsync(async (req, res) => {
   const payload = req?.body;
@@ -19,12 +20,26 @@ exports.createAccommodation = catchAsync(async (req, res) => {
   }
 
   const result = await accommodationService.createAccommodation(payload);
+
+  // Audit log
+  await auditService.logCreate({
+    userId: req.user.id,
+    entityType: 'Accommodation',
+    entityId: result.id,
+    entityName: result.hotelName,
+    newData: result,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 
 exports.updateAccommodation = catchAsync(async (req, res) => {
   const id = req?.query?.id;
   const payload = req?.body;
+
+  // Get old data before update for audit
+  const oldData = await accommodationService.getAccommodationById(id);
 
   if (req.files && req.files.hotelImages) {
     const images = Array.isArray(req.files.hotelImages)
@@ -42,13 +57,39 @@ exports.updateAccommodation = catchAsync(async (req, res) => {
     ...payload,
     id,
   });
+
+  // Audit log
+  await auditService.logUpdate({
+    userId: req.user.id,
+    entityType: 'Accommodation',
+    entityId: parseInt(id, 10),
+    entityName: result?.hotelName || oldData?.hotelName,
+    oldData,
+    newData: result,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 
 exports.deleteAccommodation = catchAsync(async (req, res) => {
   const id = req?.query?.id;
 
+  // Get data before delete for audit
+  const oldData = await accommodationService.getAccommodationById(id);
+
   const result = await accommodationService.deleteAccommodation(id);
+
+  // Audit log
+  await auditService.logDelete({
+    userId: req.user.id,
+    entityType: 'Accommodation',
+    entityId: parseInt(id, 10),
+    entityName: oldData?.hotelName,
+    deletedData: oldData,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 

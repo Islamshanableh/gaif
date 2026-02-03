@@ -5,6 +5,7 @@ module.exports = {
     read: 'readUser',
     manageUsers: 'manageUsers',
     manageCompany: 'manageCompany',
+    auditLogs: 'auditLogs',
   },
   ADMIN: {
     create: 'createUser',
@@ -17,6 +18,7 @@ module.exports = {
     read: 'readUser',
     manageUsers: 'manageUsers',
     manageCompany: 'manageCompany',
+    auditLogs: 'auditLogs',
   },
   REGISTRATION_ADMIN: {
     create: 'createRegistration',

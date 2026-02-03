@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { companyService } = require('../services');
 const { uploadFileToDb } = require('../utils/fileUpload');
+const auditService = require('../services/audit.service');
 
 exports.createCompany = catchAsync(async (req, res) => {
   const payload = req?.body;
@@ -17,12 +18,26 @@ exports.createCompany = catchAsync(async (req, res) => {
   }
 
   const result = await companyService.createCompany(payload);
+
+  // Audit log
+  await auditService.logCreate({
+    userId: req.user.id,
+    entityType: 'Company',
+    entityId: result.id,
+    entityName: result.name,
+    newData: result,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 
 exports.updateCompany = catchAsync(async (req, res) => {
   const id = req?.query?.id;
   const payload = req?.body;
+
+  // Get old data before update for audit
+  const oldData = await companyService.getCompanyById(id);
 
   if (req.files && req.files.logo) {
     const uploadedFile = await uploadFileToDb(
@@ -38,13 +53,39 @@ exports.updateCompany = catchAsync(async (req, res) => {
     ...payload,
     id,
   });
+
+  // Audit log
+  await auditService.logUpdate({
+    userId: req.user.id,
+    entityType: 'Company',
+    entityId: parseInt(id, 10),
+    entityName: result?.name || oldData?.name,
+    oldData,
+    newData: result,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 
 exports.deleteCompany = catchAsync(async (req, res) => {
   const id = req?.query?.id;
 
+  // Get data before delete for audit
+  const oldData = await companyService.getCompanyById(id);
+
   const result = await companyService.deleteCompany(id);
+
+  // Audit log
+  await auditService.logDelete({
+    userId: req.user.id,
+    entityType: 'Company',
+    entityId: parseInt(id, 10),
+    entityName: oldData?.name,
+    deletedData: oldData,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 

@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { registrationService } = require('../services');
 const { uploadFileToDb } = require('../utils/fileUpload');
+const auditService = require('../services/audit.service');
 
 // Create full registration in one API call
 exports.createRegistration = catchAsync(async (req, res) => {
@@ -273,6 +274,9 @@ exports.adminUpdateRegistration = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
   const payload = req?.body;
 
+  // Get old data before update for audit
+  const oldData = await registrationService.getRegistrationById(id);
+
   // Parse JSON fields if they come as strings (for multipart/form-data)
   if (typeof payload.spouse === 'string') {
     payload.spouse = JSON.parse(payload.spouse);
@@ -282,6 +286,18 @@ exports.adminUpdateRegistration = catchAsync(async (req, res) => {
   }
 
   const result = await registrationService.adminUpdateRegistration(id, payload);
+
+  // Audit log
+  await auditService.logUpdate({
+    userId: req.user.id,
+    entityType: 'Registration',
+    entityId: id,
+    entityName: `${result?.firstName} ${result?.lastName} (${result?.profileId})`,
+    oldData,
+    newData: result,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 
@@ -309,7 +325,22 @@ exports.submitRegistration = catchAsync(async (req, res) => {
 // Delete registration
 exports.deleteRegistration = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
+
+  // Get data before delete for audit
+  const oldData = await registrationService.getRegistrationById(id);
+
   const result = await registrationService.deleteRegistration(id);
+
+  // Audit log
+  await auditService.logDelete({
+    userId: req.user.id,
+    entityType: 'Registration',
+    entityId: id,
+    entityName: `${oldData?.firstName} ${oldData?.lastName} (${oldData?.profileId})`,
+    deletedData: oldData,
+    req,
+  });
+
   res.status(httpStatus.OK).send({ result });
 });
 

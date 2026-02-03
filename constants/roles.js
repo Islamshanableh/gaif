@@ -15,6 +15,7 @@ module.exports = {
       permissions.ADMINISTRATOR.update,
       permissions.ADMINISTRATOR.read,
       permissions.ADMINISTRATOR.manageUsers,
+      permissions.ADMINISTRATOR.auditLogs,
     ],
   },
   GAIF_ADMIN: {
@@ -23,6 +24,7 @@ module.exports = {
       permissions.GAIF_ADMIN.update,
       permissions.GAIF_ADMIN.read,
       permissions.GAIF_ADMIN.manageUsers,
+      permissions.GAIF_ADMIN.auditLogs,
     ],
   },
   REGISTRATION_ADMIN: {

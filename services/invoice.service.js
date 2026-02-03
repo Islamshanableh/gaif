@@ -196,24 +196,30 @@ const calculateFees = registration => {
     fees.deadSeaCurrency = registration.deadSeaRoom.currency || 'USD';
   }
 
-  // Convert any JD fees to USD so all line items are in USD
+  // Convert any JD/JOD fees to USD so all line items are in USD
   const rate = INVOICE_CONFIG.exchangeRate; // USD 1 = JD 0.708
   const jdToUsd = val => Math.round((val / rate) * 100) / 100;
+  // Helper to check if currency is Jordanian Dinar (JD or JOD)
+  const isJordanianDinar = currency =>
+    currency === 'JD' ||
+    currency === 'JOD' ||
+    currency === 'jd' ||
+    currency === 'jod';
 
-  // Participation-related fees: convert if in JD
-  if (fees.participationCurrency === 'JD') {
+  // Participation-related fees: convert if in JD/JOD
+  if (isJordanianDinar(fees.participationCurrency)) {
     fees.participationFees = jdToUsd(fees.participationFees);
     fees.participationCurrency = 'USD';
   }
-  if (fees.spouseCurrency === 'JD') {
+  if (isJordanianDinar(fees.spouseCurrency)) {
     fees.spouseFees = jdToUsd(fees.spouseFees);
     fees.spouseCurrency = 'USD';
   }
-  if (fees.tripCurrency === 'JD') {
+  if (isJordanianDinar(fees.tripCurrency)) {
     fees.tripFees = jdToUsd(fees.tripFees);
     fees.tripCurrency = 'USD';
   }
-  if (fees.spouseTripCurrency === 'JD') {
+  if (isJordanianDinar(fees.spouseTripCurrency)) {
     fees.spouseTripFees = jdToUsd(fees.spouseTripFees);
     fees.spouseTripCurrency = 'USD';
   }
@@ -228,15 +234,15 @@ const calculateFees = registration => {
         100,
     ) / 100;
 
-  // Accommodation fees: convert if in JD
-  if (fees.ammanCurrency === 'JD') {
+  // Accommodation fees: convert if in JD/JOD
+  if (isJordanianDinar(fees.ammanCurrency)) {
     fees.ammanAccommodation = jdToUsd(fees.ammanAccommodation);
     fees.ammanService = jdToUsd(fees.ammanService);
     fees.ammanTax = jdToUsd(fees.ammanTax);
     fees.ammanTotal = jdToUsd(fees.ammanTotal);
     fees.ammanCurrency = 'USD';
   }
-  if (fees.deadSeaCurrency === 'JD') {
+  if (isJordanianDinar(fees.deadSeaCurrency)) {
     fees.deadSeaAccommodation = jdToUsd(fees.deadSeaAccommodation);
     fees.deadSeaService = jdToUsd(fees.deadSeaService);
     fees.deadSeaTax = jdToUsd(fees.deadSeaTax);

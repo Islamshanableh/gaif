@@ -1358,9 +1358,83 @@ const RegistrationToken = sequelize.define(
   },
 );
 
+// AuditLog Model (for tracking admin actions)
+const AUDIT_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
+
+const AuditLog = sequelize.define(
+  'AuditLog',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id',
+      },
+    },
+    action: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      validate: {
+        isIn: [AUDIT_ACTIONS],
+      },
+    },
+    entityType: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    entityId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    entityName: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    changes: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      get() {
+        const raw = this.getDataValue('changes');
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return raw;
+        }
+      },
+      set(value) {
+        this.setDataValue('changes', value ? JSON.stringify(value) : null);
+      },
+    },
+    ipAddress: {
+      type: DataTypes.STRING(45),
+      allowNull: true,
+    },
+    userAgent: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'AuditLogs',
+    timestamps: true,
+    updatedAt: false,
+  },
+);
+
 // ============================================================================
 // ASSOCIATIONS
 // ============================================================================
+
+// AuditLog associations
+AuditLog.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(AuditLog, { foreignKey: 'userId', as: 'auditLogs' });
 
 // ParticipationTypeCountry associations (many-to-many)
 ParticipationType.belongsToMany(Country, {
@@ -1589,4 +1663,5 @@ module.exports = {
   RegistrationTrip,
   RegistrationToken,
   Invoice,
+  AuditLog,
 };

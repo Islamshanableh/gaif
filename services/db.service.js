@@ -18,6 +18,7 @@ const {
   File,
   RegistrationToken,
   Invoice,
+  AuditLog,
 } = require('../models');
 
 // Export sequelize instance and all models
@@ -42,4 +43,5 @@ module.exports = {
   File,
   RegistrationToken,
   Invoice,
+  AuditLog,
 };

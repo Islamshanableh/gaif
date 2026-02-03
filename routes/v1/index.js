@@ -14,6 +14,7 @@ const fileRoute = require('./file.route');
 const mfaRoute = require('./mfa.route');
 const userRoute = require('./user.route');
 const paymentRoute = require('./payment.route');
+const auditRoute = require('./audit.route');
 
 const defaultRoutes = [
   {
@@ -63,6 +64,10 @@ const defaultRoutes = [
   {
     path: '/payment',
     route: paymentRoute,
+  },
+  {
+    path: '/audit',
+    route: auditRoute,
   },
 ];
 
