@@ -743,6 +743,55 @@ exports.adminUpdateRegistration = async (id, payload) => {
   const oldAccommodationInAmman = registration.accommodationInAmman;
   const oldAccommodationInDeadSea = registration.accommodationInDeadSea;
   const oldHasSpouse = registration.hasSpouse;
+  const oldCompanyId = registration.companyId;
+
+  // Check if accommodation/company fields are actually changing
+  const isAmmanRoomChanging =
+    payload.ammanRoomId !== undefined && payload.ammanRoomId !== oldAmmanRoomId;
+  const isDeadSeaRoomChanging =
+    payload.deadSeaRoomId !== undefined &&
+    payload.deadSeaRoomId !== oldDeadSeaRoomId;
+  const isCompanyChanging =
+    payload.companyId !== undefined && payload.companyId !== oldCompanyId;
+
+  // Only check availability if the field is actually changing to a new value
+  // Check Amman room availability only if changing to a different room
+  if (isAmmanRoomChanging && payload.ammanRoomId) {
+    const ammanRoom = await HotelRoom.findByPk(payload.ammanRoomId);
+    if (ammanRoom && ammanRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Amman hotel room category',
+      );
+    }
+  }
+
+  // Check Dead Sea room availability only if changing to a different room
+  if (isDeadSeaRoomChanging && payload.deadSeaRoomId) {
+    const deadSeaRoom = await HotelRoom.findByPk(payload.deadSeaRoomId);
+    if (deadSeaRoom && deadSeaRoom.available <= 0) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available rooms for selected Dead Sea hotel room category',
+      );
+    }
+  }
+
+  // Check company available seats only if changing to a different company
+  if (isCompanyChanging && payload.companyId) {
+    const companyData = await Company.findByPk(payload.companyId);
+    if (
+      companyData &&
+      companyData.allowFreeSeats &&
+      companyData.available !== null &&
+      companyData.available <= 0
+    ) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'No available seats for this company',
+      );
+    }
+  }
 
   // Build update data from all possible fields
   const updateData = {};

@@ -3,10 +3,52 @@ const catchAsync = require('../utils/catchAsync');
 const { registrationService } = require('../services');
 const { uploadFileToDb } = require('../utils/fileUpload');
 const auditService = require('../services/audit.service');
+const ApiError = require('../utils/ApiError');
+
+// Helper function to validate uploaded files are not empty
+const validateFileNotEmpty = (file, fieldName) => {
+  if (file && file.size === 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `The file "${fieldName}" is empty. Please upload a valid file.`,
+    );
+  }
+};
 
 // Create full registration in one API call
 exports.createRegistration = catchAsync(async (req, res) => {
   const payload = req?.body;
+
+  // Validate files are not empty before processing
+  if (req.files) {
+    if (req.files.participantPicture) {
+      validateFileNotEmpty(req.files.participantPicture, 'Participant Picture');
+    }
+    if (req.files.passportCopy) {
+      validateFileNotEmpty(req.files.passportCopy, 'Passport Copy');
+    }
+    if (req.files.residency) {
+      validateFileNotEmpty(req.files.residency, 'Residency Document');
+    }
+    if (req.files.visaForm) {
+      validateFileNotEmpty(req.files.visaForm, 'Visa Form');
+    }
+    if (req.files.spousePassportCopy) {
+      validateFileNotEmpty(
+        req.files.spousePassportCopy,
+        'Spouse Passport Copy',
+      );
+    }
+    if (req.files.spouseResidency) {
+      validateFileNotEmpty(
+        req.files.spouseResidency,
+        'Spouse Residency Document',
+      );
+    }
+    if (req.files.spouseVisaForm) {
+      validateFileNotEmpty(req.files.spouseVisaForm, 'Spouse Visa Form');
+    }
+  }
 
   // Handle file uploads - store in database
   if (req.files) {
@@ -155,6 +197,22 @@ exports.createRegistration = catchAsync(async (req, res) => {
 exports.updateRegistration = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
   const payload = req?.body;
+
+  // Validate files are not empty before processing
+  if (req.files) {
+    if (req.files.participantPicture) {
+      validateFileNotEmpty(req.files.participantPicture, 'Participant Picture');
+    }
+    if (req.files.passportCopy) {
+      validateFileNotEmpty(req.files.passportCopy, 'Passport Copy');
+    }
+    if (req.files.residency) {
+      validateFileNotEmpty(req.files.residency, 'Residency Document');
+    }
+    if (req.files.visaForm) {
+      validateFileNotEmpty(req.files.visaForm, 'Visa Form');
+    }
+  }
 
   // Handle file uploads - store in database
   if (req.files) {
@@ -349,6 +407,19 @@ exports.uploadVisaDocuments = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
   const payload = req?.body || {};
 
+  // Validate files are not empty before processing
+  if (req.files) {
+    if (req.files.passportCopy) {
+      validateFileNotEmpty(req.files.passportCopy, 'Passport Copy');
+    }
+    if (req.files.residency) {
+      validateFileNotEmpty(req.files.residency, 'Residency Document');
+    }
+    if (req.files.visaForm) {
+      validateFileNotEmpty(req.files.visaForm, 'Visa Form');
+    }
+  }
+
   if (req.files) {
     if (req.files.passportCopy) {
       const uploadedFile = await uploadFileToDb(
@@ -393,6 +464,19 @@ exports.uploadVisaDocuments = catchAsync(async (req, res) => {
 exports.uploadSpouseVisaDocuments = catchAsync(async (req, res) => {
   const id = parseInt(req?.query?.id, 10);
   const payload = {};
+
+  // Validate files are not empty before processing
+  if (req.files) {
+    if (req.files.passportCopy) {
+      validateFileNotEmpty(req.files.passportCopy, 'Spouse Passport Copy');
+    }
+    if (req.files.residency) {
+      validateFileNotEmpty(req.files.residency, 'Spouse Residency Document');
+    }
+    if (req.files.visaForm) {
+      validateFileNotEmpty(req.files.visaForm, 'Spouse Visa Form');
+    }
+  }
 
   if (req.files) {
     if (req.files.passportCopy) {
