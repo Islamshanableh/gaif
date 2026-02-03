@@ -699,18 +699,21 @@ exports.getRegistrations = async query => {
   });
 
   // Summary stats: total registrations, total spouses, total double rooms
+  // totalWithRooms counts each double room selection separately (Amman + Dead Sea)
   const [summaryResults] = await sequelize.query(
     `SELECT
       COUNT(*) AS "totalRegistrations",
       SUM(CASE WHEN "hasSpouse" = 1 THEN 1 ELSE 0 END) AS "totalSpouses",
-      SUM(CASE WHEN "ammanRoomId" IS NOT NULL OR "deadSeaRoomId" IS NOT NULL THEN 1 ELSE 0 END) AS "totalWithRooms"
+      SUM(CASE WHEN "ammanRoomType" = 'double' THEN 1 ELSE 0 END) +
+      SUM(CASE WHEN "deadSeaRoomType" = 'double' THEN 1 ELSE 0 END) AS "totalWithRooms"
     FROM "Registrations"
     WHERE "isActive" = 1`,
     { raw: true },
   );
 
   const summary = {
-    totalRegistrations: parseInt(summaryResults?.[0]?.totalRegistrations, 10) || 0,
+    totalRegistrations:
+      parseInt(summaryResults?.[0]?.totalRegistrations, 10) || 0,
     totalSpouses: parseInt(summaryResults?.[0]?.totalSpouses, 10) || 0,
     totalWithRooms: parseInt(summaryResults?.[0]?.totalWithRooms, 10) || 0,
   };
