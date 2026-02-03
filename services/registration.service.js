@@ -1401,7 +1401,7 @@ exports.createFullRegistration = async payload => {
 exports.getConfirmedRegistrationForRoommate = async id => {
   const registration = await Registration.findOne({
     where: {
-      id,
+      profileId: id,
       registrationStatus: 'CONFIRMED',
       isActive: true,
     },
