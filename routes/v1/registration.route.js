@@ -30,6 +30,7 @@ router
     registrationController.updateRegistration,
   )
   .delete(
+    auth(routePermissions.ADMINISTRATOR.read),
     validate(registrationValidation.getById),
     registrationController.deleteRegistration,
   );
