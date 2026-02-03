@@ -10,9 +10,9 @@ exports.createUser = catchAsync(async (req, res) => {
   await auditService.logCreate({
     userId: req.user.sub.id,
     entityType: 'User',
-    entityId: result.user.id,
-    entityName: result.user.email,
-    newData: result.user,
+    entityId: result.id,
+    entityName: result.email,
+    newData: result,
     req,
   });
 
