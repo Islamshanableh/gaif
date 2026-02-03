@@ -1235,7 +1235,9 @@ exports.createFullRegistration = async payload => {
   }
 
   // Get the next shared ID for profileId
+  // If there's a spouse, reserve the next ID for them too
   const profileId = await getNextSharedId();
+  const spouseId = payload.hasSpouse && payload.spouse ? profileId + 1 : null;
 
   const transaction = await sequelize.transaction();
 
@@ -1312,9 +1314,8 @@ exports.createFullRegistration = async payload => {
       transaction,
     });
 
-    // Create spouse if provided with next available shared ID
-    if (payload.hasSpouse && payload.spouse) {
-      const spouseId = await getNextSharedId();
+    // Create spouse if provided (spouseId was pre-calculated above)
+    if (payload.hasSpouse && payload.spouse && spouseId) {
       await Spouse.create(
         {
           registrationId: registration.id,
