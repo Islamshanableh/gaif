@@ -1282,6 +1282,41 @@ const Invoice = sequelize.define(
       type: DataTypes.DECIMAL(10, 4),
       allowNull: true,
     },
+    // Payment fields
+    paidAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    paidCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    // Fawaterkom e-invoice fields
+    qrCode: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    fawaterkomInvoiceId: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    fawaterkomStatus: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    // Payment receipt PDF file reference
+    paymentReceiptFileId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Files',
+        key: 'id',
+      },
+    },
   },
   {
     tableName: 'Invoices',
@@ -1637,6 +1672,10 @@ Invoice.belongsTo(Registration, {
 Registration.hasMany(Invoice, {
   foreignKey: 'registrationId',
   as: 'invoices',
+});
+Invoice.belongsTo(File, {
+  foreignKey: 'paymentReceiptFileId',
+  as: 'paymentReceiptFile',
 });
 
 // ============================================================================

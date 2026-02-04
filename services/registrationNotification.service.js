@@ -322,11 +322,110 @@ const handleCompanyDecline = async registration => {
   }
 };
 
+/**
+ * Send payment receipt email to participant after successful payment
+ * @param {Object} registration - Registration data with associations
+ * @param {Object} invoice - Invoice data with payment info and QR code
+ * @returns {Promise}
+ */
+const sendPaymentReceiptEmail = async (registration, invoice) => {
+  try {
+    if (!registration.email) {
+      console.log(
+        'No participant email found for registration:',
+        registration.id,
+      );
+      return;
+    }
+
+    const emailConfig = getEmailConfig();
+
+    // Generate secure tokens for viewing registration and invoice
+    const viewRegistrationToken =
+      await registrationTokenService.generateViewRegistrationToken(
+        registration.id,
+      );
+    const viewInvoiceToken =
+      await registrationTokenService.generateViewInvoiceToken(registration.id);
+
+    // Build secure URLs
+    const viewRegistrationUrl = `https://gaif.vercel.app/display-info?token=${viewRegistrationToken}`;
+    const viewInvoiceUrl = `${emailConfig.apiBaseUrl}/registration/invoice?token=${viewInvoiceToken}`;
+
+    // Load and process template
+    const template = loadTemplate('paymentReceipt');
+    const participantName = `${registration.firstName || ''} ${
+      registration.lastName || ''
+    }`.trim();
+
+    // Format payment date
+    const moment = require('moment');
+    const paymentDate = invoice.paidAt
+      ? moment(invoice.paidAt).format('DD/MM/YYYY HH:mm')
+      : moment().format('DD/MM/YYYY HH:mm');
+
+    // Format paid amount with currency
+    const paidAmount = `${parseFloat(invoice.paidAmount || 0).toFixed(2)} ${
+      invoice.paidCurrency || 'USD'
+    }`;
+
+    const variables = {
+      participantName,
+      invoiceNumber: invoice.serialNumber || '',
+      paidAmount,
+      paymentDate,
+      registrationId: registration.profileId || registration.id,
+      viewRegistrationUrl,
+      viewInvoiceUrl,
+    };
+
+    const html = processTemplate(template, variables);
+
+    // Prepare attachments
+    const attachments = [getEmailHeaderAttachment()];
+
+    // Generate payment receipt PDF with QR code
+    try {
+      const receiptPdf = await invoiceService.generatePaymentReceiptPDF(
+        registration,
+        invoice,
+      );
+      attachments.push({
+        filename: `GAIF_Payment_Receipt_${invoice.serialNumber || registration.id}.pdf`,
+        content: receiptPdf,
+        contentType: 'application/pdf',
+      });
+      console.log(
+        `Payment receipt PDF generated for registration ${registration.id}`,
+      );
+    } catch (pdfError) {
+      console.error('Error generating payment receipt PDF:', pdfError);
+      // Continue without attachment if PDF generation fails
+    }
+
+    // Send email
+    await sendEmailWithAttachment(
+      registration.email,
+      'GAIF 2026 - Payment Receipt',
+      html,
+      attachments,
+    );
+
+    console.log(
+      `Payment receipt email sent to ${registration.email} for registration ${registration.id}`,
+    );
+  } catch (error) {
+    console.error('Error sending payment receipt email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getEmailConfig,
   sendCompanyConfirmationEmail,
   sendRegistrationDeclinedEmail,
   sendRegistrationApprovedEmail,
+  sendPaymentReceiptEmail,
   handleRegistrationComplete,
   handleCompanyConfirm,
   handleCompanyDecline,

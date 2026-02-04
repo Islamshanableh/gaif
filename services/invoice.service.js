@@ -2,8 +2,15 @@
 const PDFDocument = require('pdfkit');
 const moment = require('moment');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const config = require('../config/config');
-const { Invoice } = require('./db.service');
+const {
+  Invoice,
+  Registration,
+  Company,
+  Country,
+  File,
+} = require('./db.service');
 
 // Configuration for invoice
 const INVOICE_CONFIG = {
@@ -15,12 +22,19 @@ const INVOICE_CONFIG = {
   conferenceYear: 2026,
 };
 
-// Template image path
+// Template image paths
 const TEMPLATE_PATH = path.join(
   __dirname,
   '..',
   'templates',
   'invoice-template.jpg',
+);
+
+const PAYMENT_RECEIPT_TEMPLATE_PATH = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'invoicePayment-template.jpg',
 );
 
 /**
@@ -653,6 +667,391 @@ const generateInvoicePDF = async (registration, invoice) => {
   });
 };
 
+/**
+ * Submit invoice to Jordan Fawaterkom e-invoice system after payment
+ * @param {number} invoiceId - Invoice ID
+ * @param {number} paidAmount - Amount paid
+ * @param {string} paidCurrency - Currency used for payment (JOD or USD)
+ * @returns {Promise<Object>} Updated invoice with Fawaterkom response
+ */
+const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
+  const {
+    sendInvoiceToFawaterkom,
+    getFawaterkomConfig,
+  } = require('./jordanEinvoise.service');
+
+  // Get invoice with registration data
+  const invoice = await Invoice.findByPk(invoiceId, {
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [{ model: Country, as: 'country' }],
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  const fawaterkomConfig = getFawaterkomConfig();
+
+  // Fawaterkom always uses JOD (Jordan's e-invoice system)
+  const currency = 'JOD';
+  const total = parseFloat(invoice.totalValueJD) || 0;
+
+  // Prepare invoice data for Fawaterkom
+  const invoiceData = {
+    TransactionNumber: invoice.serialNumber,
+    UUID: uuidv4().toUpperCase(),
+    TransactionDate: new Date().toISOString().split('T')[0],
+    TransactionType: '1', // Standard Invoice
+    PaymentMethod: '012', // Cash (paid online)
+
+    // Company/Supplier info from config
+    TaxNumber: fawaterkomConfig.taxNumber,
+    ActivityNumber: fawaterkomConfig.activityNumber,
+    ClientName: fawaterkomConfig.companyName,
+
+    // Currency based on company country
+    Currency: currency,
+
+    // Amounts in the appropriate currency
+    Total: total,
+    TotalDiscount: parseFloat(invoice.totalDiscount) || 0,
+    TotalTax: parseFloat(invoice.feesTaxAmount) || 0,
+    SpecialTax: 0,
+
+    Note: `GAIF 2026 Conference Registration - ${invoice.registration?.firstName} ${invoice.registration?.lastName}`,
+
+    // Single line item with total
+    Items: [
+      {
+        RowNum: 1,
+        ItemName: 'GAIF 2026 Conference Registration Fees',
+        ItemQty: 1,
+        ItemSalePriceExc: total - (parseFloat(invoice.feesTaxAmount) || 0),
+        ItemDiscExc: parseFloat(invoice.totalDiscount) || 0,
+        ItemTotal: total - (parseFloat(invoice.feesTaxAmount) || 0),
+        ItemTax: parseFloat(invoice.feesTaxAmount) || 0,
+        ItemTaxRate: parseFloat(invoice.feesTaxPercentage) || 16,
+      },
+    ],
+  };
+
+  // Send to Fawaterkom
+  const result = await sendInvoiceToFawaterkom(invoiceData);
+
+  // Update invoice with payment info and Fawaterkom response
+  const updateData = {
+    paidAmount,
+    paidCurrency,
+    paidAt: new Date(),
+  };
+
+  if (result.success) {
+    updateData.fawaterkomInvoiceId = result.data?.EINV_PORTAL_INVOICE_RESULT_UUID || null;
+    updateData.fawaterkomStatus = 'SUBMITTED';
+    updateData.qrCode = result.data?.EINV_QR || null;
+  } else {
+    updateData.fawaterkomStatus = 'FAILED';
+    // eslint-disable-next-line no-console
+    console.error('Fawaterkom submission failed:', result.error);
+  }
+
+  await Invoice.update(updateData, { where: { id: invoiceId } });
+
+  // Return updated invoice
+  let updatedInvoice = await Invoice.findByPk(invoiceId);
+
+  // Generate and save payment receipt PDF to Files table
+  try {
+    // Generate PDF
+    const pdfBuffer = await generatePaymentReceiptPDF(
+      invoice.registration,
+      updatedInvoice,
+    );
+
+    // Generate unique file key
+    const fileKey = `receipt_${invoice.serialNumber}_${uuidv4()}`;
+    const fileName = `GAIF_Payment_Receipt_${invoice.serialNumber}.pdf`;
+
+    // Save PDF to Files table
+    const fileRecord = await File.create({
+      fileKey,
+      fileName,
+      fileType: 'application/pdf',
+      fileSize: pdfBuffer.length,
+      fileContent: pdfBuffer,
+      entityType: 'Invoice',
+      entityId: invoiceId,
+      fieldName: 'paymentReceipt',
+      isActive: true,
+    });
+
+    // Update invoice with file reference
+    await Invoice.update(
+      { paymentReceiptFileId: fileRecord.id },
+      { where: { id: invoiceId } },
+    );
+
+    // Refresh invoice with updated file reference
+    updatedInvoice = await Invoice.findByPk(invoiceId);
+
+    // eslint-disable-next-line no-console
+    console.log(`Payment receipt PDF saved to Files table: ${fileRecord.id}`);
+  } catch (pdfError) {
+    // Log error but don't fail - payment was already successful
+    // eslint-disable-next-line no-console
+    console.error('Error saving payment receipt PDF:', pdfError.message);
+  }
+
+  // Send payment receipt email to the registrant
+  try {
+    const {
+      sendPaymentReceiptEmail,
+    } = require('./registrationNotification.service');
+    await sendPaymentReceiptEmail(invoice.registration, updatedInvoice);
+    // eslint-disable-next-line no-console
+    console.log(
+      `Payment receipt email sent for registration ${invoice.registrationId}`,
+    );
+  } catch (emailError) {
+    // Log error but don't fail - payment was already successful
+    // eslint-disable-next-line no-console
+    console.error('Error sending payment receipt email:', emailError.message);
+  }
+
+  return {
+    invoice: updatedInvoice,
+    fawaterkomResult: result,
+  };
+};
+
+/**
+ * Generate Payment Receipt PDF with QR code
+ * Uses the same template as invoice but includes QR code and payment confirmation
+ * @param {Object} registration - Registration data
+ * @param {Object} invoice - Invoice data with payment info and QR code
+ * @returns {Promise<Buffer>} PDF buffer
+ */
+const generatePaymentReceiptPDF = async (registration, invoice) => {
+  const fees = {
+    participationFees: parseFloat(invoice.participationFees) || 0,
+    spouseFees: parseFloat(invoice.spouseFees) || 0,
+    tripFees: parseFloat(invoice.tripFees) || 0,
+    spouseTripFees: parseFloat(invoice.spouseTripFees) || 0,
+    totalParticipationFees: parseFloat(invoice.totalParticipationFees) || 0,
+    ammanTotal: parseFloat(invoice.ammanTotal) || 0,
+    deadSeaTotal: parseFloat(invoice.deadSeaTotal) || 0,
+    hotelAccommodationTotal: parseFloat(invoice.hotelAccommodationTotal) || 0,
+    totalDiscount: parseFloat(invoice.totalDiscount) || 0,
+    totalValueJD: parseFloat(invoice.totalValueJD) || 0,
+    totalValueUSD: parseFloat(invoice.totalValueUSD) || 0,
+    feesTaxAmount: parseFloat(invoice.feesTaxAmount) || 0,
+    participationCurrency: invoice.participationCurrency || 'USD',
+    spouseCurrency: invoice.spouseCurrency || 'USD',
+    tripCurrency: invoice.tripCurrency || 'USD',
+    spouseTripCurrency: invoice.spouseTripCurrency || 'USD',
+    ammanCurrency: invoice.ammanCurrency || 'USD',
+    deadSeaCurrency: invoice.deadSeaCurrency || 'USD',
+  };
+
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 0,
+        bufferPages: true,
+        info: {
+          Title: `GAIF Payment Receipt - ${registration.id}`,
+          Author: 'GAIF 2026',
+        },
+      });
+
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Add template as background (same as invoice but different image)
+      doc.image(PAYMENT_RECEIPT_TEMPLATE_PATH, 0, 0, {
+        width: 595.28, // A4 width in points
+        height: 841.89, // A4 height in points
+      });
+
+      // Set font color for all text (dark gray)
+      const textColor = '#333333';
+      doc.fillColor(textColor);
+
+      // ============================================================
+      // HEADER SECTION - Same positions as invoice
+      // ============================================================
+      doc.fontSize(10).font('Helvetica');
+
+      // SERIAL NUMBER value
+      doc.text(invoice.serialNumber || '', 40, 130, { width: 200 });
+
+      // TAX NUMBER value
+      const taxNumber = invoice.taxNumber || config.taxNumber;
+      if (taxNumber) {
+        doc.text(`${taxNumber}`, 450, 130, { width: 200 });
+      }
+
+      // PARTICIPANT'S NAME value
+      const participantName = `${registration.firstName || ''} ${
+        registration.middleName || ''
+      } ${registration.lastName || ''}`.trim();
+      doc.text(participantName, 42, 183, { width: 200 });
+
+      // REGISTRATION ID value (center column) — use profileId
+      const registrationDisplayId = registration.profileId || registration.id;
+      doc.text(registrationDisplayId.toString(), 346, 183, { width: 80 });
+
+      // REGISTRATION DATE value (right column)
+      const registrationDate = moment(registration.createdAt).format(
+        'DD/MM/YYYY',
+      );
+      doc.text(registrationDate, 450, 183, { width: 90 });
+
+      // ============================================================
+      // REGISTRATION section (left column) - Fee values
+      // ============================================================
+      const feeValueX = 162;
+      const feeWidth = 70;
+
+      doc.fontSize(9).font('Helvetica');
+
+      // Participation fees — always show value
+      doc.text(
+        formatCurrency(
+          fees.participationFees,
+          fees.participationCurrency || 'USD',
+        ),
+        feeValueX,
+        300,
+        { width: feeWidth, align: 'right' },
+      );
+
+      // Spouse fees
+      doc.text(
+        formatCurrency(fees.spouseFees, fees.spouseCurrency || 'USD'),
+        feeValueX,
+        330,
+        { width: feeWidth, align: 'right' },
+      );
+
+      // Trip fees
+      doc.text(
+        formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
+        feeValueX,
+        360,
+        { width: feeWidth, align: 'right' },
+      );
+
+      // Spouse – Trip fees
+      doc.text(
+        formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
+        feeValueX,
+        391,
+        { width: feeWidth, align: 'right' },
+      );
+
+      // Total Participation fees (tax included in each fee)
+      const partCurrency =
+        fees.participationCurrency ||
+        fees.spouseCurrency ||
+        fees.tripCurrency ||
+        fees.spouseTripCurrency ||
+        'USD';
+      doc.font('Helvetica-Bold');
+      doc.text(
+        formatCurrency(fees.totalParticipationFees, partCurrency),
+        feeValueX,
+        422,
+        {
+          width: feeWidth,
+          align: 'right',
+        },
+      );
+
+      // ============================================================
+      // ACCOMMODATION section (right column)
+      // ============================================================
+      doc.fontSize(9).font('Helvetica');
+
+      const accomValueX = 450;
+      const accomWidth = 70;
+
+      // Single line: combined total of Amman + Dead Sea accommodation
+      const accomCurrency = fees.ammanCurrency || fees.deadSeaCurrency || 'USD';
+      doc.font('Helvetica-Bold');
+      doc.text(
+        formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
+        accomValueX,
+        308,
+        { width: accomWidth, align: 'right' },
+      );
+
+      // ============================================================
+      // TOTAL box values (inside the beige box on left side)
+      // ============================================================
+      const totalValueX = 162;
+      const totalWidth = 70;
+
+      doc.fontSize(9).font('Helvetica');
+
+      // Total Discount (JD)
+      doc.text(formatCurrency(fees.totalDiscount), totalValueX, 525, {
+        width: totalWidth,
+        align: 'right',
+      });
+
+      // Total Value (JD)
+      doc.font('Helvetica-Bold');
+      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 555, {
+        width: totalWidth,
+        align: 'right',
+      });
+
+      // Total Value (USD)
+      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 585, {
+        width: totalWidth,
+        align: 'right',
+      });
+
+      // ============================================================
+      // QR Code (bottom right area)
+      // ============================================================
+      if (invoice.qrCode) {
+        try {
+          // QR code from Fawaterkom is base64 encoded
+          const qrBuffer = Buffer.from(invoice.qrCode, 'base64');
+          doc.image(qrBuffer, 450, 620, {
+            width: 100,
+            height: 100,
+          });
+        } catch (qrError) {
+          // eslint-disable-next-line no-console
+          console.error('Error adding QR code to PDF:', qrError.message);
+        }
+      }
+
+      // Finalize the PDF
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 module.exports = {
   INVOICE_CONFIG,
   calculateFees,
@@ -663,4 +1062,6 @@ module.exports = {
   getInvoiceByRegistrationId,
   getInvoicesByRegistrationId,
   generateInvoicePDF,
+  generatePaymentReceiptPDF,
+  submitToFawaterkom,
 };

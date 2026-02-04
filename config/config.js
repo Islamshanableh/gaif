@@ -124,6 +124,27 @@ const envVarsSchema = Joi.object()
     FEES_TAX_PERCENTAGE: Joi.number()
       .default(16)
       .description('Tax percentage applied to participation fees'),
+
+    // Jordan Fawaterkom E-Invoice
+    FAWATERKOM_API_URL: Joi.string()
+      .default('https://backend.jofotara.gov.jo/core/invoices/')
+      .description('Fawaterkom API URL'),
+    FAWATERKOM_CLIENT_ID: Joi.string()
+      .allow('')
+      .default('')
+      .description('Fawaterkom client ID'),
+    FAWATERKOM_SECRET_KEY: Joi.string()
+      .allow('')
+      .default('')
+      .description('Fawaterkom secret key'),
+    FAWATERKOM_ACTIVITY_NUMBER: Joi.string()
+      .allow('')
+      .default('')
+      .description('Fawaterkom activity number'),
+    FAWATERKOM_COMPANY_NAME: Joi.string()
+      .allow('')
+      .default('Jordan Insurance Federation')
+      .description('Company name for e-invoices'),
   })
   .unknown();
 
@@ -193,6 +214,14 @@ module.exports = {
 
   taxNumber: envVars.TAX_NUMBER,
   feesTaxPercentage: envVars.FEES_TAX_PERCENTAGE,
+
+  fawaterkom: {
+    apiUrl: envVars.FAWATERKOM_API_URL,
+    clientId: envVars.FAWATERKOM_CLIENT_ID,
+    secretKey: envVars.FAWATERKOM_SECRET_KEY,
+    activityNumber: envVars.FAWATERKOM_ACTIVITY_NUMBER,
+    companyName: envVars.FAWATERKOM_COMPANY_NAME,
+  },
 
   urls: {
     frontend: envVars.FRONTEND_URL,

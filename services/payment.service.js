@@ -148,6 +148,7 @@ const retrieveOrder = async orderId => {
 
 /**
  * Verify payment after redirect and update registration payment status
+ * Also submits e-invoice to Jordan Fawaterkom system
  * @param {number} registrationId
  * @param {number} invoiceId
  * @returns {Promise<Object>} Payment verification result
@@ -167,17 +168,43 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
     (orderData['order.status'] === 'CAPTURED' ||
       orderData['order.status'] === 'PURCHASED');
 
+  let fawaterkomResult = null;
+
   if (isPaid) {
+    // Update registration payment status
     await Registration.update(
       { paymentStatus: 'PAID' },
       { where: { id: registrationId } },
     );
+
+    // Get paid amount and currency from order data
+    const paidAmount =
+      parseFloat(orderData['order.amount']) ||
+      parseFloat(invoice.totalValueJD) ||
+      0;
+    const paidCurrency = orderData['order.currency'] || 'JOD';
+
+    // Submit to Jordan Fawaterkom e-invoice system
+    try {
+      const invoiceService = require('./invoice.service');
+      fawaterkomResult = await invoiceService.submitToFawaterkom(
+        invoiceId,
+        paidAmount,
+        paidCurrency,
+      );
+      console.log('Fawaterkom submission completed:', fawaterkomResult.fawaterkomResult?.success);
+    } catch (fawaterkomError) {
+      // Log error but don't fail payment - payment was successful
+      console.error('Fawaterkom submission error:', fawaterkomError.message);
+      fawaterkomResult = { success: false, error: fawaterkomError.message };
+    }
   }
 
   return {
     success: isPaid,
     status: orderData['order.status'] || orderData.result,
     orderId,
+    fawaterkomResult,
   };
 };
 

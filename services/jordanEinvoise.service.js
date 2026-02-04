@@ -1,16 +1,16 @@
 const axios = require('axios');
 const { create } = require('xmlbuilder2');
+const config = require('../config/config');
 
-// Fawaterkom API Configuration (URL is same for all companies)
-const FAWATERKOM_API_URL = 'https://backend.jofotara.gov.jo/core/invoices/';
-
-// Default credentials (fallback for testing only - will be replaced by company credentials)
-const FAWATERKOM_CONFIG = {
-  apiUrl: FAWATERKOM_API_URL,
-  clientId: '9df81f5b-b761-4a7e-b953-273e43183054',
-  secretKey:
-    'Gj5nS9wyYHRadaVffz5VKB4v4wlVWyPhcJvrTD4NHtOA/jVg1tJ47zwLYt3mln/MsUcPrZ0mf1EgRw6hyB3knWAy+rHUZayXjqzi39T3e9cPDSCJlqtemEQzQctYMDiWG0tYGJg5DI11RSR4UF6lYULcqkhUh8bX8qTpNpNOcChkgPok1yOAN4JU8bLOSsehZcliNugtcHrB6dGVdc16OZgGx43609m6kGFygqHLrMrZ/Uio3OGwE5eSYvk9yFi0lJC10JUp18p0iI7NJqyiHw==',
-};
+// Get Fawaterkom config from environment
+const getFawaterkomConfig = () => ({
+  apiUrl: config.fawaterkom.apiUrl,
+  clientId: config.fawaterkom.clientId,
+  secretKey: config.fawaterkom.secretKey,
+  activityNumber: config.fawaterkom.activityNumber,
+  companyName: config.fawaterkom.companyName,
+  taxNumber: config.taxNumber,
+});
 
 /**
  * Generate UBL 2.1 compliant XML for Jordanian e-invoice
@@ -387,18 +387,29 @@ function generateInvoiceXML(invoiceData) {
  */
 async function sendInvoiceToFawaterkom(invoiceData, companyCredentials = null) {
   try {
-    // Use company credentials if provided, otherwise fall back to default config
-    const clientId = companyCredentials?.clientId || FAWATERKOM_CONFIG.clientId;
+    // Get config from environment
+    const fawaterkomConfig = getFawaterkomConfig();
+
+    // Use company credentials if provided, otherwise fall back to env config
+    const clientId = companyCredentials?.clientId || fawaterkomConfig.clientId;
     const secretKey =
-      companyCredentials?.secretKey || FAWATERKOM_CONFIG.secretKey;
+      companyCredentials?.secretKey || fawaterkomConfig.secretKey;
 
     // Merge company data with invoice data (company data as defaults)
     const mergedInvoiceData = {
       ...invoiceData,
-      TaxNumber: invoiceData.TaxNumber || companyCredentials?.taxNumber,
+      TaxNumber:
+        invoiceData.TaxNumber ||
+        companyCredentials?.taxNumber ||
+        fawaterkomConfig.taxNumber,
       ActivityNumber:
-        invoiceData.ActivityNumber || companyCredentials?.activityNumber,
-      ClientName: invoiceData.ClientName || companyCredentials?.companyName,
+        invoiceData.ActivityNumber ||
+        companyCredentials?.activityNumber ||
+        fawaterkomConfig.activityNumber,
+      ClientName:
+        invoiceData.ClientName ||
+        companyCredentials?.companyName ||
+        fawaterkomConfig.companyName,
     };
 
     console.log(
@@ -407,7 +418,7 @@ async function sendInvoiceToFawaterkom(invoiceData, companyCredentials = null) {
     );
     console.log(
       'Using company credentials:',
-      companyCredentials ? 'Yes' : 'No (default)',
+      companyCredentials ? 'Yes' : 'No (env config)',
     );
 
     // Generate XML
@@ -423,7 +434,7 @@ async function sendInvoiceToFawaterkom(invoiceData, companyCredentials = null) {
 
     // Send to API
     console.log('Sending to Fawaterkom API...');
-    const response = await axios.post(FAWATERKOM_API_URL, requestBody, {
+    const response = await axios.post(fawaterkomConfig.apiUrl, requestBody, {
       headers: {
         'Content-Type': 'application/json',
         'Client-Id': clientId,
@@ -889,18 +900,29 @@ async function reverseInvoiceToFawaterkom(
   companyCredentials = null,
 ) {
   try {
-    // Use company credentials if provided, otherwise fall back to default config
-    const clientId = companyCredentials?.clientId || FAWATERKOM_CONFIG.clientId;
+    // Get config from environment
+    const fawaterkomConfig = getFawaterkomConfig();
+
+    // Use company credentials if provided, otherwise fall back to env config
+    const clientId = companyCredentials?.clientId || fawaterkomConfig.clientId;
     const secretKey =
-      companyCredentials?.secretKey || FAWATERKOM_CONFIG.secretKey;
+      companyCredentials?.secretKey || fawaterkomConfig.secretKey;
 
     // Merge company data with reverse invoice data (company data as defaults)
     const mergedReverseData = {
       ...reverseData,
-      TaxNumber: reverseData.TaxNumber || companyCredentials?.taxNumber,
+      TaxNumber:
+        reverseData.TaxNumber ||
+        companyCredentials?.taxNumber ||
+        fawaterkomConfig.taxNumber,
       ActivityNumber:
-        reverseData.ActivityNumber || companyCredentials?.activityNumber,
-      ClientName: reverseData.ClientName || companyCredentials?.companyName,
+        reverseData.ActivityNumber ||
+        companyCredentials?.activityNumber ||
+        fawaterkomConfig.activityNumber,
+      ClientName:
+        reverseData.ClientName ||
+        companyCredentials?.companyName ||
+        fawaterkomConfig.companyName,
     };
 
     console.log(
@@ -913,7 +935,7 @@ async function reverseInvoiceToFawaterkom(
     );
     console.log(
       'Using company credentials:',
-      companyCredentials ? 'Yes' : 'No (default)',
+      companyCredentials ? 'Yes' : 'No (env config)',
     );
 
     // Generate XML for Credit Note
@@ -929,7 +951,7 @@ async function reverseInvoiceToFawaterkom(
 
     // Send to API
     console.log('Sending Reverse Invoice to Fawaterkom API...');
-    const response = await axios.post(FAWATERKOM_API_URL, requestBody, {
+    const response = await axios.post(fawaterkomConfig.apiUrl, requestBody, {
       headers: {
         'Content-Type': 'application/json',
         'Client-Id': clientId,
@@ -956,115 +978,12 @@ async function reverseInvoiceToFawaterkom(
   }
 }
 
-/**
- * Simple example for reversing an invoice
- */
-async function reverseInvoiceExample() {
-  console.log('='.repeat(60));
-  console.log('🔄 Fawaterkom Invoice REVERSAL Example');
-  console.log('='.repeat(60));
-
-  const reverseInvoice = {
-    // New reverse invoice details
-    TransactionNumber: 'REV-2025-001',
-    UUID: 'B1234567-89AB-CDEF-0123-456789ABCDEF',
-    TransactionDate: '2025-12-28 10:00:00',
-
-    // Reference to original invoice being reversed
-    OriginalInvoiceNumber: 'INV-2025-001',
-    OriginalInvoiceUUID: 'A1234567-89AB-CDEF-0123-456789ABCDEF',
-
-    // Payment method and invoice type
-    PaymentMethod: '012', // 012 = Cash
-    InvoiceType: 'general', // 'income', 'general', or 'special'
-
-    // Seller/Supplier info
-    ActivityNumber: '12681580',
-    TaxNumber: '14122219',
-    ClientName: 'شركه الهيثم للمخازن التجاريه',
-
-    // Customer info (optional)
-    CustomerName: '',
-    CustomerId: '',
-    CustomerIdType: 'TN',
-
-    // Amounts (same as original invoice being reversed)
-    Total: 100.0,
-    TotalDiscount: 0.0,
-    TotalTax: 16.0,
-    SpecialTax: 0.0,
-    TaxRate: 16,
-
-    Note: 'إرجاع كامل للفاتورة',
-
-    // Items (same as original invoice)
-    Items: [
-      {
-        RowNum: 1,
-        ItemName: 'Product A - منتج أ',
-        ItemQty: 2.0,
-        ItemSalePriceExc: 50.0,
-        ItemDiscExc: 0.0,
-        ItemTotal: 100.0,
-        ItemTax: 16.0,
-        ItemTaxRate: 16,
-      },
-    ],
-  };
-
-  console.log('\n📋 Reverse Invoice Details:');
-  console.log(`   Reverse Invoice Number: ${reverseInvoice.TransactionNumber}`);
-  console.log(
-    `   Original Invoice Number: ${reverseInvoice.OriginalInvoiceNumber}`,
-  );
-  console.log(`   Date: ${reverseInvoice.TransactionDate}`);
-  console.log(
-    `   Total to Reverse: ${
-      reverseInvoice.Total + reverseInvoice.TotalTax
-    } JOD`,
-  );
-
-  console.log('\n🔄 Generating Reverse Invoice XML...');
-  const xml = generateReverseInvoiceXML(reverseInvoice);
-  console.log('✅ XML generated successfully');
-  console.log(`   Length: ${xml.length} characters`);
-
-  console.log('\n📤 Sending Reverse Invoice to Fawaterkom API...');
-  const result = await reverseInvoiceToFawaterkom(reverseInvoice);
-
-  console.log('\n' + '='.repeat(60));
-  if (result.success) {
-    console.log('✅ SUCCESS! Reverse Invoice submitted successfully');
-    console.log('Response:', JSON.stringify(result.data, null, 2));
-  } else {
-    console.log('❌ FAILED! Could not submit reverse invoice');
-    console.log('Error:', JSON.stringify(result.error, null, 2));
-  }
-  console.log('='.repeat(60) + '\n');
-
-  return result;
-}
-
 // Export functions
 module.exports = {
   generateInvoiceXML,
   sendInvoiceToFawaterkom,
-  FAWATERKOM_CONFIG,
-  // New reverse invoice functions
+  getFawaterkomConfig,
+  // Reverse invoice functions
   generateReverseInvoiceXML,
   reverseInvoiceToFawaterkom,
-  reverseInvoiceExample,
 };
-
-// Run simple example if executed directly
-if (require.main === module) {
-  simpleExample()
-    .then(result => {
-      process.exit(result.success ? 0 : 1);
-    })
-    .catch(err => {
-      console.error('\n💥 Unexpected error:', err.message);
-      console.error(err.stack);
-      process.exit(1);
-    });
-}
