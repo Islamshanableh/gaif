@@ -2,7 +2,7 @@
 const axios = require('axios');
 const querystring = require('querystring');
 const config = require('../config/config');
-const { Invoice, Registration } = require('./db.service');
+const { Invoice, Registration, Company, Country } = require('./db.service');
 
 const { meps } = config;
 
@@ -35,12 +35,37 @@ const createCheckoutSession = async registrationId => {
     throw new Error('No invoice found for this registration');
   }
 
-  const registration = await Registration.findByPk(registrationId);
+  // Get registration with company and country to determine currency
+  const registration = await Registration.findByPk(registrationId, {
+    include: [
+      {
+        model: Company,
+        as: 'company',
+        include: [
+          {
+            model: Country,
+            as: 'country',
+            attributes: ['id', 'name'],
+          },
+        ],
+      },
+    ],
+  });
+
   if (!registration) {
     throw new Error('Registration not found');
   }
 
-  const amount = parseFloat(invoice.totalValueUSD) || 0;
+  // Determine currency based on company's country
+  // If Jordan -> JOD and totalValueJD, otherwise -> USD and totalValueUSD
+  const companyCountry = registration.company?.country?.name?.toLowerCase();
+  const isJordan = companyCountry === 'jordan';
+
+  const currency = isJordan ? 'JOD' : 'USD';
+  const amount = isJordan
+    ? parseFloat(invoice.totalValueJD) || 0
+    : parseFloat(invoice.totalValueUSD) || 0;
+
   if (amount <= 0) {
     throw new Error('Invoice amount must be greater than zero');
   }
@@ -63,7 +88,7 @@ const createCheckoutSession = async registrationId => {
     'interaction.displayControl.shipping': 'HIDE',
     'order.id': orderId,
     'order.amount': amount.toFixed(2),
-    'order.currency': meps.currency || 'USD',
+    'order.currency': currency,
     'order.description': `GAIF 2026 Conference Registration - Invoice ${invoice.serialNumber}`,
   });
 
@@ -91,7 +116,7 @@ const createCheckoutSession = async registrationId => {
     successIndicator: parsed.successIndicator,
     orderId,
     amount,
-    currency: meps.currency || 'JOD',
+    currency,
     serialNumber: invoice.serialNumber,
   };
 };

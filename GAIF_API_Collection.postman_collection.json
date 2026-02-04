@@ -2079,6 +2079,185 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Audit Logs",
+      "description": "Audit log endpoints for tracking admin actions (ADMINISTRATOR and GAIF_ADMIN only)",
+      "item": [
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "logs"],
+              "query": [
+                {"key": "page", "value": "1", "description": "Page number (default: 1)"},
+                {"key": "limit", "value": "50", "description": "Items per page (default: 50)"},
+                {"key": "userId", "value": "", "description": "Filter by user who performed action", "disabled": true},
+                {"key": "action", "value": "", "description": "Filter by action: CREATE, UPDATE, DELETE", "disabled": true},
+                {"key": "entityType", "value": "", "description": "Filter by entity: User, Company, Registration, etc.", "disabled": true},
+                {"key": "entityId", "value": "", "description": "Filter by specific entity ID", "disabled": true},
+                {"key": "startDate", "value": "", "description": "Filter from date (ISO format)", "disabled": true},
+                {"key": "endDate", "value": "", "description": "Filter to date (ISO format)", "disabled": true}
+              ]
+            },
+            "description": "Get audit logs with filters and pagination. Available filters: userId, action (CREATE/UPDATE/DELETE), entityType, entityId, startDate, endDate"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 1,\n      \"action\": \"CREATE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 115,\n      \"entityName\": \"John Doe (P26001)\",\n      \"changes\": \"{\\\"new\\\": {...}}\",\n      \"ipAddress\": \"192.168.1.1\",\n      \"userAgent\": \"Mozilla/5.0...\",\n      \"createdAt\": \"2026-02-03T10:30:00.000Z\",\n      \"user\": {\n        \"id\": 1,\n        \"fullName\": \"Admin User\",\n        \"email\": \"admin@gaif.com\"\n      }\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 50,\n    \"total\": 100,\n    \"totalPages\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Audit Logs - Filter by Action",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs?action=DELETE&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "logs"],
+              "query": [
+                {"key": "action", "value": "DELETE"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"}
+              ]
+            },
+            "description": "Get all DELETE actions from audit logs"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"userId\": 1,\n      \"action\": \"DELETE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 100,\n      \"entityName\": \"Jane Smith (P26010)\",\n      \"changes\": \"{\\\"deleted\\\": {...}}\",\n      \"createdAt\": \"2026-02-03T11:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Audit Logs - Filter by Entity Type",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs?entityType=Registration&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "logs"],
+              "query": [
+                {"key": "entityType", "value": "Registration"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"}
+              ]
+            },
+            "description": "Get all audit logs for Registration entity type"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"action\": \"CREATE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 115,\n      \"entityName\": \"John Doe (P26001)\"\n    },\n    {\n      \"id\": 2,\n      \"action\": \"UPDATE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 115,\n      \"entityName\": \"John Doe (P26001)\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 50,\n    \"totalPages\": 3\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Audit Logs - Filter by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs?startDate=2026-02-01&endDate=2026-02-03&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "logs"],
+              "query": [
+                {"key": "startDate", "value": "2026-02-01"},
+                {"key": "endDate", "value": "2026-02-03"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "50"}
+              ]
+            },
+            "description": "Get audit logs within a specific date range"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [...],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 50,\n    \"total\": 25,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Entity History",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/entity/Registration/115",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "entity", "Registration", "115"]
+            },
+            "description": "Get complete audit history for a specific entity. Shows all CREATE, UPDATE, DELETE actions for that entity."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 1,\n      \"action\": \"CREATE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 115,\n      \"entityName\": \"John Doe (P26001)\",\n      \"changes\": \"{\\\"new\\\": {\\\"firstName\\\": \\\"John\\\", \\\"lastName\\\": \\\"Doe\\\"}}\",\n      \"createdAt\": \"2026-02-01T10:00:00.000Z\",\n      \"user\": {\n        \"fullName\": \"Admin User\",\n        \"email\": \"admin@gaif.com\"\n      }\n    },\n    {\n      \"id\": 3,\n      \"userId\": 1,\n      \"action\": \"UPDATE\",\n      \"entityType\": \"Registration\",\n      \"entityId\": 115,\n      \"entityName\": \"John Doe (P26001)\",\n      \"changes\": \"{\\\"old\\\": {\\\"status\\\": \\\"PENDING\\\"}, \\\"new\\\": {\\\"status\\\": \\\"CONFIRMED\\\"}}\",\n      \"createdAt\": \"2026-02-02T14:30:00.000Z\",\n      \"user\": {\n        \"fullName\": \"Admin User\",\n        \"email\": \"admin@gaif.com\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Entity History",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/entity/User/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "entity", "User", "1"]
+            },
+            "description": "Get complete audit history for a specific User"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 10,\n      \"action\": \"CREATE\",\n      \"entityType\": \"User\",\n      \"entityId\": 1,\n      \"entityName\": \"admin@gaif.com\",\n      \"createdAt\": \"2026-01-15T08:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Company Entity History",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/audit/entity/Company/5",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit", "entity", "Company", "5"]
+            },
+            "description": "Get complete audit history for a specific Company"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 20,\n      \"action\": \"CREATE\",\n      \"entityType\": \"Company\",\n      \"entityId\": 5,\n      \"entityName\": \"Acme Corporation\",\n      \"createdAt\": \"2026-01-20T09:00:00.000Z\"\n    },\n    {\n      \"id\": 25,\n      \"action\": \"UPDATE\",\n      \"entityType\": \"Company\",\n      \"entityId\": 5,\n      \"entityName\": \"Acme Corporation\",\n      \"changes\": \"{\\\"old\\\": {\\\"available\\\": 10}, \\\"new\\\": {\\\"available\\\": 8}}\",\n      \"createdAt\": \"2026-01-25T11:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
