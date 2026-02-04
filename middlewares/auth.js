@@ -27,7 +27,7 @@ const verifyCB =
     }
 
     req.user = user;
-    if (user.sub.role === 'USER') {
+    if (user.sub) {
       const findUser = await getUserById(user.sub.id);
 
       if (!findUser?.isActive) {
