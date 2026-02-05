@@ -694,21 +694,17 @@ exports.getRegistrations = async query => {
   }
 
   // If filtering by profileId, search in both Registration.profileId AND Spouse.spouseId
+  // Use a subquery for Oracle compatibility
   if (profileId) {
-    const spouseIncludeIndex = baseIncludes.findIndex(
-      inc => inc.as === 'spouse',
-    );
-    if (spouseIncludeIndex !== -1) {
-      // Modify spouse include to filter by spouseId (but keep required: false)
-      baseIncludes[spouseIncludeIndex] = {
-        ...baseIncludes[spouseIncludeIndex],
-        required: false,
-      };
-    }
-    // Use Op.and with nested Op.or to search in both profileId and spouse.spouseId
     where[Op.and] = where[Op.and] || [];
     where[Op.and].push({
-      [Op.or]: [{ profileId }, { '$spouse.spouseId$': profileId }],
+      [Op.or]: [
+        { profileId },
+        // Subquery to find registrations that have a spouse with matching spouseId
+        sequelize.literal(
+          `"Registration"."id" IN (SELECT "registrationId" FROM "Spouses" WHERE "spouseId" = ${parseInt(profileId, 10)})`,
+        ),
+      ],
     });
   }
 
