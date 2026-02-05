@@ -165,8 +165,7 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
 
   const isPaid =
     orderData.result === 'SUCCESS' &&
-    (orderData['order.status'] === 'CAPTURED' ||
-      orderData['order.status'] === 'PURCHASED');
+    (orderData.status === 'CAPTURED' || orderData.status === 'PURCHASED');
 
   let fawaterkomResult = null;
 
@@ -192,7 +191,10 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
         paidAmount,
         paidCurrency,
       );
-      console.log('Fawaterkom submission completed:', fawaterkomResult.fawaterkomResult?.success);
+      console.log(
+        'Fawaterkom submission completed:',
+        fawaterkomResult.fawaterkomResult?.success,
+      );
     } catch (fawaterkomError) {
       // Log error but don't fail payment - payment was successful
       console.error('Fawaterkom submission error:', fawaterkomError.message);

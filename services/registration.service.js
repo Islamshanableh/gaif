@@ -626,37 +626,77 @@ exports.getRegistrations = async query => {
     where.profileId = profileId;
   }
 
-  // Filter by name fields
+  // Filter by name fields (case-insensitive for Oracle)
   if (firstName) {
-    where.firstName = { [Op.like]: `%${firstName}%` };
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.firstName')),
+        { [Op.like]: `%${firstName.toUpperCase()}%` },
+      ),
+    );
   }
 
   if (middleName) {
-    where.middleName = { [Op.like]: `%${middleName}%` };
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.middleName')),
+        { [Op.like]: `%${middleName.toUpperCase()}%` },
+      ),
+    );
   }
 
   if (lastName) {
-    where.lastName = { [Op.like]: `%${lastName}%` };
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.lastName')),
+        { [Op.like]: `%${lastName.toUpperCase()}%` },
+      ),
+    );
   }
 
-  // Filter by country (nationality)
-  if (countryId) {
-    where.nationalityId = countryId;
-  }
-
-  // Search by name or email
+  // Search by name or email (case-insensitive for Oracle)
   if (search) {
+    const searchUpper = search.toUpperCase();
     where[Op.or] = [
-      { firstName: { [Op.like]: `%${search}%` } },
-      { lastName: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } },
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.firstName')),
+        { [Op.like]: `%${searchUpper}%` },
+      ),
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.lastName')),
+        { [Op.like]: `%${searchUpper}%` },
+      ),
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('Registration.email')),
+        { [Op.like]: `%${searchUpper}%` },
+      ),
       { mobile: { [Op.like]: `%${search}%` } },
     ];
   }
 
   // Build includes with tokens and invoice
+  // Get base includes and modify company include if countryId filter is applied
+  const baseIncludes = getRegistrationIncludes();
+
+  // If filtering by company's country, modify the company include
+  if (countryId) {
+    const companyIncludeIndex = baseIncludes.findIndex(
+      inc => inc.as === 'company',
+    );
+    if (companyIncludeIndex !== -1) {
+      baseIncludes[companyIncludeIndex] = {
+        ...baseIncludes[companyIncludeIndex],
+        where: { countryId },
+        required: true, // Make it required to filter out registrations without matching company country
+      };
+    }
+  }
+
   const includes = [
-    ...getRegistrationIncludes(),
+    ...baseIncludes,
     {
       model: RegistrationToken,
       as: 'tokens',
@@ -778,17 +818,22 @@ exports.adminUpdateRegistration = async (id, payload) => {
   }
 
   // Check company available seats only if changing to a different company
+  // Need to check for participant + spouse seats
   if (isCompanyChanging && payload.companyId) {
     const companyData = await Company.findByPk(payload.companyId);
+    // Determine if there will be a spouse after update
+    const willHaveSpouse =
+      payload.hasSpouse !== undefined ? payload.hasSpouse : oldHasSpouse;
+    const seatsNeeded = willHaveSpouse ? 2 : 1;
     if (
       companyData &&
       companyData.allowFreeSeats &&
       companyData.available !== null &&
-      companyData.available <= 0
+      companyData.available < seatsNeeded
     ) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'No available seats for this company',
+        `No available seats for this company (need ${seatsNeeded} seat(s))`,
       );
     }
   }
@@ -973,29 +1018,64 @@ exports.adminUpdateRegistration = async (id, payload) => {
       );
     }
 
-    // Company seats: if spouse was removed, increment; if spouse was added, decrement
-    const newHasSpouse = updatedReg.hasSpouse;
-    if (
-      oldHasSpouse &&
-      !newHasSpouse &&
-      updatedReg.company &&
-      updatedReg.company.allowFreeSeats
-    ) {
-      await Company.update(
-        { available: sequelize.literal('"available" + 1') },
-        { where: { id: updatedReg.companyId } },
-      );
-    }
-    if (
-      !oldHasSpouse &&
-      newHasSpouse &&
-      updatedReg.company &&
-      updatedReg.company.allowFreeSeats
-    ) {
-      await Company.update(
-        { available: sequelize.literal('"available" - 1') },
-        { where: { id: updatedReg.companyId } },
-      );
+    // Company seats: handle company CHANGE
+    // When company changes, increment old company seats and decrement new company seats
+    const newCompanyId = updatedReg.companyId;
+    if (oldCompanyId !== newCompanyId) {
+      // Increment old company's available seats (if it was tracking availability)
+      if (oldCompanyId) {
+        const oldCompanyData = await Company.findByPk(oldCompanyId);
+        if (
+          oldCompanyData &&
+          oldCompanyData.allowFreeSeats &&
+          oldCompanyData.available !== null
+        ) {
+          // Increment by 1 (for the participant), plus 1 more if they had a spouse
+          const seatsToRestore = oldHasSpouse ? 2 : 1;
+          await Company.update(
+            {
+              available: sequelize.literal(`"available" + ${seatsToRestore}`),
+            },
+            { where: { id: oldCompanyId } },
+          );
+        }
+      }
+
+      // Decrement new company's available seats (if tracking availability)
+      if (newCompanyId && updatedReg.company?.allowFreeSeats) {
+        // Decrement by 1 (for the participant), plus 1 more if they have a spouse
+        const seatsToTake = updatedReg.hasSpouse ? 2 : 1;
+        await Company.update(
+          { available: sequelize.literal(`"available" - ${seatsToTake}`) },
+          { where: { id: newCompanyId } },
+        );
+      }
+    } else {
+      // Company didn't change - handle spouse changes only
+      // If spouse was removed, increment; if spouse was added, decrement
+      const newHasSpouse = updatedReg.hasSpouse;
+      if (
+        oldHasSpouse &&
+        !newHasSpouse &&
+        updatedReg.company &&
+        updatedReg.company.allowFreeSeats
+      ) {
+        await Company.update(
+          { available: sequelize.literal('"available" + 1') },
+          { where: { id: updatedReg.companyId } },
+        );
+      }
+      if (
+        !oldHasSpouse &&
+        newHasSpouse &&
+        updatedReg.company &&
+        updatedReg.company.allowFreeSeats
+      ) {
+        await Company.update(
+          { available: sequelize.literal('"available" - 1') },
+          { where: { id: updatedReg.companyId } },
+        );
+      }
     }
   }
 
@@ -1053,15 +1133,17 @@ exports.submitRegistration = async id => {
 
   // Check availability before submitting
   // 1. Check company available seats (only if allowFreeSeats is true)
+  // Need 1 seat for participant, plus 1 more if there's a spouse
   if (
     regData.company &&
     regData.company.allowFreeSeats &&
     regData.company.available !== null
   ) {
-    if (regData.company.available <= 0) {
+    const seatsNeeded = regData.hasSpouse ? 2 : 1;
+    if (regData.company.available < seatsNeeded) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'No available seats for this company',
+        `No available seats for this company (need ${seatsNeeded} seat(s))`,
       );
     }
   }
@@ -1127,13 +1209,15 @@ exports.submitRegistration = async id => {
 
   // Decrement available counts after successful submission
   // 1. Decrement company available seats (only if allowFreeSeats is true)
+  // Decrement by 1 for participant, plus 1 more if there's a spouse
   if (
     regData.company &&
     regData.company.allowFreeSeats &&
     regData.company.available !== null
   ) {
+    const seatsToTake = regData.hasSpouse ? 2 : 1;
     await Company.update(
-      { available: sequelize.literal('"available" - 1') },
+      { available: sequelize.literal(`"available" - ${seatsToTake}`) },
       { where: { id: regData.companyId } },
     );
   }
@@ -1180,11 +1264,13 @@ exports.deleteRegistration = async id => {
   // Only restore availability if the registration was active
   if (registration.isActive) {
     // Restore company available seats (if applicable)
+    // Restore 1 for participant, plus 1 more if there was a spouse
     if (registration.companyId) {
       const company = await Company.findByPk(registration.companyId);
       if (company && company.allowFreeSeats && company.available !== null) {
+        const seatsToRestore = registration.hasSpouse ? 2 : 1;
         await Company.update(
-          { available: company.available + 1 },
+          { available: company.available + seatsToRestore },
           { where: { id: registration.companyId } },
         );
       }
@@ -1242,18 +1328,20 @@ exports.createFullRegistration = async payload => {
 
   // Check availability before creating registration
   // 1. Check company available seats (only if allowFreeSeats is true)
+  // Need 1 seat for participant, plus 1 more if there's a spouse
   let companyData = null;
   if (payload.companyId) {
     companyData = await Company.findByPk(payload.companyId);
+    const seatsNeeded = payload.hasSpouse ? 2 : 1;
     if (
       companyData &&
       companyData.allowFreeSeats &&
       companyData.available !== null &&
-      companyData.available <= 0
+      companyData.available < seatsNeeded
     ) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'No available seats for this company',
+        `No available seats for this company (need ${seatsNeeded} seat(s))`,
       );
     }
   }
@@ -1444,9 +1532,11 @@ exports.createFullRegistration = async payload => {
 
     // Decrement available counts
     // 1. Decrement company available seats (only if allowFreeSeats is true)
+    // Decrement by 1 for participant, plus 1 more if there's a spouse
     if (payload.companyId && companyData && companyData.allowFreeSeats) {
+      const seatsToTake = payload.hasSpouse ? 2 : 1;
       await Company.update(
-        { available: sequelize.literal('"available" - 1') },
+        { available: sequelize.literal(`"available" - ${seatsToTake}`) },
         { where: { id: payload.companyId }, transaction },
       );
     }

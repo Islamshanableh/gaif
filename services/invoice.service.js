@@ -707,41 +707,82 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
   const currency = 'JOD';
   const total = parseFloat(invoice.totalValueJD) || 0;
 
-  // Prepare invoice data for Fawaterkom
+  const taxRatePercent = parseFloat(invoice.feesTaxPercentage) || 16;
+  const taxRate = taxRatePercent / 100;
+
+  const totalInclTax = parseFloat(total);
+  const discountInclTax = parseFloat(invoice.totalDiscount) || 0;
+
+  const round = (value, decimals = 9) =>
+    Number(Number(value).toFixed(decimals));
+
+  // Reverse VAT from the final total (what customer pays)
+  const totalExcAfterDiscount = round(totalInclTax / (1 + taxRate));
+
+  // Reverse VAT from discount
+  const discountExc = round(discountInclTax / (1 + taxRate));
+
+  // Original price BEFORE discount (exclusive) = after discount + discount
+  const itemPriceExc = round(totalExcAfterDiscount + discountExc);
+
+  // Tax is calculated on the amount AFTER discount
+  const itemTax = round(totalExcAfterDiscount * taxRate);
+
+  // For Fawaterkom: use document-level discount structure
+  // Total = amount BEFORE discount (exclusive) - this is what TaxExclusiveAmount represents
+  // TotalDiscount = discount (exclusive)
+  // The XML builder calculates: TaxInclusive = Total - Discount + Tax
+  const fawaterkomTotal = itemPriceExc; // Before discount
+  const fawaterkomDiscount = discountExc; // Discount amount
+  const fawaterkomTax = itemTax; // Tax on post-discount amount
+
+  // Buyer name (participant name)
+  const buyerName = `${invoice.registration?.firstName || ''} ${invoice.registration?.lastName || ''}`.trim() || 'N/A';
+
   const invoiceData = {
     TransactionNumber: invoice.serialNumber,
     UUID: uuidv4().toUpperCase(),
     TransactionDate: new Date().toISOString().split('T')[0],
-    TransactionType: '1', // Standard Invoice
-    PaymentMethod: '012', // Cash (paid online)
+    TransactionType: '1',
+    PaymentMethod: '012',
 
-    // Company/Supplier info from config
     TaxNumber: fawaterkomConfig.taxNumber,
     ActivityNumber: fawaterkomConfig.activityNumber,
     ClientName: fawaterkomConfig.companyName,
 
-    // Currency based on company country
+    // Buyer information (participant)
+    BuyerName: buyerName,
+
     Currency: currency,
 
-    // Amounts in the appropriate currency
-    Total: total,
-    TotalDiscount: parseFloat(invoice.totalDiscount) || 0,
-    TotalTax: parseFloat(invoice.feesTaxAmount) || 0,
+    // Fawaterkom totals - using LINE-LEVEL discount
+    // Total = sum of ItemTotal (post line-discount, pre-tax)
+    // TotalDiscount = 0 (discount already in line items)
+    Total: totalExcAfterDiscount, // Post-discount amount (exclusive)
+    TotalDiscount: 0, // No document-level discount (it's in line items)
+    TotalTax: fawaterkomTax, // Tax calculated on post-discount amount
     SpecialTax: 0,
 
     Note: `GAIF 2026 Conference Registration - ${invoice.registration?.firstName} ${invoice.registration?.lastName}`,
 
-    // Single line item with total
     Items: [
       {
         RowNum: 1,
         ItemName: 'GAIF 2026 Conference Registration Fees',
-        ItemQty: 1,
-        ItemSalePriceExc: total - (parseFloat(invoice.feesTaxAmount) || 0),
-        ItemDiscExc: parseFloat(invoice.totalDiscount) || 0,
-        ItemTotal: total - (parseFloat(invoice.feesTaxAmount) || 0),
-        ItemTax: parseFloat(invoice.feesTaxAmount) || 0,
-        ItemTaxRate: parseFloat(invoice.feesTaxPercentage) || 16,
+        ItemQty: 1.0,
+
+        // Original price BEFORE discount (exclusive)
+        ItemSalePriceExc: itemPriceExc,
+
+        // Line-level discount (exclusive)
+        ItemDiscExc: fawaterkomDiscount,
+
+        // Price AFTER discount (exclusive) = ItemSalePriceExc - ItemDiscExc
+        ItemTotal: totalExcAfterDiscount,
+
+        // Tax on post-discount amount
+        ItemTax: fawaterkomTax,
+        ItemTaxRate: taxRatePercent,
       },
     ],
   };
@@ -757,13 +798,17 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
   };
 
   if (result.success) {
-    updateData.fawaterkomInvoiceId = result.data?.EINV_PORTAL_INVOICE_RESULT_UUID || null;
+    updateData.fawaterkomInvoiceId =
+      result.data?.EINV_PORTAL_INVOICE_RESULT_UUID || null;
     updateData.fawaterkomStatus = 'SUBMITTED';
     updateData.qrCode = result.data?.EINV_QR || null;
   } else {
     updateData.fawaterkomStatus = 'FAILED';
     // eslint-disable-next-line no-console
-    console.error('Fawaterkom submission failed:', result.error);
+    console.error(
+      'Fawaterkom submission failed:',
+      JSON.stringify(result.error),
+    );
   }
 
   await Invoice.update(updateData, { where: { id: invoiceId } });

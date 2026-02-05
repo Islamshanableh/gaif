@@ -160,7 +160,7 @@ function generateInvoiceXML(invoiceData) {
   customer
     .ele('cac:PartyLegalEntity')
     .ele('cbc:RegistrationName')
-    .txt('')
+    .txt(invoiceData.BuyerName || 'N/A')
     .up()
     .up();
 
@@ -178,6 +178,11 @@ function generateInvoiceXML(invoiceData) {
   seller.up().up();
 
   // Tax Total for General Tax (VAT)
+  // TaxableAmount = Total - Discount (the amount tax is calculated on)
+  const taxableAmount =
+    parseFloat(invoiceData.Total || 0) -
+    parseFloat(invoiceData.TotalDiscount || 0);
+
   const taxTotal = root.ele('cac:TaxTotal');
   taxTotal
     .ele('cbc:TaxAmount', { currencyID: 'JOD' })
@@ -187,7 +192,7 @@ function generateInvoiceXML(invoiceData) {
   const taxSubtotal = taxTotal.ele('cac:TaxSubtotal');
   taxSubtotal
     .ele('cbc:TaxableAmount', { currencyID: 'JOD' })
-    .txt(parseFloat(invoiceData.Total || 0).toFixed(3))
+    .txt(taxableAmount.toFixed(3))
     .up();
   taxSubtotal
     .ele('cbc:TaxAmount', { currencyID: 'JOD' })
@@ -423,6 +428,8 @@ async function sendInvoiceToFawaterkom(invoiceData, companyCredentials = null) {
 
     // Generate XML
     const xmlString = generateInvoiceXML(mergedInvoiceData);
+
+    console.log('xmlString', xmlString);
 
     // Convert to Base64
     const base64Invoice = Buffer.from(xmlString, 'utf-8').toString('base64');

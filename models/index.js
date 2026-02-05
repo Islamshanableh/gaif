@@ -365,15 +365,15 @@ const Accommodation = sequelize.define(
       allowNull: true,
     },
     stars: {
-      type: DataTypes.STRING(10),
-      allowNull: true,
-    },
-    hotelTax: {
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+    hotelTax: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
     hotelService: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING(500),
       allowNull: true,
     },
     hotelOrder: {
@@ -385,15 +385,15 @@ const Accommodation = sequelize.define(
       allowNull: true,
     },
     distance: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(255),
       allowNull: true,
     },
     time: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(100),
       allowNull: true,
     },
     timeInArabic: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.STRING(100),
       allowNull: true,
     },
     entryDate: {

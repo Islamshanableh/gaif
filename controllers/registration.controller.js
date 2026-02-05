@@ -342,6 +342,12 @@ exports.adminUpdateRegistration = catchAsync(async (req, res) => {
   if (typeof payload.trips === 'string') {
     payload.trips = JSON.parse(payload.trips);
   }
+  if (payload.ammanPartnerProfileId) {
+    payload.ammanRoommateId = parseInt(payload.ammanPartnerProfileId, 10);
+  }
+  if (payload.deadSeaPartnerProfileId) {
+    payload.deadSeaRoommateId = parseInt(payload.deadSeaPartnerProfileId, 10);
+  }
 
   const result = await registrationService.adminUpdateRegistration(id, payload);
 

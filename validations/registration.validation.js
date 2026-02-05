@@ -315,6 +315,7 @@ exports.adminUpdateRegistration = {
       .allow(null)
       .optional(),
     ammanRoommateId: Joi.number().allow(null).optional(),
+    ammanPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
     accommodationInDeadSea: Joi.boolean().optional(),
     deadSeaHotelId: Joi.number().allow(null).optional(),
     deadSeaRoomId: Joi.number().allow(null).optional(),
@@ -325,6 +326,7 @@ exports.adminUpdateRegistration = {
       .allow(null)
       .optional(),
     deadSeaRoommateId: Joi.number().allow(null).optional(),
+    deadSeaPartnerProfileId: Joi.string().max(100).allow('', null).optional(),
     airportPickupOption: Joi.string()
       .valid(...airportPickupOptions)
       .allow(null)
