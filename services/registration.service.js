@@ -621,10 +621,8 @@ exports.getRegistrations = async query => {
     where.paymentStatus = paymentStatus;
   }
 
-  // Filter by profileId
-  if (profileId) {
-    where.profileId = profileId;
-  }
+  // Filter by profileId - search in both Registration.profileId and Spouse.spouseId
+  // This is handled via include below when profileId is provided
 
   // Filter by name fields (case-insensitive for Oracle)
   if (firstName) {
@@ -693,6 +691,25 @@ exports.getRegistrations = async query => {
         required: true, // Make it required to filter out registrations without matching company country
       };
     }
+  }
+
+  // If filtering by profileId, search in both Registration.profileId AND Spouse.spouseId
+  if (profileId) {
+    const spouseIncludeIndex = baseIncludes.findIndex(
+      inc => inc.as === 'spouse',
+    );
+    if (spouseIncludeIndex !== -1) {
+      // Modify spouse include to filter by spouseId (but keep required: false)
+      baseIncludes[spouseIncludeIndex] = {
+        ...baseIncludes[spouseIncludeIndex],
+        required: false,
+      };
+    }
+    // Use Op.and with nested Op.or to search in both profileId and spouse.spouseId
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push({
+      [Op.or]: [{ profileId }, { '$spouse.spouseId$': profileId }],
+    });
   }
 
   const includes = [
@@ -782,7 +799,6 @@ exports.adminUpdateRegistration = async (id, payload) => {
   const oldDeadSeaRoomId = registration.deadSeaRoomId;
   const oldAccommodationInAmman = registration.accommodationInAmman;
   const oldAccommodationInDeadSea = registration.accommodationInDeadSea;
-  const oldHasSpouse = registration.hasSpouse;
   const oldCompanyId = registration.companyId;
 
   // Check if accommodation/company fields are actually changing
@@ -818,22 +834,18 @@ exports.adminUpdateRegistration = async (id, payload) => {
   }
 
   // Check company available seats only if changing to a different company
-  // Need to check for participant + spouse seats
+  // Only count the participant, spouse is not relevant for free seats
   if (isCompanyChanging && payload.companyId) {
     const companyData = await Company.findByPk(payload.companyId);
-    // Determine if there will be a spouse after update
-    const willHaveSpouse =
-      payload.hasSpouse !== undefined ? payload.hasSpouse : oldHasSpouse;
-    const seatsNeeded = willHaveSpouse ? 2 : 1;
     if (
       companyData &&
       companyData.allowFreeSeats &&
       companyData.available !== null &&
-      companyData.available < seatsNeeded
+      companyData.available <= 0
     ) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `No available seats for this company (need ${seatsNeeded} seat(s))`,
+        'No available seats for this company',
       );
     }
   }
@@ -1019,7 +1031,7 @@ exports.adminUpdateRegistration = async (id, payload) => {
     }
 
     // Company seats: handle company CHANGE
-    // When company changes, increment old company seats and decrement new company seats
+    // Only count the participant, spouse is not relevant for free seats
     const newCompanyId = updatedReg.companyId;
     if (oldCompanyId !== newCompanyId) {
       // Increment old company's available seats (if it was tracking availability)
@@ -1030,12 +1042,8 @@ exports.adminUpdateRegistration = async (id, payload) => {
           oldCompanyData.allowFreeSeats &&
           oldCompanyData.available !== null
         ) {
-          // Increment by 1 (for the participant), plus 1 more if they had a spouse
-          const seatsToRestore = oldHasSpouse ? 2 : 1;
           await Company.update(
-            {
-              available: sequelize.literal(`"available" + ${seatsToRestore}`),
-            },
+            { available: sequelize.literal('"available" + 1') },
             { where: { id: oldCompanyId } },
           );
         }
@@ -1043,40 +1051,13 @@ exports.adminUpdateRegistration = async (id, payload) => {
 
       // Decrement new company's available seats (if tracking availability)
       if (newCompanyId && updatedReg.company?.allowFreeSeats) {
-        // Decrement by 1 (for the participant), plus 1 more if they have a spouse
-        const seatsToTake = updatedReg.hasSpouse ? 2 : 1;
         await Company.update(
-          { available: sequelize.literal(`"available" - ${seatsToTake}`) },
+          { available: sequelize.literal('"available" - 1') },
           { where: { id: newCompanyId } },
         );
       }
-    } else {
-      // Company didn't change - handle spouse changes only
-      // If spouse was removed, increment; if spouse was added, decrement
-      const newHasSpouse = updatedReg.hasSpouse;
-      if (
-        oldHasSpouse &&
-        !newHasSpouse &&
-        updatedReg.company &&
-        updatedReg.company.allowFreeSeats
-      ) {
-        await Company.update(
-          { available: sequelize.literal('"available" + 1') },
-          { where: { id: updatedReg.companyId } },
-        );
-      }
-      if (
-        !oldHasSpouse &&
-        newHasSpouse &&
-        updatedReg.company &&
-        updatedReg.company.allowFreeSeats
-      ) {
-        await Company.update(
-          { available: sequelize.literal('"available" - 1') },
-          { where: { id: updatedReg.companyId } },
-        );
-      }
     }
+    // Note: Spouse changes do not affect company available seats
   }
 
   // --- Recalculate invoice if any fee-related fields changed ---
@@ -1133,17 +1114,16 @@ exports.submitRegistration = async id => {
 
   // Check availability before submitting
   // 1. Check company available seats (only if allowFreeSeats is true)
-  // Need 1 seat for participant, plus 1 more if there's a spouse
+  // Only count the participant, spouse is not relevant for free seats
   if (
     regData.company &&
     regData.company.allowFreeSeats &&
     regData.company.available !== null
   ) {
-    const seatsNeeded = regData.hasSpouse ? 2 : 1;
-    if (regData.company.available < seatsNeeded) {
+    if (regData.company.available <= 0) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `No available seats for this company (need ${seatsNeeded} seat(s))`,
+        'No available seats for this company',
       );
     }
   }
@@ -1209,15 +1189,14 @@ exports.submitRegistration = async id => {
 
   // Decrement available counts after successful submission
   // 1. Decrement company available seats (only if allowFreeSeats is true)
-  // Decrement by 1 for participant, plus 1 more if there's a spouse
+  // Only count the participant, spouse is not relevant for free seats
   if (
     regData.company &&
     regData.company.allowFreeSeats &&
     regData.company.available !== null
   ) {
-    const seatsToTake = regData.hasSpouse ? 2 : 1;
     await Company.update(
-      { available: sequelize.literal(`"available" - ${seatsToTake}`) },
+      { available: sequelize.literal('"available" - 1') },
       { where: { id: regData.companyId } },
     );
   }
@@ -1264,13 +1243,12 @@ exports.deleteRegistration = async id => {
   // Only restore availability if the registration was active
   if (registration.isActive) {
     // Restore company available seats (if applicable)
-    // Restore 1 for participant, plus 1 more if there was a spouse
+    // Only count the participant, spouse is not relevant for free seats
     if (registration.companyId) {
       const company = await Company.findByPk(registration.companyId);
       if (company && company.allowFreeSeats && company.available !== null) {
-        const seatsToRestore = registration.hasSpouse ? 2 : 1;
         await Company.update(
-          { available: company.available + seatsToRestore },
+          { available: company.available + 1 },
           { where: { id: registration.companyId } },
         );
       }
@@ -1328,20 +1306,19 @@ exports.createFullRegistration = async payload => {
 
   // Check availability before creating registration
   // 1. Check company available seats (only if allowFreeSeats is true)
-  // Need 1 seat for participant, plus 1 more if there's a spouse
+  // Only count the participant, spouse is not relevant for free seats
   let companyData = null;
   if (payload.companyId) {
     companyData = await Company.findByPk(payload.companyId);
-    const seatsNeeded = payload.hasSpouse ? 2 : 1;
     if (
       companyData &&
       companyData.allowFreeSeats &&
       companyData.available !== null &&
-      companyData.available < seatsNeeded
+      companyData.available <= 0
     ) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `No available seats for this company (need ${seatsNeeded} seat(s))`,
+        'No available seats for this company',
       );
     }
   }
@@ -1532,11 +1509,10 @@ exports.createFullRegistration = async payload => {
 
     // Decrement available counts
     // 1. Decrement company available seats (only if allowFreeSeats is true)
-    // Decrement by 1 for participant, plus 1 more if there's a spouse
+    // Only count the participant, spouse is not relevant for free seats
     if (payload.companyId && companyData && companyData.allowFreeSeats) {
-      const seatsToTake = payload.hasSpouse ? 2 : 1;
       await Company.update(
-        { available: sequelize.literal(`"available" - ${seatsToTake}`) },
+        { available: sequelize.literal('"available" - 1') },
         { where: { id: payload.companyId }, transaction },
       );
     }

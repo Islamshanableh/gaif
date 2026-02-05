@@ -744,7 +744,7 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
     UUID: uuidv4().toUpperCase(),
     TransactionDate: new Date().toISOString().split('T')[0],
     TransactionType: '1',
-    PaymentMethod: '012',
+    PaymentMethod: '022', // 022 = Receivable/Credit (as per client requirement)
 
     TaxNumber: fawaterkomConfig.taxNumber,
     ActivityNumber: fawaterkomConfig.activityNumber,
