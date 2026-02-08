@@ -893,7 +893,8 @@ exports.adminUpdateRegistration = async (id, payload) => {
   }
 
   // Handle spouse update
-  if (payload.spouse !== undefined) {
+  // Also handle case where hasSpouse is set to false without spouse field
+  if (payload.spouse !== undefined || payload.hasSpouse === false) {
     if (payload.hasSpouse && payload.spouse) {
       const spouseFields = [
         'title',
