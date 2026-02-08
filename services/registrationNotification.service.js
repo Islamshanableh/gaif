@@ -247,7 +247,7 @@ const sendRegistrationApprovedEmail = async registration => {
     // Send email with invoice attachment
     await sendEmailWithAttachment(
       registration.email,
-      'GAIF 2026 - Registration Confirmed',
+      'Thank you for your registration.',
       html,
       attachments,
     );
@@ -391,7 +391,9 @@ const sendPaymentReceiptEmail = async (registration, invoice) => {
         invoice,
       );
       attachments.push({
-        filename: `GAIF_Payment_Receipt_${invoice.serialNumber || registration.id}.pdf`,
+        filename: `GAIF_Payment_Receipt_${
+          invoice.serialNumber || registration.id
+        }.pdf`,
         content: receiptPdf,
         contentType: 'application/pdf',
       });

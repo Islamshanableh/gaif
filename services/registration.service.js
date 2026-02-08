@@ -12,7 +12,6 @@ const {
   Accommodation,
   HotelRoom,
   HotelImages,
-  TransportationSchedule,
   File,
   RegistrationToken,
   Invoice,
@@ -75,8 +74,6 @@ const getRegistrationIncludes = () => [
     ],
   },
   { model: HotelRoom, as: 'deadSeaRoom' },
-  { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
-  { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
   // Roommate associations (self-referencing)
   {
     model: Registration,
@@ -457,27 +454,12 @@ exports.updateTransportation = async (id, payload) => {
   await Registration.update(
     {
       needsVenueTransportation: payload.needsVenueTransportation || false,
-      // Legacy fields for backward compatibility
-      transportationToDeadSea: payload.transportationToDeadSea,
-      toDeadSeaScheduleId:
-        payload.transportationToDeadSea === 'BY_COACH'
-          ? payload.toDeadSeaScheduleId
-          : null,
-      transportationFromDeadSea: payload.transportationFromDeadSea,
-      fromDeadSeaScheduleId:
-        payload.transportationFromDeadSea === 'BY_COACH'
-          ? payload.fromDeadSeaScheduleId
-          : null,
+      pickupLocation: payload.pickupLocation || null,
     },
     { where: { id } },
   );
 
-  const result = await Registration.findByPk(id, {
-    include: [
-      { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
-      { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
-    ],
-  });
+  const result = await Registration.findByPk(id);
 
   return result.toJSON();
 };
@@ -887,10 +869,7 @@ exports.adminUpdateRegistration = async (id, payload) => {
     'departureTime',
     'flightDetailsForSpouse',
     'needsVenueTransportation',
-    'transportationToDeadSea',
-    'toDeadSeaScheduleId',
-    'transportationFromDeadSea',
-    'fromDeadSeaScheduleId',
+    'pickupLocation',
     'specialRequest',
     'photographyConsent',
     'needsVisa',
@@ -949,7 +928,24 @@ exports.adminUpdateRegistration = async (id, payload) => {
         });
       }
     } else if (payload.hasSpouse === false) {
+      // Delete the spouse record
       await Spouse.destroy({ where: { registrationId: id } });
+
+      // Clear spouse-related fields on the registration
+      await Registration.update(
+        {
+          flightDetailsForSpouse: false,
+        },
+        { where: { id } },
+      );
+
+      // Delete all spouse trips (forSpouse: true)
+      await RegistrationTrip.destroy({
+        where: {
+          registrationId: id,
+          forSpouse: true,
+        },
+      });
     }
   }
 
@@ -1439,10 +1435,7 @@ exports.createFullRegistration = async payload => {
       departureTime: payload.departureTime,
       flightDetailsForSpouse: payload.flightDetailsForSpouse || false,
       needsVenueTransportation: payload.needsVenueTransportation || false,
-      transportationToDeadSea: payload.transportationToDeadSea,
-      toDeadSeaScheduleId: payload.toDeadSeaScheduleId,
-      transportationFromDeadSea: payload.transportationFromDeadSea,
-      fromDeadSeaScheduleId: payload.fromDeadSeaScheduleId,
+      pickupLocation: payload.pickupLocation || null,
       specialRequest: payload.specialRequest,
       photographyConsent: payload.photographyConsent || false,
       needsVisa: payload.needsVisa || false,

@@ -848,35 +848,12 @@ const Registration = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    // Legacy transportation fields (kept for backward compatibility)
-    transportationToDeadSea: {
+    // Pickup location - where to pick up the participant (AMMAN or DEAD_SEA)
+    pickupLocation: {
       type: DataTypes.STRING(20),
       allowNull: true,
       validate: {
-        isIn: [ENUMS.TransportationType],
-      },
-    },
-    toDeadSeaScheduleId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'TransportationSchedules',
-        key: 'id',
-      },
-    },
-    transportationFromDeadSea: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-      validate: {
-        isIn: [ENUMS.TransportationType],
-      },
-    },
-    fromDeadSeaScheduleId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'TransportationSchedules',
-        key: 'id',
+        isIn: [['AMMAN', 'DEAD_SEA']],
       },
     },
     // Special Request
@@ -1549,14 +1526,6 @@ Registration.belongsTo(HotelRoom, {
   foreignKey: 'deadSeaRoomId',
   as: 'deadSeaRoom',
 });
-Registration.belongsTo(TransportationSchedule, {
-  foreignKey: 'toDeadSeaScheduleId',
-  as: 'toDeadSeaSchedule',
-});
-Registration.belongsTo(TransportationSchedule, {
-  foreignKey: 'fromDeadSeaScheduleId',
-  as: 'fromDeadSeaSchedule',
-});
 
 Company.hasMany(Registration, { foreignKey: 'companyId', as: 'registrations' });
 ParticipationType.hasMany(Registration, {
@@ -1602,15 +1571,6 @@ RegistrationTrip.belongsTo(Registration, {
 });
 RegistrationTrip.belongsTo(Trip, { foreignKey: 'tripId', as: 'trip' });
 
-// TransportationSchedule associations
-TransportationSchedule.hasMany(Registration, {
-  foreignKey: 'toDeadSeaScheduleId',
-  as: 'registrationsToDeadSea',
-});
-TransportationSchedule.hasMany(Registration, {
-  foreignKey: 'fromDeadSeaScheduleId',
-  as: 'registrationsFromDeadSea',
-});
 
 // File associations
 Company.belongsTo(File, {

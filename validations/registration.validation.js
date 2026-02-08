@@ -2,7 +2,6 @@ const Joi = require('joi');
 
 // Enum values
 const airportPickupOptions = ['NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER'];
-const transportationTypes = ['BY_COACH', 'OWN_TRANSPORTATION'];
 
 // Step 1: Registration Type (companyId is now required - company must be created first)
 exports.createRegistrationStep1 = {
@@ -180,25 +179,7 @@ exports.updateRegistrationStep7 = {
 exports.updateRegistrationStep8 = {
   body: Joi.object().keys({
     needsVenueTransportation: Joi.boolean().optional(),
-    // Legacy fields for backward compatibility
-    transportationToDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    toDeadSeaScheduleId: Joi.when('transportationToDeadSea', {
-      is: 'BY_COACH',
-      then: Joi.number().required(),
-      otherwise: Joi.number().allow(null).optional(),
-    }),
-    transportationFromDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    fromDeadSeaScheduleId: Joi.when('transportationFromDeadSea', {
-      is: 'BY_COACH',
-      then: Joi.number().required(),
-      otherwise: Joi.number().allow(null).optional(),
-    }),
+    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),
@@ -341,16 +322,7 @@ exports.adminUpdateRegistration = {
     departureTime: Joi.string().max(10).allow('', null).optional(),
     flightDetailsForSpouse: Joi.boolean().optional(),
     needsVenueTransportation: Joi.boolean().optional(),
-    transportationToDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    toDeadSeaScheduleId: Joi.number().allow(null).optional(),
-    transportationFromDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    fromDeadSeaScheduleId: Joi.number().allow(null).optional(),
+    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
     specialRequest: Joi.string().max(2000).allow('', null).optional(),
     photographyConsent: Joi.boolean().optional(),
     needsVisa: Joi.boolean().optional(),
@@ -446,17 +418,7 @@ exports.createFullRegistration = {
     departureTime: Joi.string().max(10).allow('', null).optional(),
     flightDetailsForSpouse: Joi.boolean().optional(),
     needsVenueTransportation: Joi.boolean().optional(),
-    // Legacy transportation fields (for backward compatibility)
-    transportationToDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    toDeadSeaScheduleId: Joi.number().allow(null).optional(),
-    transportationFromDeadSea: Joi.string()
-      .valid(...transportationTypes)
-      .allow(null)
-      .optional(),
-    fromDeadSeaScheduleId: Joi.number().allow(null).optional(),
+    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
     // Step 6 - Special Request
     specialRequest: Joi.string().max(2000).allow('', null).optional(),
     photographyConsent: Joi.boolean().optional(),

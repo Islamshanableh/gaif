@@ -152,9 +152,6 @@ exports.createRegistration = catchAsync(async (req, res) => {
     payload.deadSeaHotelId = parseInt(payload.deadSeaHotelId, 10);
   if (payload.deadSeaRoomId)
     payload.deadSeaRoomId = parseInt(payload.deadSeaRoomId, 10);
-  if (payload.toDeadSeaScheduleId) {
-    payload.toDeadSeaScheduleId = parseInt(payload.toDeadSeaScheduleId, 10);
-  }
   if (payload.ammanPartnerProfileId) {
     payload.ammanRoommateId = parseInt(payload.ammanPartnerProfileId, 10);
   }
@@ -298,8 +295,8 @@ exports.updateRegistration = catchAsync(async (req, res) => {
 
   // Update transportation (Step 8)
   if (
-    payload.transportationToDeadSea !== undefined ||
-    payload.transportationFromDeadSea !== undefined
+    payload.needsVenueTransportation !== undefined ||
+    payload.pickupLocation !== undefined
   ) {
     result = await registrationService.updateTransportation(id, payload);
   }
