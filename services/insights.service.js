@@ -285,22 +285,85 @@ const getMonthlyRegistrations = async () => {
 };
 
 /**
+ * Get dashboard totals - participants, spouses, paid amounts
+ * @returns {Promise<Object>} Dashboard totals
+ */
+const getDashboardTotals = async () => {
+  // Total Participants (confirmed or submitted registrations)
+  const totalParticipants = await Registration.count({
+    where: {
+      registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+    },
+  });
+
+  // Total Spouses (active spouses with confirmed/submitted registrations)
+  const totalSpouses = await Spouse.count({
+    where: {
+      isActive: true,
+    },
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        where: {
+          registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+        },
+        required: true,
+      },
+    ],
+  });
+
+  // Total Paid in JOD (sum of paidAmount where currency is JD)
+  const paidJOD = await Invoice.findAll({
+    where: {
+      paidAmount: { [Op.gt]: 0 },
+      paidCurrency: 'JD',
+    },
+    attributes: [[sequelize.fn('SUM', sequelize.col('paidAmount')), 'total']],
+    raw: true,
+  });
+
+  // Total Paid in USD (sum of paidAmount where currency is USD)
+  const paidUSD = await Invoice.findAll({
+    where: {
+      paidAmount: { [Op.gt]: 0 },
+      paidCurrency: 'USD',
+    },
+    attributes: [[sequelize.fn('SUM', sequelize.col('paidAmount')), 'total']],
+    raw: true,
+  });
+
+  const totalPaidJOD = parseFloat(paidJOD[0]?.total) || 0;
+  const totalPaidUSD = parseFloat(paidUSD[0]?.total) || 0;
+
+  return {
+    totalParticipants,
+    totalSpouses,
+    totalPaidJOD,
+    totalPaidUSD,
+  };
+};
+
+/**
  * Get all insights combined
  * @returns {Promise<Object>} All insights data
  */
 const getAllInsights = async () => {
-  const [accommodation, visa, payment, registrations] = await Promise.all([
-    getAccommodationInsights(),
-    getVisaInsights(),
-    getPaymentInsights(),
-    getMonthlyRegistrations(),
-  ]);
+  const [accommodation, visa, payment, registrations, totals] =
+    await Promise.all([
+      getAccommodationInsights(),
+      getVisaInsights(),
+      getPaymentInsights(),
+      getMonthlyRegistrations(),
+      getDashboardTotals(),
+    ]);
 
   return {
     accommodation,
     visa,
     payment,
     registrations,
+    totals,
   };
 };
 
@@ -309,5 +372,6 @@ module.exports = {
   getVisaInsights,
   getPaymentInsights,
   getMonthlyRegistrations,
+  getDashboardTotals,
   getAllInsights,
 };

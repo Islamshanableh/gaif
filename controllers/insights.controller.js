@@ -27,10 +27,16 @@ const getMonthlyRegistrations = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const getDashboardTotals = catchAsync(async (req, res) => {
+  const result = await insightsService.getDashboardTotals();
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   getAllInsights,
   getAccommodationInsights,
   getVisaInsights,
   getPaymentInsights,
   getMonthlyRegistrations,
+  getDashboardTotals,
 };

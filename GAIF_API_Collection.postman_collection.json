@@ -2338,21 +2338,39 @@
             "method": "GET",
             "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
             "url": {
-              "raw": "{{baseUrl}}/insights/monthly-registrations?year=2026",
+              "raw": "{{baseUrl}}/insights/registrations",
               "host": ["{{baseUrl}}"],
-              "path": ["insights", "monthly-registrations"],
-              "query": [
-                {"key": "year", "value": "2026", "description": "Year to get statistics for (defaults to current year)"}
-              ]
+              "path": ["insights", "registrations"]
             },
-            "description": "Get number of registrations per month for the specified year"
+            "description": "Get number of registrations per month"
           },
           "response": [
             {
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"year\": 2026,\n  \"data\": [\n    {\"month\": 1, \"monthName\": \"January\", \"count\": 25},\n    {\"month\": 2, \"monthName\": \"February\", \"count\": 42},\n    {\"month\": 3, \"monthName\": \"March\", \"count\": 38},\n    {\"month\": 4, \"monthName\": \"April\", \"count\": 55},\n    {\"month\": 5, \"monthName\": \"May\", \"count\": 70},\n    {\"month\": 6, \"monthName\": \"June\", \"count\": 45}\n  ],\n  \"total\": 275\n}"
+              "body": "{\n  \"monthly\": [\n    {\"month\": \"2026-01\", \"count\": 25},\n    {\"month\": \"2026-02\", \"count\": 42},\n    {\"month\": \"2026-03\", \"count\": 38}\n  ],\n  \"totalRegistrations\": 105\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Dashboard Totals",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights/totals",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "totals"]
+            },
+            "description": "Get dashboard totals: Total Participants, Total Spouses, Total Paid (JOD), Total Paid (USD)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"totalParticipants\": 80,\n  \"totalSpouses\": 16,\n  \"totalPaidJOD\": 25300,\n  \"totalPaidUSD\": 18400\n}"
             }
           ]
         }
