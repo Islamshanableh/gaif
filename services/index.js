@@ -7,7 +7,6 @@ module.exports.accommodationService = require('./accommodation.service');
 module.exports.userService = require('./user.service');
 module.exports.registrationService = require('./registration.service');
 module.exports.tripService = require('./trip.service');
-module.exports.transportationScheduleService = require('./transportationSchedule.service');
 module.exports.fileService = require('./file.service');
 module.exports.registrationTokenService = require('./registrationToken.service');
 module.exports.registrationNotificationService = require('./registrationNotification.service');

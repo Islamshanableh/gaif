@@ -51,7 +51,10 @@ exports.getCompanyList = async payload => {
     where,
     offset,
     limit,
-    order: [['createdAt', 'DESC']],
+    order: [
+      ['order', 'ASC'],
+      ['name', 'ASC'],
+    ],
     include: [
       { model: Country, as: 'country' },
       { model: ParticipationType, as: 'participation' },

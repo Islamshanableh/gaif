@@ -829,6 +829,7 @@
                 {"key": "numberOfFreeSeats", "value": "5", "type": "text"},
                 {"key": "available", "value": "5", "type": "text"},
                 {"key": "allowFreeSeats", "value": "true", "type": "text"},
+                {"key": "order", "value": "1", "type": "text", "description": "Display order for sorting"},
                 {"key": "logo", "type": "file", "src": "/path/to/logo.png", "description": "Company logo"}
               ]
             },
@@ -837,7 +838,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["company"]
             },
-            "description": "Create a new company with optional logo upload"
+            "description": "Create a new company with optional logo upload. The 'order' field is used for sorting companies."
           },
           "response": [
             {
@@ -883,6 +884,7 @@
                 {"key": "name", "value": "Acme Corporation Updated", "type": "text"},
                 {"key": "email", "value": "new-contact@acme.com", "type": "text"},
                 {"key": "numberOfFreeSeats", "value": "10", "type": "text"},
+                {"key": "order", "value": "1", "type": "text", "description": "Display order for sorting"},
                 {"key": "logo", "type": "file", "src": "/path/to/new-logo.png"}
               ]
             },
@@ -892,7 +894,7 @@
               "path": ["company"],
               "query": [{"key": "id", "value": "1"}]
             },
-            "description": "Update company (Admin only)"
+            "description": "Update company (Admin only). The 'order' field is used for sorting companies."
           },
           "response": [
             {
@@ -1073,17 +1075,18 @@
           "name": "Get Trips List",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}", "description": "Required when forAdmin=true"}],
             "url": {
-              "raw": "{{baseUrl}}/trip/list?isActive=true&type=participation",
+              "raw": "{{baseUrl}}/trip/list?isActive=true&type=participation&forAdmin=false",
               "host": ["{{baseUrl}}"],
               "path": ["trip", "list"],
               "query": [
                 {"key": "isActive", "value": "true"},
-                {"key": "type", "value": "participation", "description": "participation or spouse"}
+                {"key": "type", "value": "participation", "description": "participation or spouse"},
+                {"key": "forAdmin", "value": "false", "description": "When true, returns all trips regardless of isActive (admin only)"}
               ]
             },
-            "description": "Get list of trips with optional filters"
+            "description": "Get list of trips with optional filters. Use forAdmin=true to get all trips including inactive ones (requires admin auth)."
           },
           "response": [
             {
@@ -1218,17 +1221,20 @@
           "name": "Get Accommodations List",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}", "description": "Required when forAdmin=true"}
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"stars\": \"5\"\n}"
+              "raw": "{\n  \"stars\": \"5\",\n  \"forAdmin\": false\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation/list",
               "host": ["{{baseUrl}}"],
               "path": ["accommodation", "list"]
             },
-            "description": "Get list of all active accommodations with optional star filter"
+            "description": "Get list of accommodations with optional star filter. Use forAdmin=true to get all accommodations including inactive ones (requires admin auth)."
           },
           "response": [
             {
@@ -2254,6 +2260,277 @@
               "status": "OK",
               "code": 200,
               "body": "{\n  \"data\": [\n    {\n      \"id\": 20,\n      \"action\": \"CREATE\",\n      \"entityType\": \"Company\",\n      \"entityId\": 5,\n      \"entityName\": \"Acme Corporation\",\n      \"createdAt\": \"2026-01-20T09:00:00.000Z\"\n    },\n    {\n      \"id\": 25,\n      \"action\": \"UPDATE\",\n      \"entityType\": \"Company\",\n      \"entityId\": 5,\n      \"entityName\": \"Acme Corporation\",\n      \"changes\": \"{\\\"old\\\": {\\\"available\\\": 10}, \\\"new\\\": {\\\"available\\\": 8}}\",\n      \"createdAt\": \"2026-01-25T11:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Insights",
+      "description": "Dashboard insights and statistics (Admin only)",
+      "item": [
+        {
+          "name": "Get Accommodation Insights",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights/accommodation",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "accommodation"]
+            },
+            "description": "Get accommodation booking statistics for Amman and Dead Sea hotels"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"amman\": {\n    \"totalBookings\": 150,\n    \"byHotel\": [\n      {\"hotelName\": \"Grand Hyatt Amman\", \"bookings\": 80},\n      {\"hotelName\": \"Four Seasons\", \"bookings\": 70}\n    ]\n  },\n  \"deadSea\": {\n    \"totalBookings\": 120,\n    \"byHotel\": [\n      {\"hotelName\": \"Kempinski Dead Sea\", \"bookings\": 65},\n      {\"hotelName\": \"Movenpick Dead Sea\", \"bookings\": 55}\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Visa Insights",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights/visa",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "visa"]
+            },
+            "description": "Get entry visa assistance statistics"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"needVisa\": 85,\n  \"noVisaNeeded\": 215,\n  \"total\": 300\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Insights",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "payment"]
+            },
+            "description": "Get payment method statistics (Online vs System payments)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"online\": {\n    \"count\": 180,\n    \"totalAmount\": 45000.00\n  },\n  \"system\": {\n    \"count\": 50,\n    \"totalAmount\": 12500.00\n  },\n  \"unpaid\": {\n    \"count\": 70,\n    \"totalAmount\": 17500.00\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Monthly Registrations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights/monthly-registrations?year=2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "monthly-registrations"],
+              "query": [
+                {"key": "year", "value": "2026", "description": "Year to get statistics for (defaults to current year)"}
+              ]
+            },
+            "description": "Get number of registrations per month for the specified year"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"year\": 2026,\n  \"data\": [\n    {\"month\": 1, \"monthName\": \"January\", \"count\": 25},\n    {\"month\": 2, \"monthName\": \"February\", \"count\": 42},\n    {\"month\": 3, \"monthName\": \"March\", \"count\": 38},\n    {\"month\": 4, \"monthName\": \"April\", \"count\": 55},\n    {\"month\": 5, \"monthName\": \"May\", \"count\": 70},\n    {\"month\": 6, \"monthName\": \"June\", \"count\": 45}\n  ],\n  \"total\": 275\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Invoice Management",
+      "description": "Invoice management endpoints (Admin only)",
+      "item": [
+        {
+          "name": "Get Invoice List",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/list?page=1&limit=20&balanceFilter=hasBalance",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "list"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "profileId", "value": "1001", "disabled": true, "description": "Filter by profile ID"},
+                {"key": "companyId", "value": "5", "disabled": true, "description": "Filter by company ID"},
+                {"key": "firstName", "value": "John", "disabled": true, "description": "Filter by first name"},
+                {"key": "middleName", "value": "", "disabled": true, "description": "Filter by middle name"},
+                {"key": "lastName", "value": "Doe", "disabled": true, "description": "Filter by last name"},
+                {"key": "dateFrom", "value": "2026-01-01", "disabled": true, "description": "Filter by date from"},
+                {"key": "dateTo", "value": "2026-12-31", "disabled": true, "description": "Filter by date to"},
+                {"key": "balanceFilter", "value": "hasBalance", "description": "all | zero | hasBalance"}
+              ]
+            },
+            "description": "Get paginated list of invoices with filters. Returns the latest invoice per registration."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"invoiceId\": 1,\n      \"serialNumber\": \"G260001\",\n      \"registrationId\": 10,\n      \"profileId\": 1001,\n      \"fullName\": \"John Doe\",\n      \"email\": \"john@example.com\",\n      \"companyName\": \"Acme Corp\",\n      \"totalFees\": 500.00,\n      \"totalDiscount\": 50.00,\n      \"totalPayment\": 450.00,\n      \"paidAmount\": 300.00,\n      \"balance\": 150.00,\n      \"invoiceStatus\": \"ACTIVE\",\n      \"createdAt\": \"2026-01-15T10:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 50,\n    \"totalPages\": 3\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "1"]
+            },
+            "description": "Get detailed invoice by ID with all fee items, discounts, and payment status"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"invoiceId\": 1,\n  \"serialNumber\": \"G260001\",\n  \"registrationId\": 10,\n  \"profileId\": 1001,\n  \"firstName\": \"John\",\n  \"middleName\": \"\",\n  \"lastName\": \"Doe\",\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"companyId\": 5,\n  \"companyName\": \"Acme Corp\",\n  \"companyCountry\": \"Jordan\",\n  \"participationType\": \"VIP Delegate\",\n  \"items\": {\n    \"participation\": {\n      \"fees\": 300.00,\n      \"discount\": 30.00,\n      \"disclosure\": \"Early bird discount\",\n      \"payment\": 270.00,\n      \"paid\": true,\n      \"currency\": \"JD\"\n    },\n    \"spouse\": {\n      \"fees\": 100.00,\n      \"discount\": 0,\n      \"disclosure\": null,\n      \"payment\": 100.00,\n      \"paid\": false,\n      \"currency\": \"JD\"\n    },\n    \"trip\": {\n      \"fees\": 50.00,\n      \"discount\": 10.00,\n      \"disclosure\": \"Group discount\",\n      \"payment\": 40.00,\n      \"paid\": true,\n      \"currency\": \"JD\"\n    },\n    \"spouseTrip\": {\n      \"fees\": 0,\n      \"discount\": 0,\n      \"disclosure\": null,\n      \"payment\": 0,\n      \"paid\": false,\n      \"currency\": \"JD\"\n    },\n    \"amman\": {\n      \"fees\": 120.00,\n      \"discount\": 0,\n      \"disclosure\": null,\n      \"payment\": 120.00,\n      \"paid\": false,\n      \"currency\": \"JD\"\n    },\n    \"deadSea\": {\n      \"fees\": 150.00,\n      \"discount\": 10.00,\n      \"disclosure\": \"Loyalty discount\",\n      \"payment\": 140.00,\n      \"paid\": false,\n      \"currency\": \"JD\"\n    }\n  },\n  \"totalFees\": 720.00,\n  \"totalDiscount\": 50.00,\n  \"totalPayment\": 670.00,\n  \"paidAmount\": 310.00,\n  \"balance\": 360.00,\n  \"paidCurrency\": \"JD\",\n  \"paidAt\": \"2026-01-20T14:30:00.000Z\",\n  \"paymentSource\": \"ONLINE\",\n  \"paymentStatus\": \"PARTIAL\",\n  \"invoiceStatus\": \"ACTIVE\",\n  \"fawaterkomStatus\": \"SENT\",\n  \"qrCode\": \"data:image/png;base64,...\",\n  \"createdAt\": \"2026-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2026-01-20T14:30:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Save Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participationDiscount\": 30,\n  \"participationDisclosure\": \"Early bird discount\",\n  \"spouseDiscount\": 0,\n  \"spouseDisclosure\": null,\n  \"tripDiscount\": 10,\n  \"tripDisclosure\": \"Group discount\",\n  \"spouseTripDiscount\": 0,\n  \"spouseTripDisclosure\": null,\n  \"ammanDiscount\": 0,\n  \"ammanDisclosure\": null,\n  \"deadSeaDiscount\": 10,\n  \"deadSeaDisclosure\": \"Loyalty discount\",\n  \"participationPaid\": true,\n  \"spousePaid\": false,\n  \"tripPaid\": true,\n  \"spouseTripPaid\": false,\n  \"ammanPaid\": false,\n  \"deadSeaPaid\": false,\n  \"sendEmail\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoice/1/save",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "1", "save"]
+            },
+            "description": "Consolidated endpoint to save invoice changes. Handles: update discounts/disclosures, update paid status per item, calculate totals/balance, process Fawaterkom if needed, generate receipt, and send confirmation email."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invoice updated successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"G260001\",\n    \"totalDiscount\": 50.00,\n    \"totalValueJD\": 670.00,\n    \"paidAmount\": 310.00,\n    \"balance\": 360.00,\n    \"invoiceStatus\": \"ACTIVE\"\n  },\n  \"emailSent\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Invoice PDF",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/1/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "1", "pdf"]
+            },
+            "description": "Generate and download invoice PDF"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {"key": "Content-Type", "value": "application/pdf"},
+                {"key": "Content-Disposition", "value": "attachment; filename=invoice_G260001.pdf"}
+              ],
+              "body": "[PDF Binary Data]"
+            }
+          ]
+        },
+        {
+          "name": "Download Receipt PDF",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/1/receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "1", "receipt"]
+            },
+            "description": "Generate and download payment receipt PDF. Only available for paid invoices."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {"key": "Content-Type", "value": "application/pdf"},
+                {"key": "Content-Disposition", "value": "attachment; filename=receipt_G260001.pdf"}
+              ],
+              "body": "[PDF Binary Data]"
+            },
+            {
+              "name": "Not Paid Yet",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"message\": \"Invoice has not been paid yet\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "description": "Payment processing endpoints",
+      "item": [
+        {
+          "name": "Admin Mark as Paid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceId\": 1,\n  \"amount\": 450.00,\n  \"currency\": \"JD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment/admin/mark-paid",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "admin", "mark-paid"]
+            },
+            "description": "Admin endpoint to manually mark an invoice as paid (SYSTEM payment source). Used for cash/check payments received outside the online system."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment recorded successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"G260001\",\n    \"paidAmount\": 450.00,\n    \"paidCurrency\": \"JD\",\n    \"paidAt\": \"2026-01-25T11:30:00.000Z\",\n    \"paymentSource\": \"SYSTEM\",\n    \"balance\": 0\n  }\n}"
             }
           ]
         }

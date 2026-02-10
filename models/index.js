@@ -336,6 +336,11 @@ const Company = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    order: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+    },
   },
   {
     tableName: 'Companies',
@@ -1302,6 +1307,122 @@ const Invoice = sequelize.define(
         isIn: [['ONLINE', 'SYSTEM']],
       },
     },
+    // Discount fields per fee item
+    participationDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    participationDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    spouseDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    spouseDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    tripDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    tripDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    spouseTripDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    spouseTripDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    ammanDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    ammanDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    deadSeaDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    deadSeaDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    // Paid status for each fee item (admin can mark each item as paid)
+    participationPaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    spousePaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    tripPaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    spouseTripPaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    ammanPaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    deadSeaPaid: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    // Balance (totalValueJD - paidAmount), can be negative for overpayment
+    balance: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    // Refund amount (for tracking overpayment/credit to be refunded)
+    refundAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    // Reference to previous invoice (for tracking invoice history)
+    previousInvoiceId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Invoices',
+        key: 'id',
+      },
+    },
+    // Invoice status: ACTIVE, CANCELLED, REVERSED
+    invoiceStatus: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      defaultValue: 'ACTIVE',
+      validate: {
+        isIn: [['ACTIVE', 'CANCELLED', 'REVERSED']],
+      },
+    },
   },
   {
     tableName: 'Invoices',
@@ -1663,7 +1784,6 @@ module.exports = {
   HotelRoom,
   HotelImages,
   Trip,
-  TransportationSchedule,
   Registration,
   Spouse,
   File,

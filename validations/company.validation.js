@@ -12,6 +12,7 @@ exports.createCompany = {
     numberOfFreeSeats: Joi.number().allow(null).optional(),
     available: Joi.number().allow(null).optional(),
     allowFreeSeats: Joi.boolean().optional(),
+    order: Joi.number().allow(null).optional(),
   }),
 };
 
@@ -33,6 +34,7 @@ exports.updateCompany = {
     numberOfFreeSeats: Joi.number().allow(null).optional(),
     available: Joi.number().allow(null).optional(),
     allowFreeSeats: Joi.boolean().optional(),
+    order: Joi.number().allow(null).optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

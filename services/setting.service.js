@@ -7,7 +7,10 @@ exports.getCountries = async search => {
     where.name = { [Op.like]: `%${search}%` };
   }
 
-  const result = await Country.findAll({ where });
+  const result = await Country.findAll({
+    where,
+    order: [['name', 'ASC']],
+  });
 
   return result.map(country => country.toJSON());
 };

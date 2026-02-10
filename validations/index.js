@@ -6,6 +6,6 @@ module.exports.companyValidation = require('./company.validation');
 module.exports.accommodationValidation = require('./accommodation.validation');
 module.exports.registrationValidation = require('./registration.validation');
 module.exports.tripValidation = require('./trip.validation');
-module.exports.transportationScheduleValidation = require('./transportationSchedule.validation');
 module.exports.fileValidation = require('./file.validation');
 module.exports.mfaValidation = require('./mfa.validation');
+module.exports.invoiceValidation = require('./invoice.validation');

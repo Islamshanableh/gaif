@@ -15,7 +15,6 @@ const {
   RegistrationTrip,
   Accommodation,
   HotelRoom,
-  TransportationSchedule,
   File,
 } = require('../services/db.service');
 const { fileService } = require('../services');
@@ -76,8 +75,6 @@ const getFullRegistration = async id => {
         include: [{ model: HotelRoom, as: 'hotelRooms' }],
       },
       { model: HotelRoom, as: 'deadSeaRoom' },
-      { model: TransportationSchedule, as: 'toDeadSeaSchedule' },
-      { model: TransportationSchedule, as: 'fromDeadSeaSchedule' },
       // Roommate associations
       {
         model: Registration,

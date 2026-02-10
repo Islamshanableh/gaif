@@ -4,12 +4,16 @@ const moment = require('moment');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const config = require('../config/config');
+const { Op } = require('sequelize');
 const {
   Invoice,
   Registration,
   Company,
   Country,
   File,
+  Spouse,
+  ParticipationType,
+  sequelize,
 } = require('./db.service');
 
 // Configuration for invoice
@@ -580,21 +584,21 @@ const generateInvoicePDF = async (registration, invoice) => {
         { width: feeWidth, align: 'right' },
       );
 
-      // Trip fees
-      doc.text(
-        formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
-        feeValueX,
-        360,
-        { width: feeWidth, align: 'right' },
-      );
+      // // Trip fees
+      // doc.text(
+      //   formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
+      //   feeValueX,
+      //   360,
+      //   { width: feeWidth, align: 'right' },
+      // );
 
-      // Spouse – Trip fees
-      doc.text(
-        formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
-        feeValueX,
-        391,
-        { width: feeWidth, align: 'right' },
-      );
+      // // Spouse – Trip fees
+      // doc.text(
+      //   formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
+      //   feeValueX,
+      //   391,
+      //   { width: feeWidth, align: 'right' },
+      // );
 
       // Total Participation fees (tax included in each fee)
       const partCurrency =
@@ -607,7 +611,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(fees.totalParticipationFees, partCurrency),
         feeValueX,
-        422,
+        355,
         {
           width: feeWidth,
           align: 'right',
@@ -619,7 +623,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       // ============================================================
       doc.fontSize(9).font('Helvetica');
 
-      const accomValueX = 450;
+      const accomValueX = 162;
       const accomWidth = 70;
 
       // Single line: combined total of Amman + Dead Sea accommodation
@@ -628,7 +632,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
         accomValueX,
-        308,
+        453,
         { width: accomWidth, align: 'right' },
       );
 
@@ -737,7 +741,10 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
   const fawaterkomTax = itemTax; // Tax on post-discount amount
 
   // Buyer name (participant name)
-  const buyerName = `${invoice.registration?.firstName || ''} ${invoice.registration?.lastName || ''}`.trim() || 'N/A';
+  const buyerName =
+    `${invoice.registration?.firstName || ''} ${
+      invoice.registration?.lastName || ''
+    }`.trim() || 'N/A';
 
   const invoiceData = {
     TransactionNumber: invoice.serialNumber,
@@ -994,20 +1001,20 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
       );
 
       // Trip fees
-      doc.text(
-        formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
-        feeValueX,
-        360,
-        { width: feeWidth, align: 'right' },
-      );
+      // doc.text(
+      //   formatCurrency(fees.tripFees, fees.tripCurrency || 'USD'),
+      //   feeValueX,
+      //   360,
+      //   { width: feeWidth, align: 'right' },
+      // );
 
       // Spouse – Trip fees
-      doc.text(
-        formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
-        feeValueX,
-        391,
-        { width: feeWidth, align: 'right' },
-      );
+      // doc.text(
+      //   formatCurrency(fees.spouseTripFees, fees.spouseTripCurrency || 'USD'),
+      //   feeValueX,
+      //   391,
+      //   { width: feeWidth, align: 'right' },
+      // );
 
       // Total Participation fees (tax included in each fee)
       const partCurrency =
@@ -1020,7 +1027,7 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(fees.totalParticipationFees, partCurrency),
         feeValueX,
-        422,
+        355,
         {
           width: feeWidth,
           align: 'right',
@@ -1032,7 +1039,7 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
       // ============================================================
       doc.fontSize(9).font('Helvetica');
 
-      const accomValueX = 450;
+      const accomValueX = 162;
       const accomWidth = 70;
 
       // Single line: combined total of Amman + Dead Sea accommodation
@@ -1041,7 +1048,7 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
       doc.text(
         formatCurrency(fees.hotelAccommodationTotal, accomCurrency),
         accomValueX,
-        308,
+        453,
         { width: accomWidth, align: 'right' },
       );
 
@@ -1097,6 +1104,736 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
   });
 };
 
+/**
+ * Get list of invoices with filters for admin
+ * Returns only the latest invoice per registration
+ * @param {Object} filters - Filter options
+ * @returns {Promise<Object>} Paginated invoice list
+ */
+const getInvoiceList = async (filters = {}) => {
+  const {
+    profileId,
+    companyId,
+    firstName,
+    middleName,
+    lastName,
+    dateFrom,
+    dateTo,
+    balanceFilter, // 'all', 'zero', 'hasBalance'
+    page = 1,
+    limit = 20,
+  } = filters;
+
+  // Build registration where clause
+  const registrationWhere = {
+    registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+  };
+
+  if (profileId) {
+    registrationWhere.profileId = profileId;
+  }
+
+  if (companyId) {
+    registrationWhere.companyId = companyId;
+  }
+
+  if (firstName) {
+    registrationWhere[Op.and] = registrationWhere[Op.and] || [];
+    registrationWhere[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('registration.firstName')),
+        { [Op.like]: `%${firstName.toUpperCase()}%` },
+      ),
+    );
+  }
+
+  if (middleName) {
+    registrationWhere[Op.and] = registrationWhere[Op.and] || [];
+    registrationWhere[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('registration.middleName')),
+        { [Op.like]: `%${middleName.toUpperCase()}%` },
+      ),
+    );
+  }
+
+  if (lastName) {
+    registrationWhere[Op.and] = registrationWhere[Op.and] || [];
+    registrationWhere[Op.and].push(
+      sequelize.where(
+        sequelize.fn('UPPER', sequelize.col('registration.lastName')),
+        { [Op.like]: `%${lastName.toUpperCase()}%` },
+      ),
+    );
+  }
+
+  // Build invoice where clause
+  const invoiceWhere = {
+    invoiceStatus: { [Op.ne]: 'CANCELLED' },
+  };
+
+  if (dateFrom || dateTo) {
+    invoiceWhere.createdAt = {};
+    if (dateFrom) {
+      invoiceWhere.createdAt[Op.gte] = new Date(dateFrom);
+    }
+    if (dateTo) {
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      invoiceWhere.createdAt[Op.lte] = endDate;
+    }
+  }
+
+  // Balance filter
+  if (balanceFilter === 'zero') {
+    invoiceWhere.balance = 0;
+  } else if (balanceFilter === 'hasBalance') {
+    invoiceWhere.balance = { [Op.ne]: 0 };
+  }
+
+  // Get all matching invoices with registration data
+  const offset = (page - 1) * limit;
+
+  // First, get registration IDs that match the filters
+  // Then get the latest invoice for each registration
+  const invoices = await Invoice.findAll({
+    where: invoiceWhere,
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        where: registrationWhere,
+        required: true,
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [{ model: Country, as: 'country' }],
+          },
+          {
+            model: Country,
+            as: 'nationality',
+          },
+          {
+            model: ParticipationType,
+            as: 'participation',
+          },
+          {
+            model: Spouse,
+            as: 'spouse',
+          },
+        ],
+      },
+    ],
+    order: [['createdAt', 'DESC']],
+  });
+
+  // Group by registrationId and keep only the latest invoice
+  const latestInvoicesByRegistration = {};
+  invoices.forEach(invoice => {
+    const regId = invoice.registrationId;
+    if (
+      !latestInvoicesByRegistration[regId] ||
+      invoice.createdAt > latestInvoicesByRegistration[regId].createdAt
+    ) {
+      latestInvoicesByRegistration[regId] = invoice;
+    }
+  });
+
+  const uniqueInvoices = Object.values(latestInvoicesByRegistration);
+
+  // Apply pagination
+  const totalCount = uniqueInvoices.length;
+  const paginatedInvoices = uniqueInvoices.slice(offset, offset + limit);
+
+  // Format response with all fee items
+  const formattedInvoices = paginatedInvoices.map(invoice => {
+    const reg = invoice.registration;
+    return {
+      invoiceId: invoice.id,
+      serialNumber: invoice.serialNumber,
+      registrationId: invoice.registrationId,
+      profileId: reg?.profileId,
+      // Participant info
+      firstName: reg?.firstName,
+      middleName: reg?.middleName,
+      lastName: reg?.lastName,
+      fullName: `${reg?.firstName || ''} ${reg?.middleName || ''} ${
+        reg?.lastName || ''
+      }`.trim(),
+      email: reg?.email,
+      // Company info
+      companyId: reg?.companyId,
+      companyName: reg?.company?.name,
+      companyCountry: reg?.company?.country?.name,
+      // Participation type
+      participationType: reg?.participation?.title,
+      // Fee items with discounts
+      items: {
+        participation: {
+          fees: parseFloat(invoice.participationFees) || 0,
+          discount: parseFloat(invoice.participationDiscount) || 0,
+          disclosure: invoice.participationDisclosure,
+          payment:
+            (parseFloat(invoice.participationFees) || 0) -
+            (parseFloat(invoice.participationDiscount) || 0),
+          currency: invoice.participationCurrency || 'USD',
+        },
+        spouse: {
+          fees: parseFloat(invoice.spouseFees) || 0,
+          discount: parseFloat(invoice.spouseDiscount) || 0,
+          disclosure: invoice.spouseDisclosure,
+          payment:
+            (parseFloat(invoice.spouseFees) || 0) -
+            (parseFloat(invoice.spouseDiscount) || 0),
+          currency: invoice.spouseCurrency || 'USD',
+        },
+        trip: {
+          fees: parseFloat(invoice.tripFees) || 0,
+          discount: parseFloat(invoice.tripDiscount) || 0,
+          disclosure: invoice.tripDisclosure,
+          payment:
+            (parseFloat(invoice.tripFees) || 0) -
+            (parseFloat(invoice.tripDiscount) || 0),
+          currency: invoice.tripCurrency || 'USD',
+        },
+        spouseTrip: {
+          fees: parseFloat(invoice.spouseTripFees) || 0,
+          discount: parseFloat(invoice.spouseTripDiscount) || 0,
+          disclosure: invoice.spouseTripDisclosure,
+          payment:
+            (parseFloat(invoice.spouseTripFees) || 0) -
+            (parseFloat(invoice.spouseTripDiscount) || 0),
+          currency: invoice.spouseTripCurrency || 'USD',
+        },
+        amman: {
+          fees: parseFloat(invoice.ammanTotal) || 0,
+          discount: parseFloat(invoice.ammanDiscount) || 0,
+          disclosure: invoice.ammanDisclosure,
+          payment:
+            (parseFloat(invoice.ammanTotal) || 0) -
+            (parseFloat(invoice.ammanDiscount) || 0),
+          currency: invoice.ammanCurrency || 'USD',
+        },
+        deadSea: {
+          fees: parseFloat(invoice.deadSeaTotal) || 0,
+          discount: parseFloat(invoice.deadSeaDiscount) || 0,
+          disclosure: invoice.deadSeaDisclosure,
+          payment:
+            (parseFloat(invoice.deadSeaTotal) || 0) -
+            (parseFloat(invoice.deadSeaDiscount) || 0),
+          currency: invoice.deadSeaCurrency || 'USD',
+        },
+      },
+      // Totals
+      totalFees: parseFloat(invoice.totalValueJD) || 0,
+      totalDiscount: parseFloat(invoice.totalDiscount) || 0,
+      totalPayment:
+        (parseFloat(invoice.totalValueJD) || 0) -
+        (parseFloat(invoice.totalDiscount) || 0),
+      balance: parseFloat(invoice.balance) || 0,
+      // Payment info
+      paidAmount: parseFloat(invoice.paidAmount) || 0,
+      paidCurrency: invoice.paidCurrency,
+      paidAt: invoice.paidAt,
+      paymentSource: invoice.paymentSource,
+      paymentStatus: reg?.paymentStatus,
+      // Invoice status
+      invoiceStatus: invoice.invoiceStatus,
+      fawaterkomStatus: invoice.fawaterkomStatus,
+      // Dates
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+    };
+  });
+
+  return {
+    invoices: formattedInvoices,
+    pagination: {
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    },
+  };
+};
+
+/**
+ * Get invoice by ID with full details
+ * @param {number} invoiceId - Invoice ID
+ * @returns {Promise<Object>} Invoice with registration details
+ */
+const getInvoiceById = async invoiceId => {
+  const invoice = await Invoice.findByPk(invoiceId, {
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [{ model: Country, as: 'country' }],
+          },
+          { model: Country, as: 'nationality' },
+          { model: ParticipationType, as: 'participation' },
+          { model: Spouse, as: 'spouse' },
+        ],
+      },
+    ],
+  });
+
+  return invoice;
+};
+
+/**
+ * Admin Save Invoice - Consolidated function that handles:
+ * - Update discounts and disclosures for each item
+ * - Update paid status for each item
+ * - Calculate totals and balance
+ * - Process Fawaterkom if needed (for newly paid items or if already paid and changed)
+ * - Generate receipt
+ * - Send confirmation email
+ * @param {number} invoiceId - Invoice ID
+ * @param {Object} data - All invoice update data
+ * @returns {Promise<Object>} Result with updated invoice and status
+ */
+const adminSaveInvoice = async (invoiceId, data) => {
+  const {
+    // Discounts
+    participationDiscount = 0,
+    participationDisclosure,
+    spouseDiscount = 0,
+    spouseDisclosure,
+    tripDiscount = 0,
+    tripDisclosure,
+    spouseTripDiscount = 0,
+    spouseTripDisclosure,
+    ammanDiscount = 0,
+    ammanDisclosure,
+    deadSeaDiscount = 0,
+    deadSeaDisclosure,
+    // Paid status for each item
+    participationPaid = false,
+    spousePaid = false,
+    tripPaid = false,
+    spouseTripPaid = false,
+    ammanPaid = false,
+    deadSeaPaid = false,
+    // Options
+    sendEmail = false,
+  } = data;
+
+  // Get current invoice with registration
+  const currentInvoice = await getInvoiceById(invoiceId);
+  if (!currentInvoice) {
+    throw new Error('Invoice not found');
+  }
+
+  const registration = currentInvoice.registration;
+  if (!registration) {
+    throw new Error('Registration not found for this invoice');
+  }
+
+  // Check previous paid states to detect changes
+  const wasPreviouslyPaid = currentInvoice.paidAt !== null;
+  const previousPaidItems = {
+    participation: currentInvoice.participationPaid || false,
+    spouse: currentInvoice.spousePaid || false,
+    trip: currentInvoice.tripPaid || false,
+    spouseTrip: currentInvoice.spouseTripPaid || false,
+    amman: currentInvoice.ammanPaid || false,
+    deadSea: currentInvoice.deadSeaPaid || false,
+  };
+
+  // Calculate amounts after discount for each item
+  const participationAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.participationFees) || 0) -
+      parseFloat(participationDiscount),
+  );
+  const spouseAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.spouseFees) || 0) - parseFloat(spouseDiscount),
+  );
+  const tripAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.tripFees) || 0) - parseFloat(tripDiscount),
+  );
+  const spouseTripAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.spouseTripFees) || 0) -
+      parseFloat(spouseTripDiscount),
+  );
+  const ammanAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.ammanTotal) || 0) - parseFloat(ammanDiscount),
+  );
+  const deadSeaAmount = Math.max(
+    0,
+    (parseFloat(currentInvoice.deadSeaTotal) || 0) -
+      parseFloat(deadSeaDiscount),
+  );
+
+  // Calculate total discount
+  const totalDiscountAmount =
+    parseFloat(participationDiscount) +
+    parseFloat(spouseDiscount) +
+    parseFloat(tripDiscount) +
+    parseFloat(spouseTripDiscount) +
+    parseFloat(ammanDiscount) +
+    parseFloat(deadSeaDiscount);
+
+  // Calculate total fees (original amounts)
+  const totalFees =
+    (parseFloat(currentInvoice.participationFees) || 0) +
+    (parseFloat(currentInvoice.spouseFees) || 0) +
+    (parseFloat(currentInvoice.tripFees) || 0) +
+    (parseFloat(currentInvoice.spouseTripFees) || 0) +
+    (parseFloat(currentInvoice.ammanTotal) || 0) +
+    (parseFloat(currentInvoice.deadSeaTotal) || 0);
+
+  // Calculate paid amount (sum of items marked as paid, after discounts)
+  const paidAmount =
+    (participationPaid ? participationAmount : 0) +
+    (spousePaid ? spouseAmount : 0) +
+    (tripPaid ? tripAmount : 0) +
+    (spouseTripPaid ? spouseTripAmount : 0) +
+    (ammanPaid ? ammanAmount : 0) +
+    (deadSeaPaid ? deadSeaAmount : 0);
+
+  // Calculate new total after discount
+  const newTotalJD = Math.max(0, totalFees - totalDiscountAmount);
+  const newTotalUSD =
+    Math.round((newTotalJD / INVOICE_CONFIG.exchangeRate) * 100) / 100;
+
+  // Calculate balance (total after discount - paid amount)
+  const balance = newTotalJD - paidAmount;
+
+  // Check if all items are paid
+  const allItemsPaid =
+    participationPaid &&
+    spousePaid &&
+    tripPaid &&
+    spouseTripPaid &&
+    ammanPaid &&
+    deadSeaPaid;
+
+  // Check if any item is newly paid
+  const hasNewlyPaidItems =
+    (participationPaid && !previousPaidItems.participation) ||
+    (spousePaid && !previousPaidItems.spouse) ||
+    (tripPaid && !previousPaidItems.trip) ||
+    (spouseTripPaid && !previousPaidItems.spouseTrip) ||
+    (ammanPaid && !previousPaidItems.amman) ||
+    (deadSeaPaid && !previousPaidItems.deadSea);
+
+  // Determine if we need to process Fawaterkom
+  const needsFawaterkom = hasNewlyPaidItems && paidAmount > 0;
+  const needsReverse = wasPreviouslyPaid && hasNewlyPaidItems;
+
+  // Update invoice with all data
+  const updateData = {
+    // Discounts
+    participationDiscount,
+    participationDisclosure,
+    spouseDiscount,
+    spouseDisclosure,
+    tripDiscount,
+    tripDisclosure,
+    spouseTripDiscount,
+    spouseTripDisclosure,
+    ammanDiscount,
+    ammanDisclosure,
+    deadSeaDiscount,
+    deadSeaDisclosure,
+    // Paid status
+    participationPaid,
+    spousePaid,
+    tripPaid,
+    spouseTripPaid,
+    ammanPaid,
+    deadSeaPaid,
+    // Totals
+    totalDiscount: totalDiscountAmount,
+    totalValueJD: newTotalJD,
+    totalValueUSD: newTotalUSD,
+    paidAmount,
+    balance,
+  };
+
+  // If any payment is made, mark payment details
+  if (paidAmount > 0) {
+    updateData.paidCurrency = 'JOD';
+    updateData.paymentSource = 'SYSTEM';
+    if (!currentInvoice.paidAt) {
+      updateData.paidAt = new Date();
+    }
+  }
+
+  await Invoice.update(updateData, { where: { id: invoiceId } });
+
+  // Update registration payment status based on balance
+  if (balance === 0 && paidAmount > 0) {
+    await Registration.update(
+      { paymentStatus: 'PAID' },
+      { where: { id: registration.id } },
+    );
+  } else if (paidAmount > 0 && balance > 0) {
+    await Registration.update(
+      { paymentStatus: 'PARTIAL' },
+      { where: { id: registration.id } },
+    );
+  }
+
+  let fawaterkomResult = null;
+  let reverseResult = null;
+
+  // Handle Fawaterkom submission
+  if (needsFawaterkom) {
+    // If was previously paid and needs changes, reverse first
+    if (needsReverse && currentInvoice.fawaterkomInvoiceId) {
+      try {
+        reverseResult = await reverseFawaterkomInvoice(invoiceId);
+      } catch (reverseError) {
+        console.error(
+          'Error reversing Fawaterkom invoice:',
+          reverseError.message,
+        );
+      }
+    }
+
+    // Submit new/updated invoice to Fawaterkom
+    try {
+      fawaterkomResult = await submitToFawaterkom(invoiceId, paidAmount, 'JOD');
+    } catch (fawaterkomError) {
+      console.error('Error submitting to Fawaterkom:', fawaterkomError.message);
+      fawaterkomResult = { success: false, error: fawaterkomError.message };
+    }
+  }
+
+  // Get updated invoice
+  const updatedInvoice = await getInvoiceById(invoiceId);
+
+  // Send confirmation email if requested and payment was made
+  let emailResult = null;
+  if (sendEmail && paidAmount > 0) {
+    try {
+      emailResult = await sendInvoiceConfirmationEmail(invoiceId);
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError.message);
+      emailResult = { success: false, error: emailError.message };
+    }
+  }
+
+  return {
+    success: true,
+    invoice: updatedInvoice,
+    summary: {
+      totalFees,
+      totalDiscount: totalDiscountAmount,
+      totalAfterDiscount: newTotalJD,
+      paidAmount,
+      balance,
+      allItemsPaid,
+    },
+    items: {
+      participation: {
+        fees: parseFloat(currentInvoice.participationFees) || 0,
+        discount: parseFloat(participationDiscount),
+        payment: participationAmount,
+        paid: participationPaid,
+      },
+      spouse: {
+        fees: parseFloat(currentInvoice.spouseFees) || 0,
+        discount: parseFloat(spouseDiscount),
+        payment: spouseAmount,
+        paid: spousePaid,
+      },
+      trip: {
+        fees: parseFloat(currentInvoice.tripFees) || 0,
+        discount: parseFloat(tripDiscount),
+        payment: tripAmount,
+        paid: tripPaid,
+      },
+      spouseTrip: {
+        fees: parseFloat(currentInvoice.spouseTripFees) || 0,
+        discount: parseFloat(spouseTripDiscount),
+        payment: spouseTripAmount,
+        paid: spouseTripPaid,
+      },
+      amman: {
+        fees: parseFloat(currentInvoice.ammanTotal) || 0,
+        discount: parseFloat(ammanDiscount),
+        payment: ammanAmount,
+        paid: ammanPaid,
+      },
+      deadSea: {
+        fees: parseFloat(currentInvoice.deadSeaTotal) || 0,
+        discount: parseFloat(deadSeaDiscount),
+        payment: deadSeaAmount,
+        paid: deadSeaPaid,
+      },
+    },
+    fawaterkomResult,
+    reverseResult,
+    emailResult,
+  };
+};
+
+/**
+ * Process payment for invoice with discount (for unpaid invoices)
+ * Creates new invoice, marks as paid, submits to Fawaterkom
+ * @param {number} invoiceId - Invoice ID
+ * @returns {Promise<Object>} Result with receipt and QR code
+ */
+const processInvoicePayment = async invoiceId => {
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  const registration = invoice.registration;
+  if (!registration) {
+    throw new Error('Registration not found');
+  }
+
+  // Get the amount after discount
+  const totalAfterDiscount = parseFloat(invoice.totalValueJD) || 0;
+
+  // Update registration payment status
+  await Registration.update(
+    { paymentStatus: 'PAID' },
+    { where: { id: registration.id } },
+  );
+
+  // Submit to Fawaterkom and generate receipt
+  const result = await submitToFawaterkom(invoiceId, totalAfterDiscount, 'JOD');
+
+  // Update invoice with payment source
+  await Invoice.update(
+    {
+      paymentSource: 'SYSTEM',
+      balance: 0,
+    },
+    { where: { id: invoiceId } },
+  );
+
+  return {
+    success: true,
+    invoice: result.invoice,
+    fawaterkomResult: result.fawaterkomResult,
+  };
+};
+
+/**
+ * Reverse Fawaterkom invoice and create credit note
+ * For when user has already paid and gets a discount (refund scenario)
+ * @param {number} invoiceId - Original invoice ID
+ * @returns {Promise<Object>} Result with reversal status
+ */
+const reverseFawaterkomInvoice = async invoiceId => {
+  const {
+    reverseInvoiceToFawaterkom,
+    getFawaterkomConfig,
+  } = require('./jordanEinvoise.service');
+
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  if (!invoice.fawaterkomInvoiceId) {
+    // No Fawaterkom invoice to reverse
+    return { success: false, message: 'No Fawaterkom invoice to reverse' };
+  }
+
+  const fawaterkomConfig = getFawaterkomConfig();
+
+  // Calculate the refund amount (balance will be negative if overpaid)
+  const refundAmount =
+    parseFloat(invoice.balance) < 0 ? Math.abs(parseFloat(invoice.balance)) : 0;
+
+  if (refundAmount <= 0) {
+    return { success: false, message: 'No refund amount to process' };
+  }
+
+  // Create credit note data
+  const creditNoteData = {
+    TransactionNumber: `CN-${invoice.serialNumber}`,
+    UUID: uuidv4().toUpperCase(),
+    TransactionDate: new Date().toISOString().split('T')[0],
+    TransactionType: '2', // Credit note
+    PaymentMethod: '022',
+    OriginalInvoiceUUID: invoice.fawaterkomInvoiceId,
+
+    TaxNumber: fawaterkomConfig.taxNumber,
+    ActivityNumber: fawaterkomConfig.activityNumber,
+    ClientName: fawaterkomConfig.companyName,
+
+    BuyerName:
+      `${invoice.registration?.firstName || ''} ${
+        invoice.registration?.lastName || ''
+      }`.trim() || 'N/A',
+
+    Currency: 'JOD',
+    Total: refundAmount,
+    TotalDiscount: 0,
+    TotalTax: 0,
+    SpecialTax: 0,
+
+    Note: `Credit note for GAIF 2026 - Discount applied to Invoice ${invoice.serialNumber}`,
+
+    Items: [
+      {
+        RowNum: 1,
+        ItemName: 'Discount/Refund',
+        ItemQty: 1.0,
+        ItemSalePriceExc: refundAmount,
+        ItemDiscExc: 0,
+        ItemTotal: refundAmount,
+        ItemTax: 0,
+        ItemTaxRate: 0,
+      },
+    ],
+  };
+
+  // Send credit note (reverse invoice) to Fawaterkom
+  const result = await reverseInvoiceToFawaterkom(creditNoteData);
+
+  if (result.success) {
+    // Update invoice with reversal info
+    await Invoice.update(
+      {
+        invoiceStatus: 'REVERSED',
+        refundAmount,
+      },
+      { where: { id: invoiceId } },
+    );
+  }
+
+  return result;
+};
+
+/**
+ * Send confirmation email for invoice
+ * @param {number} invoiceId - Invoice ID
+ * @returns {Promise<Object>} Email send result
+ */
+const sendInvoiceConfirmationEmail = async invoiceId => {
+  const invoice = await getInvoiceById(invoiceId);
+  if (!invoice || !invoice.registration) {
+    throw new Error('Invoice or registration not found');
+  }
+
+  const {
+    sendPaymentReceiptEmail,
+  } = require('./registrationNotification.service');
+  await sendPaymentReceiptEmail(invoice.registration, invoice);
+
+  return { success: true, message: 'Confirmation email sent' };
+};
+
 module.exports = {
   INVOICE_CONFIG,
   calculateFees,
@@ -1109,4 +1846,11 @@ module.exports = {
   generateInvoicePDF,
   generatePaymentReceiptPDF,
   submitToFawaterkom,
+  // Admin functions
+  getInvoiceList,
+  getInvoiceById,
+  adminSaveInvoice,
+  processInvoicePayment,
+  reverseFawaterkomInvoice,
+  sendInvoiceConfirmationEmail,
 };
