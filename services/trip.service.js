@@ -60,7 +60,14 @@ exports.getTripById = async id => {
 exports.getTrips = async query => {
   const where = {};
 
-  if (query.isActive !== undefined) {
+  // For admin, return all records (active and inactive)
+  // For registration (non-admin), return only active records
+  if (query.forAdmin) {
+    // If forAdmin is true, don't filter by isActive unless explicitly specified
+    if (query.isActive !== undefined) {
+      where.isActive = query.isActive;
+    }
+  } else if (query.isActive !== undefined) {
     where.isActive = query.isActive;
   } else {
     where.isActive = true;

@@ -62,11 +62,15 @@ exports.getAccommodationList = async payload => {
   if (payload.stars) {
     where.stars = payload.stars;
   }
+
+  // For admin, return all records (active and inactive)
+  // For registration (non-admin), return only active records
+  if (!payload.forAdmin) {
+    where.isActive = true;
+  }
+
   const result = await Accommodation.findAll({
-    where: {
-      isActive: true,
-      ...where,
-    },
+    where,
     include: [
       { model: HotelImages, as: 'hotelImages' },
       { model: HotelRoom, as: 'hotelRooms' },

@@ -56,6 +56,7 @@ exports.updateAccommodation = {
       available: Joi.number(),
     }),
     hotelImages: Joi.array().items(Joi.string()).optional(),
+    isActive: Joi.boolean().optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),
@@ -65,5 +66,6 @@ exports.updateAccommodation = {
 exports.getAccommodationList = {
   body: Joi.object().keys({
     stars: Joi.string(),
+    forAdmin: Joi.boolean().optional(),
   }),
 };

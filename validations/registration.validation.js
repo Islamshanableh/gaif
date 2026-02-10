@@ -179,7 +179,10 @@ exports.updateRegistrationStep7 = {
 exports.updateRegistrationStep8 = {
   body: Joi.object().keys({
     needsVenueTransportation: Joi.boolean().optional(),
-    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
+    pickupLocation: Joi.string()
+      .valid('AMMAN', 'DEAD_SEA')
+      .allow(null)
+      .optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),
@@ -322,7 +325,10 @@ exports.adminUpdateRegistration = {
     departureTime: Joi.string().max(10).allow('', null).optional(),
     flightDetailsForSpouse: Joi.boolean().optional(),
     needsVenueTransportation: Joi.boolean().optional(),
-    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
+    pickupLocation: Joi.string()
+      .valid('AMMAN', 'DEAD_SEA')
+      .allow(null)
+      .optional(),
     specialRequest: Joi.string().max(2000).allow('', null).optional(),
     photographyConsent: Joi.boolean().optional(),
     needsVisa: Joi.boolean().optional(),
@@ -418,7 +424,10 @@ exports.createFullRegistration = {
     departureTime: Joi.string().max(10).allow('', null).optional(),
     flightDetailsForSpouse: Joi.boolean().optional(),
     needsVenueTransportation: Joi.boolean().optional(),
-    pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').allow(null).optional(),
+    pickupLocation: Joi.string()
+      .valid('AMMAN', 'DEAD_SEA')
+      .allow(null)
+      .optional(),
     // Step 6 - Special Request
     specialRequest: Joi.string().max(2000).allow('', null).optional(),
     photographyConsent: Joi.boolean().optional(),

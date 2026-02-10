@@ -51,6 +51,7 @@ exports.getById = {
 exports.getTrips = {
   query: Joi.object().keys({
     isActive: Joi.boolean().optional(),
+    forAdmin: Joi.boolean().optional(),
     type: Joi.string()
       .valid(...tripTypes)
       .optional(),
