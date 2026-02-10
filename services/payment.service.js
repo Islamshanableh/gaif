@@ -183,6 +183,12 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
       0;
     const paidCurrency = orderData['order.currency'] || 'JOD';
 
+    // Update invoice with payment source (ONLINE = MEPS gateway)
+    await Invoice.update(
+      { paymentSource: 'ONLINE' },
+      { where: { id: invoiceId } },
+    );
+
     // Submit to Jordan Fawaterkom e-invoice system
     try {
       const invoiceService = require('./invoice.service');

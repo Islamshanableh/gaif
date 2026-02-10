@@ -1294,6 +1294,14 @@ const Invoice = sequelize.define(
         key: 'id',
       },
     },
+    // Payment source: ONLINE (MEPS gateway) or SYSTEM (admin manual payment)
+    paymentSource: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      validate: {
+        isIn: [['ONLINE', 'SYSTEM']],
+      },
+    },
   },
   {
     tableName: 'Invoices',

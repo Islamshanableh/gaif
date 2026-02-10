@@ -168,3 +168,77 @@ exports.checkPaymentStatus = catchAsync(async (req, res) => {
     paymentStatus: registration.paymentStatus,
   });
 });
+
+/**
+ * Admin endpoint to mark payment as paid (SYSTEM payment)
+ * POST /api/v1/payment/admin/mark-paid
+ * Body: { registrationId, paidAmount, paidCurrency }
+ */
+exports.adminMarkAsPaid = catchAsync(async (req, res) => {
+  const { registrationId, paidAmount, paidCurrency } = req.body;
+
+  if (!registrationId) {
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .json({ message: 'registrationId is required' });
+  }
+
+  const { Registration, Invoice } = require('../services/db.service');
+  const invoiceService = require('../services/invoice.service');
+
+  // Get the latest invoice for this registration
+  const invoice = await Invoice.findOne({
+    where: { registrationId },
+    order: [['createdAt', 'DESC']],
+  });
+
+  if (!invoice) {
+    return res
+      .status(httpStatus.NOT_FOUND)
+      .json({ message: 'No invoice found for this registration' });
+  }
+
+  // Update registration payment status
+  await Registration.update(
+    { paymentStatus: 'PAID' },
+    { where: { id: registrationId } },
+  );
+
+  // Update invoice with system payment details
+  const amount = paidAmount || parseFloat(invoice.totalValueJD) || 0;
+  const currency = paidCurrency || 'JOD';
+
+  await Invoice.update(
+    {
+      paidAmount: amount,
+      paidCurrency: currency,
+      paidAt: new Date(),
+      paymentSource: 'SYSTEM',
+    },
+    { where: { id: invoice.id } },
+  );
+
+  // Submit to Fawaterkom e-invoice system
+  let fawaterkomResult = null;
+  try {
+    fawaterkomResult = await invoiceService.submitToFawaterkom(
+      invoice.id,
+      amount,
+      currency,
+    );
+  } catch (error) {
+    // Log error but don't fail - payment was recorded
+    console.error('Fawaterkom submission error:', error.message);
+    fawaterkomResult = { success: false, error: error.message };
+  }
+
+  return res.json({
+    success: true,
+    message: 'Payment marked as paid (SYSTEM)',
+    registrationId,
+    invoiceId: invoice.id,
+    paidAmount: amount,
+    paidCurrency: currency,
+    fawaterkomResult,
+  });
+});

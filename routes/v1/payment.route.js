@@ -1,5 +1,7 @@
 const express = require('express');
 const paymentController = require('../../controllers/payment.controller');
+const { auth } = require('../../middlewares/auth');
+const { routePermissions } = require('../../constants');
 
 const router = express.Router();
 
@@ -12,5 +14,12 @@ router.get('/result', paymentController.paymentResult);
 
 // Check payment status (for frontend polling)
 router.get('/status', paymentController.checkPaymentStatus);
+
+// Admin endpoint to mark payment as paid (SYSTEM payment)
+router.post(
+  '/admin/mark-paid',
+  auth(routePermissions.ADMINISTRATOR.update),
+  paymentController.adminMarkAsPaid,
+);
 
 module.exports = router;
