@@ -1499,6 +1499,112 @@ const RegistrationToken = sequelize.define(
   },
 );
 
+// CompanyInvoice Model (for company-level invoices)
+const CompanyInvoice = sequelize.define(
+  'CompanyInvoice',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    companyId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Companies',
+        key: 'id',
+      },
+    },
+    serialNumber: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+    },
+    totalAmount: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+    },
+    discount: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+    },
+    netAmount: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false,
+    },
+    currency: {
+      type: DataTypes.STRING(10),
+      defaultValue: 'JD',
+    },
+    totalValueJD: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    totalValueUSD: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    exchangeRate: {
+      type: DataTypes.DECIMAL(10, 4),
+      allowNull: true,
+    },
+    description: {
+      type: DataTypes.STRING(1000),
+      allowNull: true,
+    },
+    invoiceDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    dueDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.STRING(20),
+      defaultValue: 'PENDING',
+      validate: {
+        isIn: [['PENDING', 'PAID', 'CANCELLED']],
+      },
+    },
+    paidAmount: {
+      type: DataTypes.DECIMAL(12, 2),
+      defaultValue: 0,
+    },
+    paidCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    paymentReference: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    emailSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    createdBy: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Users',
+        key: 'id',
+      },
+    },
+  },
+  {
+    tableName: 'CompanyInvoices',
+    timestamps: true,
+  },
+);
+
 // AuditLog Model (for tracking admin actions)
 const AUDIT_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
 
@@ -1700,7 +1806,6 @@ RegistrationTrip.belongsTo(Registration, {
 });
 RegistrationTrip.belongsTo(Trip, { foreignKey: 'tripId', as: 'trip' });
 
-
 // File associations
 Company.belongsTo(File, {
   foreignKey: 'logoId',
@@ -1769,6 +1874,14 @@ Invoice.belongsTo(File, {
 
 // ============================================================================
 // EXPORTS
+// CompanyInvoice Associations
+CompanyInvoice.belongsTo(Company, { foreignKey: 'companyId', as: 'company' });
+Company.hasMany(CompanyInvoice, {
+  foreignKey: 'companyId',
+  as: 'companyInvoices',
+});
+CompanyInvoice.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
+
 // ============================================================================
 
 module.exports = {
@@ -1790,5 +1903,6 @@ module.exports = {
   RegistrationTrip,
   RegistrationToken,
   Invoice,
+  CompanyInvoice,
   AuditLog,
 };

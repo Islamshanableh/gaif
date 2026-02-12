@@ -9,3 +9,4 @@ module.exports.tripValidation = require('./trip.validation');
 module.exports.fileValidation = require('./file.validation');
 module.exports.mfaValidation = require('./mfa.validation');
 module.exports.invoiceValidation = require('./invoice.validation');
+module.exports.companyInvoiceValidation = require('./companyInvoice.validation');

@@ -2521,6 +2521,247 @@
       ]
     },
     {
+      "name": "Company Invoice",
+      "description": "Company-level invoice management (Admin only). Create invoices for companies with custom amounts, discounts, and descriptions. Currency is automatically fetched from the company's participation type. Returns both JOD and USD totals with exchange rate.",
+      "item": [
+        {
+          "name": "Create Company Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": 1,\n  \"totalAmount\": 5000,\n  \"discount\": 500,\n  \"description\": \"Registration fees for GAIF35 Conference - 10 delegates\",\n  \"invoiceDate\": \"2026-02-15\",\n  \"dueDate\": \"2026-03-15\",\n  \"sendEmail\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice"]
+            },
+            "description": "Create a company invoice with total amount, discount, and description. Currency is automatically fetched from the company's participation type. Generates PDF and sends email to company with payment link. Returns both JOD and USD totals."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"invoice\": {\n    \"id\": 1,\n    \"companyId\": 1,\n    \"serialNumber\": \"C260001\",\n    \"totalAmount\": 5000,\n    \"discount\": 500,\n    \"netAmount\": 4500,\n    \"currency\": \"JD\",\n    \"totalValueJD\": 4500,\n    \"totalValueUSD\": 6428.57,\n    \"exchangeRate\": 0.7,\n    \"description\": \"Registration fees for GAIF35 Conference - 10 delegates\",\n    \"invoiceDate\": \"2026-02-15\",\n    \"dueDate\": \"2026-03-15\",\n    \"status\": \"PENDING\",\n    \"company\": {\n      \"id\": 1,\n      \"name\": \"Acme Insurance Corp\",\n      \"email\": \"finance@acme-insurance.com\",\n      \"participation\": {\n        \"currency\": \"JD\"\n      }\n    }\n  },\n  \"emailSent\": true,\n  \"emailError\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Company Invoice List",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/list?page=1&limit=20&status=PENDING",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "list"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "companyId", "value": "1", "disabled": true},
+                {"key": "status", "value": "PENDING", "description": "PENDING | PAID | CANCELLED"},
+                {"key": "dateFrom", "value": "2026-01-01", "disabled": true},
+                {"key": "dateTo", "value": "2026-12-31", "disabled": true}
+              ]
+            },
+            "description": "Get paginated list of company invoices with filters"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"serialNumber\": \"C260001\",\n      \"totalAmount\": 5000,\n      \"discount\": 500,\n      \"netAmount\": 4500,\n      \"currency\": \"JD\",\n      \"totalValueJD\": 4500,\n      \"totalValueUSD\": 6428.57,\n      \"exchangeRate\": 0.7,\n      \"status\": \"PENDING\",\n      \"invoiceDate\": \"2026-02-15\",\n      \"company\": {\n        \"id\": 1,\n        \"name\": \"Acme Insurance Corp\",\n        \"participation\": {\n          \"currency\": \"JD\"\n        }\n      }\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Company Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1"]
+            },
+            "description": "Get company invoice details by ID"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"companyId\": 1,\n  \"serialNumber\": \"C260001\",\n  \"totalAmount\": 5000,\n  \"discount\": 500,\n  \"netAmount\": 4500,\n  \"currency\": \"JD\",\n  \"totalValueJD\": 4500,\n  \"totalValueUSD\": 6428.57,\n  \"exchangeRate\": 0.7,\n  \"description\": \"Registration fees for GAIF35 Conference - 10 delegates\",\n  \"invoiceDate\": \"2026-02-15\",\n  \"dueDate\": \"2026-03-15\",\n  \"status\": \"PENDING\",\n  \"paidAmount\": 0,\n  \"paidCurrency\": null,\n  \"paidAt\": null,\n  \"emailSentAt\": \"2026-02-15T10:30:00.000Z\",\n  \"company\": {\n    \"id\": 1,\n    \"name\": \"Acme Insurance Corp\",\n    \"email\": \"finance@acme-insurance.com\",\n    \"country\": {\n      \"id\": 1,\n      \"name\": \"Jordan\"\n    },\n    \"participation\": {\n      \"id\": 1,\n      \"title\": \"Standard Registration\",\n      \"currency\": \"JD\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Invoices by Company",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/company/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "company", "1"]
+            },
+            "description": "Get all invoices for a specific company"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"serialNumber\": \"C260001\",\n    \"totalAmount\": 5000,\n    \"netAmount\": 4500,\n    \"status\": \"PENDING\",\n    \"invoiceDate\": \"2026-02-15\"\n  },\n  {\n    \"id\": 2,\n    \"serialNumber\": \"C260002\",\n    \"totalAmount\": 2000,\n    \"netAmount\": 2000,\n    \"status\": \"PAID\",\n    \"invoiceDate\": \"2026-01-10\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Update Company Invoice",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"totalAmount\": 5500,\n  \"discount\": 550,\n  \"description\": \"Updated: Registration fees for GAIF35 Conference - 11 delegates\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1"]
+            },
+            "description": "Update company invoice details"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"serialNumber\": \"C260001\",\n  \"totalAmount\": 5500,\n  \"discount\": 550,\n  \"netAmount\": 4950,\n  \"description\": \"Updated: Registration fees for GAIF35 Conference - 11 delegates\",\n  \"status\": \"PENDING\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Company Invoice PDF",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1", "pdf"]
+            },
+            "description": "Download company invoice as PDF"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {"key": "Content-Type", "value": "application/pdf"},
+                {"key": "Content-Disposition", "value": "attachment; filename=invoice_C260001.pdf"}
+              ],
+              "body": "[PDF Binary Data]"
+            }
+          ]
+        },
+        {
+          "name": "Resend Company Invoice Email",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1/send-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1", "send-email"]
+            },
+            "description": "Resend company invoice email with PDF attachment"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"emailSentTo\": \"finance@acme-insurance.com\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark Company Invoice as Paid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paidAmount\": 4500,\n  \"paymentReference\": \"BANK-TXN-12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1/mark-paid",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1", "mark-paid"]
+            },
+            "description": "Mark company invoice as paid"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"serialNumber\": \"C260001\",\n  \"status\": \"PAID\",\n  \"paidAmount\": 4500,\n  \"paidAt\": \"2026-02-20T14:30:00.000Z\",\n  \"paymentReference\": \"BANK-TXN-12345\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Save Company Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"totalAmount\": 6000,\n  \"discount\": 600,\n  \"description\": \"Updated: Registration fees for GAIF35 Conference - 12 delegates\",\n  \"invoiceDate\": \"2026-02-15\",\n  \"dueDate\": \"2026-03-20\",\n  \"markAsPaid\": false,\n  \"paidAmount\": null,\n  \"paidCurrency\": null,\n  \"paymentReference\": null,\n  \"sendEmail\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/1/save",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "1", "save"]
+            },
+            "description": "Consolidated endpoint for editing company invoice. Handles: update total amount, discount, description, dates, mark as paid, and send email - all in one API call."
+          },
+          "response": [
+            {
+              "name": "Success - Updated and Email Sent",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invoice updated successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"C260001\",\n    \"totalAmount\": 6000,\n    \"discount\": 600,\n    \"netAmount\": 5400,\n    \"currency\": \"JD\",\n    \"totalValueJD\": 5400,\n    \"totalValueUSD\": 7714.29,\n    \"exchangeRate\": 0.7,\n    \"description\": \"Updated: Registration fees for GAIF35 Conference - 12 delegates\",\n    \"invoiceDate\": \"2026-02-15\",\n    \"dueDate\": \"2026-03-20\",\n    \"status\": \"PENDING\",\n    \"company\": {\n      \"id\": 1,\n      \"name\": \"Acme Insurance Corp\",\n      \"email\": \"finance@acme-insurance.com\",\n      \"participation\": {\n        \"currency\": \"JD\"\n      }\n    }\n  },\n  \"emailSent\": true,\n  \"emailError\": null\n}"
+            },
+            {
+              "name": "Success - Marked as Paid",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Invoice updated successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"C260001\",\n    \"totalAmount\": 6000,\n    \"discount\": 600,\n    \"netAmount\": 5400,\n    \"currency\": \"JD\",\n    \"totalValueJD\": 5400,\n    \"totalValueUSD\": 7714.29,\n    \"exchangeRate\": 0.7,\n    \"status\": \"PAID\",\n    \"paidAmount\": 5400,\n    \"paidCurrency\": \"JD\",\n    \"paidAt\": \"2026-02-20T14:30:00.000Z\",\n    \"paymentReference\": \"BANK-TXN-54321\"\n  },\n  \"emailSent\": false,\n  \"emailError\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Payment",
       "description": "Payment processing endpoints",
       "item": [

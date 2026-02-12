@@ -17,6 +17,7 @@ const {
   File,
   RegistrationToken,
   Invoice,
+  CompanyInvoice,
   AuditLog,
 } = require('../models');
 
@@ -41,5 +42,6 @@ module.exports = {
   File,
   RegistrationToken,
   Invoice,
+  CompanyInvoice,
   AuditLog,
 };

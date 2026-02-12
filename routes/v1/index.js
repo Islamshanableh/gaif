@@ -16,6 +16,7 @@ const paymentRoute = require('./payment.route');
 const auditRoute = require('./audit.route');
 const insightsRoute = require('./insights.route');
 const invoiceRoute = require('./invoice.route');
+const companyInvoiceRoute = require('./companyInvoice.route');
 
 const defaultRoutes = [
   {
@@ -73,6 +74,10 @@ const defaultRoutes = [
   {
     path: '/invoice',
     route: invoiceRoute,
+  },
+  {
+    path: '/company-invoice',
+    route: companyInvoiceRoute,
   },
 ];
 
