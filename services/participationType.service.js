@@ -32,9 +32,16 @@ exports.createParticipationType = async payload => {
 
     await transaction.commit();
 
-    // Fetch with countries
+    // Fetch with countries (sorted alphabetically)
     const participationType = await ParticipationType.findByPk(result.id, {
-      include: [{ model: Country, as: 'countries' }],
+      include: [
+        {
+          model: Country,
+          as: 'countries',
+          through: { attributes: [] },
+        },
+      ],
+      order: [[{ model: Country, as: 'countries' }, 'name', 'ASC']],
     });
 
     return participationType.toJSON();
@@ -71,8 +78,14 @@ exports.getParticipationTypeList = async query => {
     where.allowForRegister = allowForRegister;
   }
 
-  // Build include for countries
-  const include = [{ model: Country, as: 'countries' }];
+  // Build include for countries (sorted alphabetically by name)
+  const include = [
+    {
+      model: Country,
+      as: 'countries',
+      through: { attributes: [] }, // Hide junction table attributes
+    },
+  ];
 
   // If filtering by countryId, we need to filter participation types that have this country
   let participationTypeIds = null;
@@ -103,7 +116,10 @@ exports.getParticipationTypeList = async query => {
       where,
       offset,
       limit,
-      order: [['createdAt', 'DESC']],
+      order: [
+        ['createdAt', 'DESC'],
+        [{ model: Country, as: 'countries' }, 'name', 'ASC'],
+      ],
       include,
       distinct: true,
     });
@@ -122,7 +138,14 @@ exports.getParticipationTypeList = async query => {
 exports.getParticipationTypeById = async id => {
   const result = await ParticipationType.findOne({
     where: { id },
-    include: [{ model: Country, as: 'countries' }],
+    include: [
+      {
+        model: Country,
+        as: 'countries',
+        through: { attributes: [] },
+      },
+    ],
+    order: [[{ model: Country, as: 'countries' }, 'name', 'ASC']],
   });
 
   return result ? result.toJSON() : null;
@@ -168,7 +191,14 @@ exports.updateParticipationType = async payload => {
     await transaction.commit();
 
     const result = await ParticipationType.findByPk(id, {
-      include: [{ model: Country, as: 'countries' }],
+      include: [
+        {
+          model: Country,
+          as: 'countries',
+          through: { attributes: [] },
+        },
+      ],
+      order: [[{ model: Country, as: 'countries' }, 'name', 'ASC']],
     });
     return result ? result.toJSON() : null;
   } catch (e) {
