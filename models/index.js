@@ -187,6 +187,11 @@ const ParticipationType = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    order: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+    },
   },
   {
     tableName: 'ParticipationTypes',

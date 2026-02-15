@@ -17,6 +17,7 @@ exports.createParticipationType = {
     petraSpouse: Joi.boolean().required(),
     accommodationAqaba: Joi.boolean().required(),
     accommodationAmman: Joi.boolean().required(),
+    order: Joi.number().min(0).optional(),
   }),
 };
 
@@ -43,6 +44,7 @@ exports.updateParticipationType = {
     petraSpouse: Joi.boolean(),
     accommodationAqaba: Joi.boolean(),
     accommodationAmman: Joi.boolean(),
+    order: Joi.number().min(0).optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

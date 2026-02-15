@@ -117,6 +117,7 @@ exports.getParticipationTypeList = async query => {
       offset,
       limit,
       order: [
+        ['order', 'ASC'],
         ['createdAt', 'DESC'],
         [{ model: Country, as: 'countries' }, 'name', 'ASC'],
       ],
