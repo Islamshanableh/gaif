@@ -22,8 +22,8 @@ ENV PATH=/opt/oracle/instantclient_23_5:$PATH
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install production dependencies
-RUN npm ci --only=production
+# Install production dependencies (skip prepare script for husky)
+RUN npm pkg delete scripts.prepare && npm ci --omit=dev
 
 # Copy application files
 COPY . .
