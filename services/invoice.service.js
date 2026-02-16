@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const moment = require('moment');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const QRCode = require('qrcode');
 const config = require('../config/config');
 const { Op } = require('sequelize');
 const {
@@ -454,6 +455,24 @@ const getInvoicesByRegistrationId = async registrationId => {
  * @returns {Promise<Buffer>} PDF buffer
  */
 const generateInvoicePDF = async (registration, invoice) => {
+  // Generate QR code image buffer
+  // Priority: verificationUrl (opens Fawaterkom portal), fallback to qrCode (TLV data)
+  let qrImageBuffer = null;
+  const qrData = invoice?.verificationUrl || invoice?.qrCode;
+  if (qrData) {
+    try {
+      qrImageBuffer = await QRCode.toBuffer(qrData, {
+        type: 'png',
+        width: 120,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+    } catch (qrErr) {
+      // eslint-disable-next-line no-console
+      console.error('Error generating QR code for invoice:', qrErr.message);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -663,6 +682,25 @@ const generateInvoicePDF = async (registration, invoice) => {
         align: 'right',
       });
 
+      // ============================================================
+      // QR Code (if available from Fawaterkom)
+      // ============================================================
+      if (qrImageBuffer) {
+        try {
+          // Use pre-generated QR code image buffer
+          doc.image(qrImageBuffer, 450, 500, {
+            width: 80,
+            height: 80,
+          });
+        } catch (qrError) {
+          // Log error but don't fail PDF generation
+          console.error(
+            'Error adding QR code to invoice PDF:',
+            qrError.message,
+          );
+        }
+      }
+
       // Finalize the PDF
       doc.end();
     } catch (error) {
@@ -775,7 +813,7 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
     Items: [
       {
         RowNum: 1,
-        ItemName: 'GAIF 2026 Conference Registration Fees',
+        ItemName: `GAIF 2026 Conference Registration Fees ${invoice.registration?.profileId}`,
         ItemQty: 1.0,
 
         // Original price BEFORE discount (exclusive)
@@ -797,6 +835,8 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
   // Send to Fawaterkom
   const result = await sendInvoiceToFawaterkom(invoiceData);
 
+  console.log('result======>', result);
+
   // Update invoice with payment info and Fawaterkom response
   const updateData = {
     paidAmount,
@@ -805,8 +845,8 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
   };
 
   if (result.success) {
-    updateData.fawaterkomInvoiceId =
-      result.data?.EINV_PORTAL_INVOICE_RESULT_UUID || null;
+    const invoiceUUID = result.data?.EINV_INV_UUID || null;
+    updateData.fawaterkomInvoiceId = invoiceUUID;
     updateData.fawaterkomStatus = 'SUBMITTED';
     updateData.qrCode = result.data?.EINV_QR || null;
   } else {
@@ -915,6 +955,24 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
     ammanCurrency: invoice.ammanCurrency || 'USD',
     deadSeaCurrency: invoice.deadSeaCurrency || 'USD',
   };
+
+  // Generate QR code image buffer
+  // Priority: verificationUrl (opens Fawaterkom portal), fallback to qrCode (TLV data)
+  let qrImageBuffer = null;
+  const qrData = invoice.qrCode;
+  if (qrData) {
+    try {
+      qrImageBuffer = await QRCode.toBuffer(qrData, {
+        type: 'png',
+        width: 150,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+    } catch (qrErr) {
+      // eslint-disable-next-line no-console
+      console.error('Error generating QR code:', qrErr.message);
+    }
+  }
 
   return new Promise((resolve, reject) => {
     try {
@@ -1082,13 +1140,12 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
       // ============================================================
       // QR Code (bottom right area)
       // ============================================================
-      if (invoice.qrCode) {
+      if (qrImageBuffer) {
         try {
-          // QR code from Fawaterkom is base64 encoded
-          const qrBuffer = Buffer.from(invoice.qrCode, 'base64');
-          doc.image(qrBuffer, 450, 620, {
-            width: 100,
-            height: 100,
+          // Use pre-generated QR code image buffer
+          doc.image(qrImageBuffer, 420, 750, {
+            width: 80,
+            height: 80,
           });
         } catch (qrError) {
           // eslint-disable-next-line no-console

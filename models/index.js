@@ -1287,6 +1287,11 @@ const Invoice = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    // JoFotara verification URL for QR code scanning
+    verificationUrl: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
     fawaterkomInvoiceId: {
       type: DataTypes.STRING(100),
       allowNull: true,

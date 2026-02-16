@@ -1,14 +1,37 @@
-FROM node:24.9.0-alpine
+# Use Oracle Linux for better Oracle client compatibility
+FROM node:20-bullseye-slim
 
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json first
+# Install Oracle Instant Client dependencies
+RUN apt-get update && apt-get install -y \
+    libaio1 \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Oracle Instant Client
+RUN wget https://download.oracle.com/otn_software/linux/instantclient/2350000/instantclient-basic-linux.x64-23.5.0.24.07.zip \
+    && unzip instantclient-basic-linux.x64-23.5.0.24.07.zip -d /opt/oracle \
+    && rm instantclient-basic-linux.x64-23.5.0.24.07.zip
+
+# Set Oracle environment variables
+ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_23_5:$LD_LIBRARY_PATH
+ENV PATH=/opt/oracle/instantclient_23_5:$PATH
+
+# Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install production dependencies
+RUN npm ci --only=production
 
-# Now copy the rest of the application files
+# Copy application files
 COPY . .
 
-CMD  npm run dev
+# Expose the port
+EXPOSE 3000
+
+# Run in production mode
+ENV NODE_ENV=production
+
+CMD ["npm", "start"]

@@ -4,8 +4,20 @@ services:
   api:
     build:
       context: .
-    container_name: api
-    hostname: api
+      dockerfile: Dockerfile
+    container_name: gaif-api
+    hostname: gaif-api
     ports:
-      - 3000:3000
+      - "3000:3000"
     restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Mount wallet directory if using Oracle wallet
+      - ./wallet:/usr/src/app/wallet:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
