@@ -34,4 +34,4 @@ EXPOSE 3000
 # Run in production mode
 ENV NODE_ENV=production
 
-CMD ["npm", "start"]
+CMD ["node", "./bin/www"]
