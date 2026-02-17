@@ -45,10 +45,10 @@ services:
     hostname: gaif-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${CMS_DB_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: gaif2026_production_Gaif2026
-      MYSQL_USER: gaif2026_production_Gaif2026User
-      MYSQL_PASSWORD: "B[G@Stz@g+BY"
+      MYSQL_ROOT_PASSWORD: ${CMS_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${CMS_DB_NAME}
+      MYSQL_USER: ${CMS_DB_USER}
+      MYSQL_PASSWORD: ${CMS_DB_PASSWORD}
     volumes:
       - cms_mysql_data:/var/lib/mysql
     networks:

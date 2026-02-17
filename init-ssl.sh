@@ -3,7 +3,7 @@
 # SSL initialization script for both domains
 # Run this script once on the server to obtain SSL certificates
 
-EMAIL="your-email@example.com"  # Change this to your email
+EMAIL="islam.alshanableh@gmail.com"
 
 echo "=== Creating directories ==="
 mkdir -p ./nginx/ssl
