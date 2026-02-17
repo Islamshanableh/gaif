@@ -25,6 +25,35 @@ services:
     networks:
       - gaif-network
 
+  # WordPress container (existing gaif-main)
+  wordpress:
+    image: php:8.2-apache
+    container_name: gaif-main
+    hostname: gaif-main
+    restart: unless-stopped
+    volumes:
+      - /root/main_website/production.gaif2026.com:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - gaif-network
+
+  # MySQL database for ExpressionEngine CMS
+  db:
+    image: mysql:8.0
+    container_name: gaif-db
+    hostname: gaif-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CMS_DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: gaif2026_production_Gaif2026
+      MYSQL_USER: gaif2026_production_Gaif2026User
+      MYSQL_PASSWORD: "B[G@Stz@g+BY"
+    volumes:
+      - cms_mysql_data:/var/lib/mysql
+    networks:
+      - gaif-network
+
   nginx:
     image: nginx:alpine
     container_name: gaif-nginx
@@ -38,6 +67,7 @@ services:
     depends_on:
       - api
       - frontend
+      - wordpress
     restart: unless-stopped
     networks:
       - gaif-network
@@ -55,3 +85,6 @@ services:
 networks:
   gaif-network:
     driver: bridge
+
+volumes:
+  cms_mysql_data:
