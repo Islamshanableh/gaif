@@ -25,9 +25,11 @@ services:
     networks:
       - gaif-network
 
-  # WordPress container (existing gaif-main)
+  # ExpressionEngine CMS container (existing gaif-main)
   wordpress:
-    image: php:8.2-apache
+    build:
+      context: ./cms
+      dockerfile: Dockerfile
     container_name: gaif-main
     hostname: gaif-main
     restart: unless-stopped
