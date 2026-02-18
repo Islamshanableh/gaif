@@ -20,7 +20,7 @@ const {
 // Configuration for invoice
 const INVOICE_CONFIG = {
   // Exchange rate
-  exchangeRate: 0.7, // USD 1 = JD 0.70
+  exchangeRate: 0.708, // USD 1 = JD 0.70
 
   // Conference details
   conferenceNumber: 35,
