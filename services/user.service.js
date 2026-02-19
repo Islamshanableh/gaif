@@ -4,9 +4,11 @@ const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
 
 const { User, Op } = require('./db.service');
-const { hash } = require('../config/config');
 
 const ApiError = require('../utils/ApiError');
+
+// Standard bcrypt salt rounds (10 is recommended for security/performance balance)
+const SALT_ROUNDS = 10;
 
 exports.register = async payload => {
   // Check email uniqueness before creating
@@ -17,7 +19,7 @@ exports.register = async payload => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already exists');
   }
 
-  payload.password = bcrypt.hashSync(payload.password, hash.secret);
+  payload.password = bcrypt.hashSync(payload.password, SALT_ROUNDS);
 
   try {
     const user = await User.create(payload);
@@ -79,7 +81,7 @@ exports.updateUserById = async payload => {
 
   // Hash password if provided
   if (updateData.password) {
-    updateData.password = bcrypt.hashSync(updateData.password, hash.secret);
+    updateData.password = bcrypt.hashSync(updateData.password, SALT_ROUNDS);
   }
 
   await User.update(updateData, {
@@ -113,7 +115,7 @@ exports.updateUserPassword = async (id, payload) => {
     }
   }
 
-  const password = bcrypt.hashSync(payload.password, hash.secret);
+  const password = bcrypt.hashSync(payload.password, SALT_ROUNDS);
 
   await User.update({ password }, { where: { id } });
 
