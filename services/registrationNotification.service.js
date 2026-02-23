@@ -234,11 +234,13 @@ const sendRegistrationApprovedEmail = async registration => {
         invoice,
       );
       attachments.push({
-        filename: `GAIF_Invoice_${registration.id}.pdf`,
+        filename: `GAIF_Pre_Invoice_${registration.id}.pdf`,
         content: invoicePdf,
         contentType: 'application/pdf',
       });
-      console.log(`Invoice PDF generated for registration ${registration.id}`);
+      console.log(
+        `Pre-Invoice PDF generated for registration ${registration.id}`,
+      );
     } catch (pdfError) {
       console.error('Error generating invoice PDF:', pdfError);
       // Continue without attachment if PDF generation fails
@@ -391,15 +393,11 @@ const sendPaymentReceiptEmail = async (registration, invoice) => {
         invoice,
       );
       attachments.push({
-        filename: `GAIF_Payment_Receipt_${
-          invoice.serialNumber || registration.id
-        }.pdf`,
+        filename: `GAIF_Invoice_${invoice.serialNumber || registration.id}.pdf`,
         content: receiptPdf,
         contentType: 'application/pdf',
       });
-      console.log(
-        `Payment receipt PDF generated for registration ${registration.id}`,
-      );
+      console.log(`Invoice PDF generated for registration ${registration.id}`);
     } catch (pdfError) {
       console.error('Error generating payment receipt PDF:', pdfError);
       // Continue without attachment if PDF generation fails
@@ -408,13 +406,13 @@ const sendPaymentReceiptEmail = async (registration, invoice) => {
     // Send email
     await sendEmailWithAttachment(
       registration.email,
-      'GAIF 2026 - Payment Receipt',
+      'GAIF 2026 - Invoice',
       html,
       attachments,
     );
 
     console.log(
-      `Payment receipt email sent to ${registration.email} for registration ${registration.id}`,
+      `Invoice email sent to ${registration.email} for registration ${registration.id}`,
     );
   } catch (error) {
     console.error('Error sending payment receipt email:', error);

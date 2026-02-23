@@ -480,7 +480,7 @@ const generateInvoicePDF = async (registration, invoice) => {
         margin: 0,
         bufferPages: true,
         info: {
-          Title: `GAIF Invoice - ${registration.id}`,
+          Title: `GAIF Pre Invoice - ${registration.id}`,
           Author: 'GAIF 2026',
         },
       });
@@ -873,7 +873,7 @@ const submitToFawaterkom = async (invoiceId, paidAmount, paidCurrency) => {
 
     // Generate unique file key
     const fileKey = `receipt_${invoice.serialNumber}_${uuidv4()}`;
-    const fileName = `GAIF_Payment_Receipt_${invoice.serialNumber}.pdf`;
+    const fileName = `GAIF_Invoice_${invoice.serialNumber}.pdf`;
 
     // Save PDF to Files table
     const fileRecord = await File.create({
@@ -981,7 +981,7 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
         margin: 0,
         bufferPages: true,
         info: {
-          Title: `GAIF Payment Receipt - ${registration.id}`,
+          Title: `GAIF Invoice - ${registration.id}`,
           Author: 'GAIF 2026',
         },
       });

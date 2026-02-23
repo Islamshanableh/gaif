@@ -677,7 +677,7 @@ exports.viewInvoice = catchAsync(async (req, res) => {
   const pdfBuffer = await invoiceService.generateInvoicePDF(regData, invoice);
 
   // Set headers
-  const filename = `GAIF_Invoice_${registration.id}.pdf`;
+  const filename = `GAIF_Pre_Invoice_${registration.id}.pdf`;
   res.set({
     'Content-Type': 'application/pdf',
     'Content-Disposition':

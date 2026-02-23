@@ -191,7 +191,7 @@ const downloadInvoicePDF = catchAsync(async (req, res) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename=invoice_${invoice.serialNumber}.pdf`,
+    `attachment; filename=pre_invoice_${invoice.serialNumber}.pdf`,
   );
   return res.send(pdfBuffer);
 });
@@ -224,7 +224,7 @@ const downloadReceiptPDF = catchAsync(async (req, res) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename=receipt_${invoice.serialNumber}.pdf`,
+    `attachment; filename=invoice_${invoice.serialNumber}.pdf`,
   );
   return res.send(pdfBuffer);
 });
