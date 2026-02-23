@@ -59,4 +59,13 @@ router
     invoiceController.downloadReceiptPDF,
   );
 
+// Resend confirmation email to registration
+router
+  .route('/:id/resend-email')
+  .post(
+    auth(routePermissions.ADMINISTRATOR.update),
+    validate(invoiceValidation.getById),
+    invoiceController.resendConfirmationEmail,
+  );
+
 module.exports = router;

@@ -1179,6 +1179,7 @@ const getInvoiceList = async (filters = {}) => {
     balanceFilter, // 'all', 'zero', 'hasBalance'
     page = 1,
     limit = 20,
+    exportAll = false, // Flag to return all data without pagination
   } = filters;
 
   // Build registration where clause
@@ -1299,9 +1300,11 @@ const getInvoiceList = async (filters = {}) => {
 
   const uniqueInvoices = Object.values(latestInvoicesByRegistration);
 
-  // Apply pagination
+  // Apply pagination (skip if exportAll is true)
   const totalCount = uniqueInvoices.length;
-  const paginatedInvoices = uniqueInvoices.slice(offset, offset + limit);
+  const paginatedInvoices = exportAll
+    ? uniqueInvoices
+    : uniqueInvoices.slice(offset, offset + limit);
 
   // Format response with all fee items
   const formattedInvoices = paginatedInvoices.map(invoice => {
@@ -1319,6 +1322,9 @@ const getInvoiceList = async (filters = {}) => {
         reg?.lastName || ''
       }`.trim(),
       email: reg?.email,
+      // Nationality
+      nationalityId: reg?.nationalityId,
+      nationality: reg?.nationality?.name,
       // Company info
       companyId: reg?.companyId,
       companyName: reg?.company?.name,
@@ -1406,12 +1412,14 @@ const getInvoiceList = async (filters = {}) => {
 
   return {
     invoices: formattedInvoices,
-    pagination: {
-      total: totalCount,
-      page,
-      limit,
-      totalPages: Math.ceil(totalCount / limit),
-    },
+    pagination: exportAll
+      ? { total: totalCount, exportAll: true }
+      : {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit),
+        },
   };
 };
 

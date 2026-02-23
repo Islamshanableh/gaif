@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const invoiceService = require('../services/invoice.service');
+const registrationNotificationService = require('../services/registrationNotification.service');
 
 /**
  * Get list of invoices with filters
@@ -18,6 +19,7 @@ const getInvoiceList = catchAsync(async (req, res) => {
     balanceFilter: req.query.balanceFilter,
     page: parseInt(req.query.page, 10) || 1,
     limit: parseInt(req.query.limit, 10) || 20,
+    exportAll: req.query.exportAll === 'true', // Flag to return all data without pagination
   };
 
   const result = await invoiceService.getInvoiceList(filters);
@@ -229,10 +231,33 @@ const downloadReceiptPDF = catchAsync(async (req, res) => {
   return res.send(pdfBuffer);
 });
 
+/**
+ * Resend confirmation email to a registration
+ * POST /api/v1/invoice/:id/resend-email
+ */
+const resendConfirmationEmail = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  // Get the invoice to find the registration ID
+  const invoice = await invoiceService.getInvoiceById(parseInt(id, 10));
+  if (!invoice) {
+    return res
+      .status(httpStatus.NOT_FOUND)
+      .json({ message: 'Invoice not found' });
+  }
+
+  const result = await registrationNotificationService.resendConfirmationEmail(
+    invoice.registrationId,
+  );
+
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   getInvoiceList,
   getInvoiceById,
   adminSaveInvoice,
   downloadInvoicePDF,
   downloadReceiptPDF,
+  resendConfirmationEmail,
 };

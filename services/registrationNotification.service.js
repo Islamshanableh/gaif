@@ -420,6 +420,139 @@ const sendPaymentReceiptEmail = async (registration, invoice) => {
   }
 };
 
+/**
+ * Resend confirmation email to a registration with the latest data and invoice
+ * @param {number} registrationId - Registration ID
+ * @returns {Promise<Object>} Result with success status
+ */
+const resendConfirmationEmail = async registrationId => {
+  const {
+    Registration,
+    Company,
+    Country,
+    ParticipationType,
+    Spouse,
+    Accommodation,
+    HotelRoom,
+    RegistrationTrip,
+    Trip,
+  } = require('./db.service');
+
+  // Get full registration data with all associations
+  const registration = await Registration.findByPk(registrationId, {
+    include: [
+      {
+        model: Company,
+        as: 'company',
+        include: [{ model: Country, as: 'country' }],
+      },
+      { model: Country, as: 'nationality' },
+      { model: ParticipationType, as: 'participation' },
+      { model: Spouse, as: 'spouse' },
+      { model: Accommodation, as: 'ammanHotel' },
+      { model: HotelRoom, as: 'ammanRoom' },
+      { model: Accommodation, as: 'deadSeaHotel' },
+      { model: HotelRoom, as: 'deadSeaRoom' },
+      {
+        model: RegistrationTrip,
+        as: 'trips',
+        include: [{ model: Trip, as: 'trip' }],
+      },
+    ],
+  });
+
+  if (!registration) {
+    throw new Error('Registration not found');
+  }
+
+  if (!registration.email) {
+    throw new Error('Registration has no email address');
+  }
+
+  const regData = registration.toJSON();
+
+  // Get the latest invoice
+  let invoice = await invoiceService.getInvoiceByRegistrationId(registrationId);
+  if (!invoice) {
+    // Create invoice if none exists
+    invoice = await invoiceService.createInvoice(regData);
+  }
+
+  const emailConfig = getEmailConfig();
+
+  // Generate secure tokens for viewing registration and invoice
+  const viewRegistrationToken =
+    await registrationTokenService.generateViewRegistrationToken(registrationId);
+  const viewInvoiceToken =
+    await registrationTokenService.generateViewInvoiceToken(registrationId);
+  const updateRegistrationToken =
+    await registrationTokenService.generateUpdateRegistrationToken(registrationId);
+
+  // Build secure URLs
+  const viewRegistrationUrl = `${emailConfig.baseUrl}/display-info?token=${viewRegistrationToken}`;
+  const viewInvoiceUrl = `${emailConfig.apiBaseUrl}/registration/invoice?token=${viewInvoiceToken}`;
+  const updateRegistrationUrl =
+    emailConfig.updateRegistrationUrl ||
+    `${emailConfig.baseUrl}/registration/update?token=${updateRegistrationToken}`;
+
+  const template = loadTemplate('registrationApproved');
+  const participantName = `${registration.firstName || ''} ${
+    registration.lastName || ''
+  }`.trim();
+
+  // Build payment URL pointing to the checkout endpoint
+  const paymentUrl = `${emailConfig.apiBaseUrl}/payment/checkout?registrationId=${registrationId}`;
+
+  const variables = {
+    participantName,
+    registrationId: registration.profileId || registration.id,
+    viewRegistrationUrl,
+    viewInvoiceUrl,
+    updateRegistrationUrl,
+    paymentUrl,
+    visaFormUrl: emailConfig.visaFormUrl || '#',
+    partnersUrl: emailConfig.partnersUrl || '#',
+    partnershipOpportunitiesUrl: emailConfig.partnershipOpportunitiesUrl || '#',
+  };
+
+  const html = processTemplate(template, variables);
+
+  // Generate invoice PDF to attach
+  const attachments = [getEmailHeaderAttachment()];
+  try {
+    const invoicePdf = await invoiceService.generateInvoicePDF(regData, invoice);
+    attachments.push({
+      filename: `GAIF_Pre_Invoice_${registration.id}.pdf`,
+      content: invoicePdf,
+      contentType: 'application/pdf',
+    });
+    console.log(`Pre-Invoice PDF generated for registration ${registration.id}`);
+  } catch (pdfError) {
+    console.error('Error generating invoice PDF:', pdfError);
+    // Continue without attachment if PDF generation fails
+  }
+
+  // Send email with invoice attachment
+  await sendEmailWithAttachment(
+    registration.email,
+    'Thank you for your registration.',
+    html,
+    attachments,
+  );
+
+  console.log(
+    `Confirmation email resent to ${registration.email} for registration ${registration.id}`,
+  );
+
+  return {
+    success: true,
+    email: registration.email,
+    registrationId: registration.id,
+    profileId: registration.profileId,
+    invoiceSerialNumber: invoice.serialNumber,
+  };
+};
+
 module.exports = {
   getEmailConfig,
   sendCompanyConfirmationEmail,
@@ -431,4 +564,5 @@ module.exports = {
   handleCompanyDecline,
   loadTemplate,
   processTemplate,
+  resendConfirmationEmail,
 };

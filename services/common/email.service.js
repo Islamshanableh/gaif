@@ -13,11 +13,20 @@ let tokenExpiry = 0;
 const getAccessToken = async () => {
   // Return cached token if still valid (with 60s buffer)
   if (cachedToken && Date.now() < tokenExpiry - 60000) {
+    console.log('Using cached access token');
     return cachedToken;
   }
 
   const tenantId = config.email.tenantId || 'common';
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+  console.log('Refreshing access token...');
+  console.log(`Tenant ID: ${tenantId}`);
+  console.log(`Client ID: ${config.email.clientId}`);
+  console.log(`Refresh token exists: ${!!config.email.refreshToken}`);
+  console.log(
+    `Refresh token length: ${config.email.refreshToken?.length || 0}`,
+  );
 
   const params = new URLSearchParams({
     client_id: config.email.clientId,
@@ -27,11 +36,24 @@ const getAccessToken = async () => {
     scope: 'https://graph.microsoft.com/Mail.Send',
   });
 
-  const response = await axios.post(tokenUrl, params);
-  cachedToken = response.data.access_token;
-  tokenExpiry = Date.now() + response.data.expires_in * 1000;
-
-  return cachedToken;
+  try {
+    const response = await axios.post(tokenUrl, params);
+    cachedToken = response.data.access_token;
+    tokenExpiry = Date.now() + response.data.expires_in * 1000;
+    console.log(
+      `Access token refreshed successfully, expires in ${response.data.expires_in}s`,
+    );
+    return cachedToken;
+  } catch (error) {
+    console.error('Failed to refresh access token:');
+    console.error('Error:', error.response?.data || error.message);
+    if (error.response?.data?.error === 'invalid_grant') {
+      console.error(
+        'REFRESH TOKEN EXPIRED! You need to regenerate the OAuth tokens.',
+      );
+    }
+    throw error;
+  }
 };
 
 /**
@@ -106,6 +128,11 @@ const sendViaGraph = async ({ to, subject, text, html, attachments = [] }) => {
         'Content-Type': 'application/json',
       },
     },
+  );
+
+  // Log response status for debugging (Graph API returns 202 on success)
+  console.log(
+    `Graph API sendMail response: status=${response.status}, to=${to}`,
   );
 
   return response;
