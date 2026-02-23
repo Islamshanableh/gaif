@@ -20,7 +20,7 @@ const {
 // Configuration for invoice
 const INVOICE_CONFIG = {
   // Exchange rate
-  exchangeRate: 0.708, // USD 1 = JD 0.70
+  exchangeRate: 0.709, // USD 1 = JD 0.70
 
   // Conference details
   conferenceNumber: 35,
@@ -671,13 +671,13 @@ const generateInvoicePDF = async (registration, invoice) => {
 
       // Total Value (JD)
       doc.font('Helvetica-Bold');
-      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 555, {
+      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 555, {
         width: totalWidth,
         align: 'right',
       });
 
       // Total Value (USD)
-      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 585, {
+      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 585, {
         width: totalWidth,
         align: 'right',
       });
@@ -685,21 +685,21 @@ const generateInvoicePDF = async (registration, invoice) => {
       // ============================================================
       // QR Code (if available from Fawaterkom)
       // ============================================================
-      if (qrImageBuffer) {
-        try {
-          // Use pre-generated QR code image buffer
-          doc.image(qrImageBuffer, 450, 500, {
-            width: 80,
-            height: 80,
-          });
-        } catch (qrError) {
-          // Log error but don't fail PDF generation
-          console.error(
-            'Error adding QR code to invoice PDF:',
-            qrError.message,
-          );
-        }
-      }
+      // if (qrImageBuffer) {
+      //   try {
+      //     // Use pre-generated QR code image buffer
+      //     doc.image(qrImageBuffer, 450, 500, {
+      //       width: 80,
+      //       height: 80,
+      //     });
+      //   } catch (qrError) {
+      //     // Log error but don't fail PDF generation
+      //     console.error(
+      //       'Error adding QR code to invoice PDF:',
+      //       qrError.message,
+      //     );
+      //   }
+      // }
 
       // Finalize the PDF
       doc.end();
@@ -1126,13 +1126,13 @@ const generatePaymentReceiptPDF = async (registration, invoice) => {
 
       // Total Value (JD)
       doc.font('Helvetica-Bold');
-      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 555, {
+      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 555, {
         width: totalWidth,
         align: 'right',
       });
 
       // Total Value (USD)
-      doc.text(formatCurrency(fees.totalValueUSD, 'USD'), totalValueX, 585, {
+      doc.text(formatCurrency(fees.totalValueJD), totalValueX, 585, {
         width: totalWidth,
         align: 'right',
       });

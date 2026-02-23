@@ -15,7 +15,7 @@ const {
 const { sendEmailWithAttachment } = require('./common/email.service');
 
 // Exchange rate configuration (same as invoice.service.js)
-const EXCHANGE_RATE = 0.708; // USD 1 = JD 0.70
+const EXCHANGE_RATE = 0.709; // USD 1 = JD 0.70
 
 // Template image path (using existing invoice template)
 const TEMPLATE_PATH = path.join(
