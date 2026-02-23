@@ -191,7 +191,7 @@ const sendRegistrationApprovedEmail = async registration => {
       );
 
     // Build secure URLs
-    const viewRegistrationUrl = `https://gaif.vercel.app/display-info?token=${viewRegistrationToken}`;
+    const viewRegistrationUrl = `${emailConfig.baseUrl}/display-info?token=${viewRegistrationToken}`;
     const viewInvoiceUrl = `${emailConfig.apiBaseUrl}/registration/invoice?token=${viewInvoiceToken}`;
     const updateRegistrationUrl =
       emailConfig.updateRegistrationUrl ||
@@ -351,7 +351,7 @@ const sendPaymentReceiptEmail = async (registration, invoice) => {
       await registrationTokenService.generateViewInvoiceToken(registration.id);
 
     // Build secure URLs
-    const viewRegistrationUrl = `https://gaif.vercel.app/display-info?token=${viewRegistrationToken}`;
+    const viewRegistrationUrl = `${emailConfig.baseUrl}/display-info?token=${viewRegistrationToken}`;
     const viewInvoiceUrl = `${emailConfig.apiBaseUrl}/registration/invoice?token=${viewInvoiceToken}`;
 
     // Load and process template
