@@ -105,3 +105,23 @@ exports.getAccommodationList = catchAsync(async (req, res) => {
   const result = await accommodationService.getAccommodationList(payload);
   res.status(httpStatus.OK).send({ result });
 });
+
+/**
+ * Get accommodation report - registrations with accommodation details
+ * GET /api/v1/accommodation/report
+ */
+exports.getAccommodationReport = catchAsync(async (req, res) => {
+  const filters = {
+    location: req.query.location, // 'amman' or 'deadSea'
+    hotelCategory: req.query.hotelCategory, // stars
+    hotelId: req.query.hotelId ? parseInt(req.query.hotelId, 10) : undefined,
+    roomCategory: req.query.roomCategory,
+    roomType: req.query.roomType, // 'single' or 'double'
+    page: parseInt(req.query.page, 10) || 1,
+    limit: parseInt(req.query.limit, 10) || 20,
+    exportAll: req.query.exportAll === 'true',
+  };
+
+  const result = await accommodationService.getAccommodationReport(filters);
+  res.status(httpStatus.OK).send(result);
+});

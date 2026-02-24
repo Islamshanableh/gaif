@@ -18,10 +18,22 @@ const {
   Op,
   sequelize,
 } = require('./db.service');
+const config = require('../config/config');
 const ApiError = require('../utils/ApiError');
 
 // File attributes to include (without content)
 const fileAttributes = ['id', 'fileKey', 'fileName', 'fileType', 'fileSize'];
+
+// Helper to add CDN prefix to file object
+const processFile = file => {
+  if (file && file.fileKey) {
+    return {
+      ...file,
+      url: `${config.cdnPrefix}/${file.fileKey}`,
+    };
+  }
+  return file;
+};
 
 // Common include configuration for registration queries
 const getRegistrationIncludes = () => [
@@ -93,10 +105,131 @@ const getRegistrationIncludes = () => [
 ];
 
 // Helper to process registration data
-// Files are now stored in database, so no CDN prefix needed
-// File data is included as associations with id, fileKey, fileName, fileType
+// Adds CDN prefix to file URLs and extracts latest invoice fees
 const processRegistrationData = reg => {
-  // No transformation needed - files are included as associations
+  // Process registration files
+  if (reg.participantPicture) {
+    reg.participantPicture = processFile(reg.participantPicture);
+  }
+  if (reg.passportCopy) {
+    reg.passportCopy = processFile(reg.passportCopy);
+  }
+  if (reg.residency) {
+    reg.residency = processFile(reg.residency);
+  }
+  if (reg.visaForm) {
+    reg.visaForm = processFile(reg.visaForm);
+  }
+
+  // Process spouse files
+  if (reg.spouse) {
+    if (reg.spouse.passportCopy) {
+      reg.spouse.passportCopy = processFile(reg.spouse.passportCopy);
+    }
+    if (reg.spouse.residency) {
+      reg.spouse.residency = processFile(reg.spouse.residency);
+    }
+    if (reg.spouse.visaForm) {
+      reg.spouse.visaForm = processFile(reg.spouse.visaForm);
+    }
+  }
+
+  // Process company logo
+  if (reg.company && reg.company.logo) {
+    reg.company.logo = processFile(reg.company.logo);
+  }
+
+  // Process trip images
+  if (reg.trips && reg.trips.length > 0) {
+    reg.trips = reg.trips.map(t => {
+      if (t.trip && t.trip.image) {
+        t.trip.image = processFile(t.trip.image);
+      }
+      return t;
+    });
+  }
+
+  // Process hotel images
+  if (reg.ammanHotel && reg.ammanHotel.hotelImages) {
+    reg.ammanHotel.hotelImages = reg.ammanHotel.hotelImages.map(img => ({
+      ...img,
+      url: img.fileKey ? `${config.cdnPrefix}/${img.fileKey}` : null,
+    }));
+  }
+  if (reg.deadSeaHotel && reg.deadSeaHotel.hotelImages) {
+    reg.deadSeaHotel.hotelImages = reg.deadSeaHotel.hotelImages.map(img => ({
+      ...img,
+      url: img.fileKey ? `${config.cdnPrefix}/${img.fileKey}` : null,
+    }));
+  }
+
+  // Get latest invoice and extract fees
+  if (reg.invoices && reg.invoices.length > 0) {
+    // Sort invoices by createdAt descending and get the latest
+    const sortedInvoices = reg.invoices.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    );
+    const latestInvoice = sortedInvoices[0];
+
+    // Add fees from latest invoice to registration data
+    reg.latestInvoice = {
+      id: latestInvoice.id,
+      serialNumber: latestInvoice.serialNumber,
+      // Participation fees
+      participationFees: parseFloat(latestInvoice.participationFees) || 0,
+      participationCurrency: latestInvoice.participationCurrency || 'USD',
+      participationDiscount: parseFloat(latestInvoice.participationDiscount) || 0,
+      participationPaid: latestInvoice.participationPaid || false,
+      // Spouse fees
+      spouseFees: parseFloat(latestInvoice.spouseFees) || 0,
+      spouseCurrency: latestInvoice.spouseCurrency || 'USD',
+      spouseDiscount: parseFloat(latestInvoice.spouseDiscount) || 0,
+      spousePaid: latestInvoice.spousePaid || false,
+      // Trip fees
+      tripFees: parseFloat(latestInvoice.tripFees) || 0,
+      tripCurrency: latestInvoice.tripCurrency || 'USD',
+      tripDiscount: parseFloat(latestInvoice.tripDiscount) || 0,
+      tripPaid: latestInvoice.tripPaid || false,
+      // Spouse trip fees
+      spouseTripFees: parseFloat(latestInvoice.spouseTripFees) || 0,
+      spouseTripCurrency: latestInvoice.spouseTripCurrency || 'USD',
+      spouseTripDiscount: parseFloat(latestInvoice.spouseTripDiscount) || 0,
+      spouseTripPaid: latestInvoice.spouseTripPaid || false,
+      // Amman accommodation fees
+      ammanAccommodation: parseFloat(latestInvoice.ammanAccommodation) || 0,
+      ammanTax: parseFloat(latestInvoice.ammanTax) || 0,
+      ammanService: parseFloat(latestInvoice.ammanService) || 0,
+      ammanTotal: parseFloat(latestInvoice.ammanTotal) || 0,
+      ammanCurrency: latestInvoice.ammanCurrency || 'JD',
+      ammanDiscount: parseFloat(latestInvoice.ammanDiscount) || 0,
+      ammanPaid: latestInvoice.ammanPaid || false,
+      // Dead Sea accommodation fees
+      deadSeaAccommodation: parseFloat(latestInvoice.deadSeaAccommodation) || 0,
+      deadSeaTax: parseFloat(latestInvoice.deadSeaTax) || 0,
+      deadSeaService: parseFloat(latestInvoice.deadSeaService) || 0,
+      deadSeaTotal: parseFloat(latestInvoice.deadSeaTotal) || 0,
+      deadSeaCurrency: latestInvoice.deadSeaCurrency || 'JD',
+      deadSeaDiscount: parseFloat(latestInvoice.deadSeaDiscount) || 0,
+      deadSeaPaid: latestInvoice.deadSeaPaid || false,
+      // Totals
+      totalParticipationFees: parseFloat(latestInvoice.totalParticipationFees) || 0,
+      hotelAccommodationTotal: parseFloat(latestInvoice.hotelAccommodationTotal) || 0,
+      totalDiscount: parseFloat(latestInvoice.totalDiscount) || 0,
+      totalValueJD: parseFloat(latestInvoice.totalValueJD) || 0,
+      totalValueUSD: parseFloat(latestInvoice.totalValueUSD) || 0,
+      exchangeRate: parseFloat(latestInvoice.exchangeRate) || 0,
+      paidAmount: parseFloat(latestInvoice.paidAmount) || 0,
+      balance: parseFloat(latestInvoice.balance) || 0,
+      // Status
+      invoiceStatus: latestInvoice.invoiceStatus,
+      paidAt: latestInvoice.paidAt,
+      paymentSource: latestInvoice.paymentSource,
+      createdAt: latestInvoice.createdAt,
+    };
+  } else {
+    reg.latestInvoice = null;
+  }
+
   return reg;
 };
 
@@ -701,14 +834,8 @@ exports.getRegistrations = async query => {
     {
       model: Invoice,
       as: 'invoices',
-      attributes: [
-        'id',
-        'serialNumber',
-        'totalValueJD',
-        'totalValueUSD',
-        'createdAt',
-      ],
       required: false,
+      // Include all invoice fields for fees
     },
   ];
 

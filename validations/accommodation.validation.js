@@ -69,3 +69,16 @@ exports.getAccommodationList = {
     forAdmin: Joi.boolean().optional(),
   }),
 };
+
+exports.getAccommodationReport = {
+  query: Joi.object().keys({
+    location: Joi.string().valid('amman', 'deadSea').optional(),
+    hotelCategory: Joi.string().optional(), // stars
+    hotelId: Joi.number().optional(),
+    roomCategory: Joi.string().optional(),
+    roomType: Joi.string().valid('single', 'double').optional(),
+    page: Joi.number().min(1).default(1),
+    limit: Joi.number().min(1).max(100).default(20),
+    exportAll: Joi.string().valid('true', 'false').optional(),
+  }),
+};

@@ -30,7 +30,10 @@ router
     registrationController.updateRegistration,
   )
   .delete(
-    auth(routePermissions.ADMINISTRATOR.read),
+    auth(
+      routePermissions.ADMINISTRATOR.read,
+      routePermissions.REGISTRATION_ADMIN.read,
+    ),
     validate(registrationValidation.getById),
     registrationController.deleteRegistration,
   );
@@ -39,7 +42,10 @@ router
 router
   .route('/list')
   .get(
-    auth(routePermissions.ADMINISTRATOR.read),
+    auth(
+      routePermissions.ADMINISTRATOR.read,
+      routePermissions.REGISTRATION_ADMIN.read,
+    ),
     validate(registrationValidation.getRegistrations),
     registrationController.getRegistrations,
   );
@@ -48,7 +54,10 @@ router
 router
   .route('/admin-update')
   .put(
-    auth(routePermissions.ADMINISTRATOR.read),
+    auth(
+      routePermissions.ADMINISTRATOR.read,
+      routePermissions.REGISTRATION_ADMIN.read,
+    ),
     validate(registrationValidation.adminUpdateRegistration),
     registrationController.adminUpdateRegistration,
   );

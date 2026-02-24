@@ -42,7 +42,7 @@ const verifyCB =
     if (requiredRights.length) {
       const userRights = roleRights.get(user.sub.role);
       const hasRequiredRights = userRights
-        ? requiredRights.every(requiredRight =>
+        ? requiredRights.some(requiredRight =>
             userRights?.includes(requiredRight),
           )
         : false;

@@ -43,4 +43,13 @@ router
     accommodationController.getAccommodationList,
   );
 
+// Accommodation report - registrations with accommodation details
+router
+  .route('/report')
+  .get(
+    auth(routePermissions.ADMINISTRATOR.read),
+    validate(accommodationValidation.getAccommodationReport),
+    accommodationController.getAccommodationReport,
+  );
+
 module.exports = router;
