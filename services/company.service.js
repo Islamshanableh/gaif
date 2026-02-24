@@ -25,8 +25,14 @@ exports.createCompany = async payload => {
 };
 
 exports.getCompanyList = async payload => {
-  const { page = 1, limit = 10, search, countryId, participationId } = payload;
-  const offset = (page - 1) * limit;
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    countryId,
+    participationId,
+    all,
+  } = payload;
 
   const where = {
     isActive: true,
@@ -47,23 +53,33 @@ exports.getCompanyList = async payload => {
     ];
   }
 
+  const include = [
+    { model: Country, as: 'country' },
+    { model: ParticipationType, as: 'participation' },
+    {
+      model: File,
+      as: 'logo',
+      attributes: ['id', 'fileKey', 'fileName', 'fileType'],
+    },
+  ];
+
+  const order = [
+    ['order', 'ASC'],
+    ['name', 'ASC'],
+  ];
+
+  if (all) {
+    const companies = await Company.findAll({ where, order, include });
+    return { data: companies.map(item => item.toJSON()) };
+  }
+
+  const offset = (page - 1) * limit;
   const { count: total, rows: companies } = await Company.findAndCountAll({
     where,
     offset,
     limit,
-    order: [
-      ['order', 'ASC'],
-      ['name', 'ASC'],
-    ],
-    include: [
-      { model: Country, as: 'country' },
-      { model: ParticipationType, as: 'participation' },
-      {
-        model: File,
-        as: 'logo',
-        attributes: ['id', 'fileKey', 'fileName', 'fileType'],
-      },
-    ],
+    order,
+    include,
   });
 
   return {

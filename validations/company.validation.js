@@ -48,5 +48,6 @@ exports.getCompanyList = {
     search: Joi.string().allow('', null).optional(),
     countryId: Joi.number().optional(),
     participationId: Joi.number().optional(),
+    all: Joi.boolean().optional(),
   }),
 };
