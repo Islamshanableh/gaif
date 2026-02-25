@@ -78,7 +78,7 @@ exports.getAccommodationReport = {
     roomCategory: Joi.string().optional(),
     roomType: Joi.string().valid('single', 'double').optional(),
     page: Joi.number().min(1).default(1),
-    limit: Joi.number().min(1).max(100).default(20),
-    exportAll: Joi.string().valid('true', 'false').optional(),
+    limit: Joi.number().min(1).default(20),
+    exportAll: Joi.boolean().default(false),
   }),
 };

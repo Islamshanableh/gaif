@@ -67,4 +67,14 @@ router
     insightsController.getDashboardTotals,
   );
 
+router
+  .route('/participation-types')
+  .get(
+    auth(
+      routePermissions.ADMINISTRATOR.read,
+      routePermissions.REGISTRATION_ADMIN.read,
+    ),
+    insightsController.getParticipationTypeInsights,
+  );
+
 module.exports = router;

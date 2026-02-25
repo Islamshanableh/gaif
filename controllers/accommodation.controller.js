@@ -119,7 +119,7 @@ exports.getAccommodationReport = catchAsync(async (req, res) => {
     roomType: req.query.roomType, // 'single' or 'double'
     page: parseInt(req.query.page, 10) || 1,
     limit: parseInt(req.query.limit, 10) || 20,
-    exportAll: req.query.exportAll === 'true',
+    exportAll: req.query.exportAll === true,
   };
 
   const result = await accommodationService.getAccommodationReport(filters);

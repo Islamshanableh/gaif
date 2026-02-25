@@ -1244,6 +1244,37 @@
               "body": "[\n  {\n    \"id\": 1,\n    \"hotelName\": \"Grand Hyatt Amman\",\n    \"stars\": \"5\",\n    \"hotelRooms\": [\n      {\"id\": 1, \"roomCategory\": \"Standard\", \"roomRate\": 120, \"currency\": \"JD\"}\n    ],\n    \"hotelImages\": [\n      {\"fileKey\": \"https://cdn.example.com/hotels/hyatt.jpg\"}\n    ]\n  }\n]"
             }
           ]
+        },
+        {
+          "name": "Get Accommodation Report",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/accommodation/report?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["accommodation", "report"],
+              "query": [
+                {"key": "location", "value": "deadSea", "disabled": true, "description": "amman | deadSea"},
+                {"key": "hotelId", "value": "1", "disabled": true, "description": "Filter by hotel ID"},
+                {"key": "hotelCategory", "value": "5", "disabled": true, "description": "Filter by star rating"},
+                {"key": "roomCategory", "value": "Standard Room", "disabled": true, "description": "Filter by room category"},
+                {"key": "roomType", "value": "single", "disabled": true, "description": "single | double"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "exportAll", "value": "true", "disabled": true, "description": "Set true to export all records without pagination"}
+              ]
+            },
+            "description": "Get paginated report of registrations with accommodation details. Filter by location, hotel, room category, and room type. Admin only."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"registrationId\": 1,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"email\": \"john@example.com\",\n      \"companyName\": \"Acme Corp\",\n      \"location\": \"deadSea\",\n      \"hotelName\": \"Kempinski Hotel Ishtar Dead Sea\",\n      \"hotelCategory\": \"5\",\n      \"roomCategory\": \"Standard Room\",\n      \"roomType\": \"single\",\n      \"checkIn\": \"2026-10-04\",\n      \"checkOut\": \"2026-10-07\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 85,\n    \"totalPages\": 5\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -2373,6 +2404,27 @@
               "body": "{\n  \"totalParticipants\": 80,\n  \"totalSpouses\": 16,\n  \"totalPaidJOD\": 25300,\n  \"totalPaidUSD\": 18400\n}"
             }
           ]
+        },
+        {
+          "name": "Get All Insights",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights"]
+            },
+            "description": "Get all insights in a single call: accommodation, visa, payment, monthly registrations, and dashboard totals. Admin only."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"accommodation\": {\n    \"amman\": {\"totalBookings\": 150},\n    \"deadSea\": {\"totalBookings\": 120}\n  },\n  \"visa\": {\n    \"needVisa\": 85,\n    \"noVisaNeeded\": 215,\n    \"total\": 300\n  },\n  \"payment\": {\n    \"online\": {\"count\": 180, \"totalAmount\": 45000.00},\n    \"system\": {\"count\": 50, \"totalAmount\": 12500.00},\n    \"unpaid\": {\"count\": 70, \"totalAmount\": 17500.00}\n  },\n  \"monthly\": [\n    {\"month\": \"2026-01\", \"count\": 25},\n    {\"month\": \"2026-02\", \"count\": 42}\n  ],\n  \"totals\": {\n    \"totalParticipants\": 80,\n    \"totalSpouses\": 16,\n    \"totalPaidJOD\": 25300,\n    \"totalPaidUSD\": 18400\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -2766,6 +2818,99 @@
       "description": "Payment processing endpoints",
       "item": [
         {
+          "name": "Initiate Checkout",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payment/checkout?registrationId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "checkout"],
+              "query": [{"key": "registrationId", "value": "1", "description": "Registration ID to pay for"}]
+            },
+            "description": "Initiate MEPS hosted checkout session. Returns an HTML page that auto-redirects the user to the MEPS payment gateway. Typically accessed via the link in the approval email."
+          },
+          "response": [
+            {
+              "name": "Success - Redirects to MEPS Payment Page",
+              "status": "OK",
+              "code": 200,
+              "body": "<!-- HTML page that loads MEPS Checkout JS and calls Checkout.showPaymentPage() -->"
+            },
+            {
+              "name": "Bad Request - Missing registrationId",
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"message\": \"registrationId is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Payment Result Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payment/result?registrationId=1&invoiceId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "result"],
+              "query": [
+                {"key": "registrationId", "value": "1", "description": "Registration ID"},
+                {"key": "invoiceId", "value": "1", "description": "Invoice ID"}
+              ]
+            },
+            "description": "Callback endpoint MEPS redirects to after a payment attempt. Verifies payment status with MEPS, updates the registration and invoice, then redirects the user to the success or failed page. Not called directly — triggered by MEPS after checkout."
+          },
+          "response": [
+            {
+              "name": "Success - Redirects to /payment/success",
+              "status": "Found",
+              "code": 302,
+              "body": "Redirects to: {SERVER_BASE}/payment/success?registrationId=1"
+            },
+            {
+              "name": "Failed - Redirects to /payment/failed",
+              "status": "Found",
+              "code": 302,
+              "body": "Redirects to: {SERVER_BASE}/payment/failed?registrationId=1&status=DECLINED"
+            }
+          ]
+        },
+        {
+          "name": "Check Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/payment/status?registrationId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment", "status"],
+              "query": [{"key": "registrationId", "value": "1", "description": "Registration ID to check"}]
+            },
+            "description": "Poll the current payment status of a registration. Use this to check if payment has been completed after the user goes through the MEPS checkout flow."
+          },
+          "response": [
+            {
+              "name": "Success - Pending",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"registrationId\": 1,\n  \"paymentStatus\": \"PENDING\"\n}"
+            },
+            {
+              "name": "Success - Paid",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"registrationId\": 1,\n  \"paymentStatus\": \"PAID\"\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"message\": \"Registration not found\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Admin Mark as Paid",
           "request": {
             "method": "POST",
@@ -2775,21 +2920,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"invoiceId\": 1,\n  \"amount\": 450.00,\n  \"currency\": \"JD\"\n}"
+              "raw": "{\n  \"registrationId\": 1,\n  \"paidAmount\": 450.00,\n  \"paidCurrency\": \"JOD\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payment/admin/mark-paid",
               "host": ["{{baseUrl}}"],
               "path": ["payment", "admin", "mark-paid"]
             },
-            "description": "Admin endpoint to manually mark an invoice as paid (SYSTEM payment source). Used for cash/check payments received outside the online system."
+            "description": "Admin endpoint to manually mark a registration as paid (SYSTEM payment source). Used for cash/check payments received outside the online system. Also submits to Fawaterkom e-invoice."
           },
           "response": [
             {
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"success\": true,\n  \"message\": \"Payment recorded successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"G260001\",\n    \"paidAmount\": 450.00,\n    \"paidCurrency\": \"JD\",\n    \"paidAt\": \"2026-01-25T11:30:00.000Z\",\n    \"paymentSource\": \"SYSTEM\",\n    \"balance\": 0\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment marked as paid (SYSTEM)\",\n  \"registrationId\": 1,\n  \"invoiceId\": 1,\n  \"paidAmount\": 450.00,\n  \"paidCurrency\": \"JOD\",\n  \"fawaterkomResult\": {\n    \"success\": true\n  }\n}"
             }
           ]
         }

@@ -4,6 +4,7 @@ const {
   Spouse,
   Invoice,
   Accommodation,
+  ParticipationType,
   sequelize,
 } = require('./db.service');
 
@@ -244,24 +245,12 @@ const getMonthlyRegistrations = async () => {
       registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
     },
     attributes: [
-      [
-        sequelize.fn(
-          'TO_CHAR',
-          sequelize.col('createdAt'),
-          'YYYY-MM',
-        ),
-        'month',
-      ],
+      [sequelize.fn('TO_CHAR', sequelize.col('createdAt'), 'YYYY-MM'), 'month'],
       [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
     ],
-    group: [
-      sequelize.fn('TO_CHAR', sequelize.col('createdAt'), 'YYYY-MM'),
-    ],
+    group: [sequelize.fn('TO_CHAR', sequelize.col('createdAt'), 'YYYY-MM')],
     order: [
-      [
-        sequelize.fn('TO_CHAR', sequelize.col('createdAt'), 'YYYY-MM'),
-        'ASC',
-      ],
+      [sequelize.fn('TO_CHAR', sequelize.col('createdAt'), 'YYYY-MM'), 'ASC'],
     ],
     raw: true,
   });
@@ -345,18 +334,66 @@ const getDashboardTotals = async () => {
 };
 
 /**
+ * Get participation type insights - registrations count per participation type
+ * @returns {Promise<Object>} Participation type statistics
+ */
+const getParticipationTypeInsights = async () => {
+  const registrations = await Registration.findAll({
+    where: {
+      participationId: { [Op.ne]: null },
+      registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+    },
+    attributes: ['participationId'],
+    include: [
+      {
+        model: ParticipationType,
+        as: 'participation',
+        attributes: ['id', 'title'],
+      },
+    ],
+    raw: true,
+    nest: true,
+  });
+
+  // Group by participation type
+  const typeCounts = {};
+  registrations.forEach(reg => {
+    const typeId = reg.participationId;
+    const title = reg.participation?.title || 'Unknown';
+    if (!typeCounts[typeId]) {
+      typeCounts[typeId] = { participationId: typeId, title, count: 0 };
+    }
+    typeCounts[typeId].count += 1;
+  });
+
+  const types = Object.values(typeCounts).sort((a, b) => b.count - a.count);
+
+  return {
+    total: registrations.length,
+    types,
+  };
+};
+
+/**
  * Get all insights combined
  * @returns {Promise<Object>} All insights data
  */
 const getAllInsights = async () => {
-  const [accommodation, visa, payment, registrations, totals] =
-    await Promise.all([
-      getAccommodationInsights(),
-      getVisaInsights(),
-      getPaymentInsights(),
-      getMonthlyRegistrations(),
-      getDashboardTotals(),
-    ]);
+  const [
+    accommodation,
+    visa,
+    payment,
+    registrations,
+    totals,
+    participationTypes,
+  ] = await Promise.all([
+    getAccommodationInsights(),
+    getVisaInsights(),
+    getPaymentInsights(),
+    getMonthlyRegistrations(),
+    getDashboardTotals(),
+    getParticipationTypeInsights(),
+  ]);
 
   return {
     accommodation,
@@ -364,6 +401,7 @@ const getAllInsights = async () => {
     payment,
     registrations,
     totals,
+    participationTypes,
   };
 };
 
@@ -373,5 +411,6 @@ module.exports = {
   getPaymentInsights,
   getMonthlyRegistrations,
   getDashboardTotals,
+  getParticipationTypeInsights,
   getAllInsights,
 };
