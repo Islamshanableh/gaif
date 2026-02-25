@@ -67,7 +67,7 @@ exports.initiateCheckout = catchAsync(async (req, res) => {
   </style>
   <script src="${checkoutJsUrl}"
     data-error="errorCallback"
-    data-cancel="${config.urls.frontend}/payment/cancelled"
+    data-cancel="${config.urls.api.replace('/api/v1', '')}/payment/cancelled"
   ></script>
 </head>
 <body>
@@ -124,15 +124,15 @@ exports.paymentResult = catchAsync(async (req, res) => {
     parseInt(invoiceId, 10),
   );
 
-  // Redirect to frontend with payment result
-  const frontendUrl = config.urls.frontend;
+  // Redirect to payment result pages served by this server
+  const serverBase = config.urls.api.replace('/api/v1', '');
   if (result.success) {
     return res.redirect(
-      `${frontendUrl}/payment/success?registrationId=${registrationId}`,
+      `${serverBase}/payment/success?registrationId=${registrationId}`,
     );
   }
   return res.redirect(
-    `${frontendUrl}/payment/failed?registrationId=${registrationId}&status=${result.status}`,
+    `${serverBase}/payment/failed?registrationId=${registrationId}&status=${result.status}`,
   );
 });
 

@@ -19,6 +19,7 @@ const httpStatus = require('http-status');
 const ApiError = require('./utils/ApiError');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const routes = require('./routes/v1');
+const paymentPagesRoutes = require('./routes/paymentPages.route');
 
 const shouldCompress = (req, res) => {
   if (req.headers['x-no-compression']) {
@@ -76,6 +77,9 @@ app.get('/', async (_req, res) => {
 app.use('/files', express.static('files'));
 
 app.use('/api/v1', routes);
+
+// Payment result pages (success, failed, cancelled)
+app.use('/payment', paymentPagesRoutes);
 
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {
