@@ -3,7 +3,7 @@ const Joi = require('joi');
 exports.createCompany = {
   body: Joi.object().keys({
     name: Joi.string().required(),
-    email: Joi.string().required(),
+    email: Joi.string(),
     entryDate: Joi.date(),
     expirationDate: Joi.date(),
     countryId: Joi.number().required(),
