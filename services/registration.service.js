@@ -717,6 +717,7 @@ exports.getRegistrations = async query => {
     countryId,
     nationalityId,
     hasSpouse,
+    airportPickupOption,
     hotelId,
     hotelStars,
     hotelLocation,
@@ -775,6 +776,10 @@ exports.getRegistrations = async query => {
 
   if (hasSpouse !== undefined) {
     where.hasSpouse = hasSpouse;
+  }
+
+  if (airportPickupOption) {
+    where.airportPickupOption = airportPickupOption;
   }
 
   if (hotelId) {
@@ -903,7 +908,7 @@ exports.getRegistrations = async query => {
     },
   ];
 
-  const allowedSortFields = ['createdAt', 'profileId'];
+  const allowedSortFields = ['createdAt', 'profileId', 'arrivalDate', 'departureDate'];
   const orderField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
   const orderDir = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 

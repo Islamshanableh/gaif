@@ -355,6 +355,7 @@ exports.getAccommodationReport = async (filters = {}) => {
       middleName: r.middleName,
       lastName: r.lastName,
       fullName: `${r.firstName || ''} ${r.middleName || ''} ${r.lastName || ''}`.trim(),
+      position: r.position,
       email: r.email,
       mobile: r.mobile,
       // Nationality

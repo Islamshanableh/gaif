@@ -245,11 +245,16 @@ exports.getRegistrations = {
     countryId: Joi.number().optional(),
     nationalityId: Joi.number().optional(),
     hasSpouse: Joi.boolean().optional(),
+    airportPickupOption: Joi.string()
+      .valid('NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER')
+      .optional(),
     hotelId: Joi.number().optional(),
     hotelStars: Joi.string().allow('', null).optional(),
     hotelLocation: Joi.string().allow('', null).optional(),
     isActive: Joi.boolean().optional(),
-    sortBy: Joi.string().valid('createdAt', 'profileId').optional(),
+    sortBy: Joi.string()
+      .valid('createdAt', 'profileId', 'arrivalDate', 'departureDate')
+      .optional(),
     sortOrder: Joi.string().valid('ASC', 'DESC').optional(),
     exportAll: Joi.string().valid('true', 'false').optional(),
   }),
