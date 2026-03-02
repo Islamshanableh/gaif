@@ -164,12 +164,9 @@ const processRegistrationData = reg => {
   }
 
   // Get latest invoice and extract fees
+  // Invoices are pre-ordered DESC by createdAt from the DB query, so first is latest
   if (reg.invoices && reg.invoices.length > 0) {
-    // Sort invoices by createdAt descending and get the latest
-    const sortedInvoices = reg.invoices.sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-    );
-    const latestInvoice = sortedInvoices[0];
+    const latestInvoice = reg.invoices[0];
 
     // Add fees from latest invoice to registration data
     reg.latestInvoice = {
@@ -178,7 +175,8 @@ const processRegistrationData = reg => {
       // Participation fees
       participationFees: parseFloat(latestInvoice.participationFees) || 0,
       participationCurrency: latestInvoice.participationCurrency || 'USD',
-      participationDiscount: parseFloat(latestInvoice.participationDiscount) || 0,
+      participationDiscount:
+        parseFloat(latestInvoice.participationDiscount) || 0,
       participationPaid: latestInvoice.participationPaid || false,
       // Spouse fees
       spouseFees: parseFloat(latestInvoice.spouseFees) || 0,
@@ -212,8 +210,10 @@ const processRegistrationData = reg => {
       deadSeaDiscount: parseFloat(latestInvoice.deadSeaDiscount) || 0,
       deadSeaPaid: latestInvoice.deadSeaPaid || false,
       // Totals
-      totalParticipationFees: parseFloat(latestInvoice.totalParticipationFees) || 0,
-      hotelAccommodationTotal: parseFloat(latestInvoice.hotelAccommodationTotal) || 0,
+      totalParticipationFees:
+        parseFloat(latestInvoice.totalParticipationFees) || 0,
+      hotelAccommodationTotal:
+        parseFloat(latestInvoice.hotelAccommodationTotal) || 0,
       totalDiscount: parseFloat(latestInvoice.totalDiscount) || 0,
       totalValueJD: parseFloat(latestInvoice.totalValueJD) || 0,
       totalValueUSD: parseFloat(latestInvoice.totalValueUSD) || 0,
@@ -229,6 +229,9 @@ const processRegistrationData = reg => {
   } else {
     reg.latestInvoice = null;
   }
+
+  // Remove raw invoices array — response exposes only latestInvoice
+  delete reg.invoices;
 
   return reg;
 };
@@ -718,6 +721,8 @@ exports.getRegistrations = async query => {
     hotelStars,
     hotelLocation,
     isActive,
+    sortBy = 'createdAt',
+    sortOrder = 'DESC',
     exportAll,
   } = query;
   const offset = (page - 1) * limit;
@@ -736,10 +741,9 @@ exports.getRegistrations = async query => {
     if (hotelLocation) {
       accommodationWhere[Op.and] = accommodationWhere[Op.and] || [];
       accommodationWhere[Op.and].push(
-        sequelize.where(
-          sequelize.fn('UPPER', sequelize.col('location')),
-          { [Op.like]: `%${hotelLocation.toUpperCase()}%` },
-        ),
+        sequelize.where(sequelize.fn('UPPER', sequelize.col('location')), {
+          [Op.like]: `%${hotelLocation.toUpperCase()}%`,
+        }),
       );
     }
     const matchingHotels = await Accommodation.findAll({
@@ -873,7 +877,10 @@ exports.getRegistrations = async query => {
         { profileId },
         // Subquery to find registrations that have a spouse with matching spouseId
         sequelize.literal(
-          `"Registration"."id" IN (SELECT "registrationId" FROM "Spouses" WHERE "spouseId" = ${parseInt(profileId, 10)})`,
+          `"Registration"."id" IN (SELECT "registrationId" FROM "Spouses" WHERE "spouseId" = ${parseInt(
+            profileId,
+            10,
+          )})`,
         ),
       ],
     });
@@ -891,13 +898,18 @@ exports.getRegistrations = async query => {
       model: Invoice,
       as: 'invoices',
       required: false,
-      // Include all invoice fields for fees
+      separate: true, // Run as a separate query so order/limit apply per registration
+      order: [['createdAt', 'DESC']],
     },
   ];
 
+  const allowedSortFields = ['createdAt', 'profileId'];
+  const orderField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+  const orderDir = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
   const queryOptions = {
     where,
-    order: [['createdAt', 'DESC']],
+    order: [[orderField, orderDir]],
     include: includes,
     distinct: true,
   };

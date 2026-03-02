@@ -249,6 +249,8 @@ exports.getRegistrations = {
     hotelStars: Joi.string().allow('', null).optional(),
     hotelLocation: Joi.string().allow('', null).optional(),
     isActive: Joi.boolean().optional(),
+    sortBy: Joi.string().valid('createdAt', 'profileId').optional(),
+    sortOrder: Joi.string().valid('ASC', 'DESC').optional(),
     exportAll: Joi.string().valid('true', 'false').optional(),
   }),
 };
