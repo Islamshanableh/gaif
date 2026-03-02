@@ -720,6 +720,7 @@ exports.getRegistrations = async query => {
     airportPickupOption,
     roomType,
     needsVisa,
+    pickupLocation,
     hotelId,
     hotelStars,
     hotelLocation,
@@ -786,6 +787,10 @@ exports.getRegistrations = async query => {
 
   if (needsVisa !== undefined) {
     where.needsVisa = needsVisa;
+  }
+
+  if (pickupLocation) {
+    where.pickupLocation = pickupLocation;
   }
 
   if (roomType) {
