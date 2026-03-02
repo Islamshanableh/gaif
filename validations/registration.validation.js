@@ -243,6 +243,12 @@ exports.getRegistrations = {
     middleName: Joi.string().allow('', null).optional(),
     lastName: Joi.string().allow('', null).optional(),
     countryId: Joi.number().optional(),
+    nationalityId: Joi.number().optional(),
+    hasSpouse: Joi.boolean().optional(),
+    hotelId: Joi.number().optional(),
+    hotelStars: Joi.string().allow('', null).optional(),
+    hotelLocation: Joi.string().allow('', null).optional(),
+    isActive: Joi.boolean().optional(),
     exportAll: Joi.string().valid('true', 'false').optional(),
   }),
 };

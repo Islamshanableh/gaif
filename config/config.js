@@ -64,6 +64,12 @@ const envVarsSchema = Joi.object()
       .description('OAuth2 refresh token'),
     EMAIL_TENANT_ID: Joi.string().allow('').description('Microsoft tenant ID'),
 
+    // Gmail (dev only)
+    GMAIL_USER: Joi.string().allow('').description('Gmail address for dev'),
+    GMAIL_APP_PASSWORD: Joi.string()
+      .allow('')
+      .description('Gmail app password for dev'),
+
     // URLs
     FRONTEND_URL: Joi.string()
       .default('https://gaif2026.com')
@@ -202,6 +208,8 @@ module.exports = {
     clientSecret: envVars.EMAIL_CLIENT_SECRET,
     refreshToken: envVars.EMAIL_REFRESH_TOKEN,
     tenantId: envVars.EMAIL_TENANT_ID,
+    gmailUser: envVars.GMAIL_USER,
+    gmailAppPassword: envVars.GMAIL_APP_PASSWORD,
   },
 
   meps: {

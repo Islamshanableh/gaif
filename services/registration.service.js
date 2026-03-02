@@ -712,13 +712,42 @@ exports.getRegistrations = async query => {
     middleName,
     lastName,
     countryId,
+    nationalityId,
+    hasSpouse,
+    hotelId,
+    hotelStars,
+    hotelLocation,
+    isActive,
     exportAll,
   } = query;
   const offset = (page - 1) * limit;
 
   const where = {
-    isActive: true,
+    isActive: isActive !== undefined ? isActive : true,
   };
+
+  // Pre-query Accommodations for hotel stars/location filters
+  let matchingHotelIds = null;
+  if (hotelStars || hotelLocation) {
+    const accommodationWhere = {};
+    if (hotelStars) {
+      accommodationWhere.stars = hotelStars;
+    }
+    if (hotelLocation) {
+      accommodationWhere[Op.and] = accommodationWhere[Op.and] || [];
+      accommodationWhere[Op.and].push(
+        sequelize.where(
+          sequelize.fn('UPPER', sequelize.col('location')),
+          { [Op.like]: `%${hotelLocation.toUpperCase()}%` },
+        ),
+      );
+    }
+    const matchingHotels = await Accommodation.findAll({
+      where: accommodationWhere,
+      attributes: ['id'],
+    });
+    matchingHotelIds = matchingHotels.map(h => h.id);
+  }
 
   if (companyId) {
     where.companyId = companyId;
@@ -734,6 +763,33 @@ exports.getRegistrations = async query => {
 
   if (paymentStatus) {
     where.paymentStatus = paymentStatus;
+  }
+
+  if (nationalityId) {
+    where.nationalityId = nationalityId;
+  }
+
+  if (hasSpouse !== undefined) {
+    where.hasSpouse = hasSpouse;
+  }
+
+  if (hotelId) {
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push({
+      [Op.or]: [{ ammanHotelId: hotelId }, { deadSeaHotelId: hotelId }],
+    });
+  }
+
+  if (matchingHotelIds !== null) {
+    // Use [-1] when empty so the query returns no results (no valid hotel ID is -1)
+    const ids = matchingHotelIds.length ? matchingHotelIds : [-1];
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push({
+      [Op.or]: [
+        { ammanHotelId: { [Op.in]: ids } },
+        { deadSeaHotelId: { [Op.in]: ids } },
+      ],
+    });
   }
 
   // Filter by profileId - search in both Registration.profileId and Spouse.spouseId

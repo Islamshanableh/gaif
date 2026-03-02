@@ -1,6 +1,9 @@
 const axios = require('axios');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 const config = require('../../config/config');
+
+const isDev = config.env === 'development';
 
 // Cache access token to avoid refreshing on every email
 let cachedToken = null;
@@ -54,6 +57,38 @@ const getAccessToken = async () => {
     }
     throw error;
   }
+};
+
+/**
+ * Send email via Gmail (nodemailer) — development only
+ */
+const sendViaGmail = async ({ to, subject, text, html, attachments = [] }) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: config.email.gmailUser,
+      pass: config.email.gmailAppPassword,
+    },
+  });
+
+  const mailOptions = {
+    from: `"${config.email.fromName}" <${config.email.gmailUser}>`,
+    to,
+    subject,
+    text,
+    html,
+    attachments: attachments.map(att => ({
+      filename: att.filename || att.name || 'attachment',
+      content: att.content,
+      path: att.path,
+      contentType: att.contentType || att.type,
+      cid: att.cid,
+    })),
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+  console.log('Email sent via Gmail to:', to, '| messageId:', info.messageId);
+  return info;
 };
 
 /**
@@ -147,12 +182,9 @@ const sendViaGraph = async ({ to, subject, text, html, attachments = [] }) => {
  */
 exports.sendEmail = async (email, message, subject) => {
   try {
-    const result = await sendViaGraph({
-      to: email,
-      subject,
-      text: message,
-    });
-    console.log('Email sent via Graph API to:', email);
+    const send = isDev ? sendViaGmail : sendViaGraph;
+    const result = await send({ to: email, subject, text: message });
+    console.log('Email sent to:', email);
     return result;
   } catch (error) {
     console.log('Error sending email:', error.response?.data || error.message);
@@ -170,13 +202,9 @@ exports.sendEmail = async (email, message, subject) => {
  */
 exports.sendHtmlEmail = async (email, subject, html, text = '') => {
   try {
-    const result = await sendViaGraph({
-      to: email,
-      subject,
-      html,
-      text: text || subject,
-    });
-    console.log('HTML email sent via Graph API to:', email);
+    const send = isDev ? sendViaGmail : sendViaGraph;
+    const result = await send({ to: email, subject, html, text: text || subject });
+    console.log('HTML email sent to:', email);
     return result;
   } catch (error) {
     console.log(
@@ -202,13 +230,9 @@ exports.sendEmailWithAttachment = async (
   attachments = [],
 ) => {
   try {
-    const result = await sendViaGraph({
-      to: email,
-      subject,
-      html,
-      attachments,
-    });
-    console.log('Email with attachment sent via Graph API to:', email);
+    const send = isDev ? sendViaGmail : sendViaGraph;
+    const result = await send({ to: email, subject, html, attachments });
+    console.log('Email with attachment sent to:', email);
     return result;
   } catch (error) {
     console.log(
