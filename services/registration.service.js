@@ -718,6 +718,8 @@ exports.getRegistrations = async query => {
     nationalityId,
     hasSpouse,
     airportPickupOption,
+    roomType,
+    needsVisa,
     hotelId,
     hotelStars,
     hotelLocation,
@@ -780,6 +782,17 @@ exports.getRegistrations = async query => {
 
   if (airportPickupOption) {
     where.airportPickupOption = airportPickupOption;
+  }
+
+  if (needsVisa !== undefined) {
+    where.needsVisa = needsVisa;
+  }
+
+  if (roomType) {
+    where[Op.and] = where[Op.and] || [];
+    where[Op.and].push({
+      [Op.or]: [{ ammanRoomType: roomType }, { deadSeaRoomType: roomType }],
+    });
   }
 
   if (hotelId) {
@@ -908,7 +921,12 @@ exports.getRegistrations = async query => {
     },
   ];
 
-  const allowedSortFields = ['createdAt', 'profileId', 'arrivalDate', 'departureDate'];
+  const allowedSortFields = [
+    'createdAt',
+    'profileId',
+    'arrivalDate',
+    'departureDate',
+  ];
   const orderField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
   const orderDir = sortOrder?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 

@@ -248,6 +248,8 @@ exports.getRegistrations = {
     airportPickupOption: Joi.string()
       .valid('NEED_PICKUP', 'NO_PICKUP', 'PROVIDE_LATER')
       .optional(),
+    roomType: Joi.string().valid('single', 'double').optional(),
+    needsVisa: Joi.boolean().optional(),
     hotelId: Joi.number().optional(),
     hotelStars: Joi.string().allow('', null).optional(),
     hotelLocation: Joi.string().allow('', null).optional(),
