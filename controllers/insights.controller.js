@@ -37,6 +37,11 @@ const getParticipationTypeInsights = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const getTransportationInsights = catchAsync(async (req, res) => {
+  const result = await insightsService.getTransportationInsights();
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   getAllInsights,
   getAccommodationInsights,
@@ -45,4 +50,5 @@ module.exports = {
   getMonthlyRegistrations,
   getDashboardTotals,
   getParticipationTypeInsights,
+  getTransportationInsights,
 };

@@ -77,4 +77,14 @@ router
     insightsController.getParticipationTypeInsights,
   );
 
+router
+  .route('/transportation')
+  .get(
+    auth(
+      routePermissions.ADMINISTRATOR.read,
+      routePermissions.REGISTRATION_ADMIN.read,
+    ),
+    insightsController.getTransportationInsights,
+  );
+
 module.exports = router;

@@ -375,6 +375,51 @@ const getParticipationTypeInsights = async () => {
 };
 
 /**
+ * Get transportation insights - airport pickup and venue transportation
+ * @returns {Promise<Object>} Transportation statistics
+ */
+const getTransportationInsights = async () => {
+  const activeFilter = {
+    registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+  };
+
+  const [airportToAmman, airportToDeadSea, venueTransportation] =
+    await Promise.all([
+      Registration.count({
+        where: {
+          ...activeFilter,
+          airportPickupOption: 'NEED_PICKUP',
+          pickupLocation: 'AMMAN',
+        },
+      }),
+      Registration.count({
+        where: {
+          ...activeFilter,
+          airportPickupOption: 'NEED_PICKUP',
+          pickupLocation: 'DEAD_SEA',
+        },
+      }),
+      Registration.count({
+        where: {
+          ...activeFilter,
+          needsVenueTransportation: true,
+        },
+      }),
+    ]);
+
+  const types = [
+    { type: 'AIRPORT_TO_AMMAN', label: 'Airport to Amman', count: airportToAmman },
+    { type: 'AIRPORT_TO_DEAD_SEA', label: 'Airport to Dead Sea', count: airportToDeadSea },
+    { type: 'VENUE_TRANSPORTATION', label: 'Venue Transportation', count: venueTransportation },
+  ];
+
+  return {
+    total: airportToAmman + airportToDeadSea + venueTransportation,
+    types,
+  };
+};
+
+/**
  * Get all insights combined
  * @returns {Promise<Object>} All insights data
  */
@@ -386,6 +431,7 @@ const getAllInsights = async () => {
     registrations,
     totals,
     participationTypes,
+    transportation,
   ] = await Promise.all([
     getAccommodationInsights(),
     getVisaInsights(),
@@ -393,6 +439,7 @@ const getAllInsights = async () => {
     getMonthlyRegistrations(),
     getDashboardTotals(),
     getParticipationTypeInsights(),
+    getTransportationInsights(),
   ]);
 
   return {
@@ -402,6 +449,7 @@ const getAllInsights = async () => {
     registrations,
     totals,
     participationTypes,
+    transportation,
   };
 };
 
@@ -412,5 +460,6 @@ module.exports = {
   getMonthlyRegistrations,
   getDashboardTotals,
   getParticipationTypeInsights,
+  getTransportationInsights,
   getAllInsights,
 };
