@@ -595,6 +595,43 @@ exports.companyDecline = catchAsync(async (req, res) => {
     { where: { id: registrationId } },
   );
 
+  // Only restore availability if the registration was SUBMITTED
+  // (availability is only decremented on submit, not on draft)
+  if (registration.registrationStatus === 'SUBMITTED') {
+    // Restore company available seats
+    if (registration.companyId) {
+      const company = await Company.findByPk(registration.companyId);
+      if (company && company.allowFreeSeats && company.available !== null) {
+        await Company.update(
+          { available: company.available + 1 },
+          { where: { id: registration.companyId } },
+        );
+      }
+    }
+
+    // Restore Amman hotel room availability
+    if (registration.accommodationInAmman && registration.ammanRoomId) {
+      const ammanRoom = await HotelRoom.findByPk(registration.ammanRoomId);
+      if (ammanRoom) {
+        await HotelRoom.update(
+          { available: ammanRoom.available + 1 },
+          { where: { id: registration.ammanRoomId } },
+        );
+      }
+    }
+
+    // Restore Dead Sea hotel room availability
+    if (registration.accommodationInDeadSea && registration.deadSeaRoomId) {
+      const deadSeaRoom = await HotelRoom.findByPk(registration.deadSeaRoomId);
+      if (deadSeaRoom) {
+        await HotelRoom.update(
+          { available: deadSeaRoom.available + 1 },
+          { where: { id: registration.deadSeaRoomId } },
+        );
+      }
+    }
+  }
+
   // Send declined email to participant
   await registrationNotificationService.handleCompanyDecline(
     registration.toJSON(),

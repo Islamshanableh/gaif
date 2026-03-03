@@ -258,6 +258,7 @@ exports.createRegistration = async payload => {
       where: {
         whatsapp: payload.whatsapp,
         isActive: true,
+        registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
       },
       attributes: ['id'],
     });
@@ -304,6 +305,7 @@ exports.updatePersonalInfo = async (id, payload) => {
       where: {
         whatsapp: payload.whatsapp,
         isActive: true,
+        registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
         id: { [Op.ne]: id }, // Exclude current registration
       },
       attributes: ['id'],
@@ -1508,6 +1510,7 @@ exports.createFullRegistration = async payload => {
       where: {
         whatsapp: payload.whatsapp,
         isActive: true,
+        registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
       },
       attributes: ['id'],
     });
@@ -1802,6 +1805,7 @@ exports.checkWhatsappUniqueness = async (
   const where = {
     whatsapp: `+${whatsapp}`,
     isActive: true,
+    registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
   };
 
   // Exclude current registration when updating
