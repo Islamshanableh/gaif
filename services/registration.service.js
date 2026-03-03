@@ -997,6 +997,26 @@ exports.adminUpdateRegistration = async (id, payload) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Registration not found');
   }
 
+  // Check WhatsApp uniqueness if being updated
+  if (payload.whatsapp) {
+    const existingWhatsapp = await Registration.findOne({
+      where: {
+        whatsapp: payload.whatsapp,
+        isActive: true,
+        registrationStatus: { [Op.in]: ['SUBMITTED', 'CONFIRMED'] },
+        id: { [Op.ne]: id }, // Exclude current registration
+      },
+      attributes: ['id'],
+    });
+
+    if (existingWhatsapp) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'This WhatsApp number is already registered. Please use a different number.',
+      );
+    }
+  }
+
   // Capture old values for availability adjustments
   const oldAmmanRoomId = registration.ammanRoomId;
   const oldDeadSeaRoomId = registration.deadSeaRoomId;
