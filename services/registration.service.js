@@ -1417,9 +1417,14 @@ exports.submitRegistration = async id => {
     totalPrice += regData.deadSeaRoom.double || regData.deadSeaRoom.single || 0;
   }
 
+  // If participation type does not require confirmation, auto-confirm the registration
+  const requiresConfirmation =
+    regData.participation?.requireConfirmationFromCompany !== false;
+  const newStatus = requiresConfirmation ? 'SUBMITTED' : 'CONFIRMED';
+
   await Registration.update(
     {
-      registrationStatus: 'SUBMITTED',
+      registrationStatus: newStatus,
       totalPrice,
     },
     { where: { id } },
@@ -1687,7 +1692,10 @@ exports.createFullRegistration = async payload => {
       photographyConsent: payload.photographyConsent || false,
       needsVisa: payload.needsVisa || false,
       totalPrice,
-      registrationStatus: 'SUBMITTED',
+      registrationStatus:
+        participationType?.requireConfirmationFromCompany !== false
+          ? 'SUBMITTED'
+          : 'CONFIRMED',
     };
 
     if (payload.participantPictureId) {
