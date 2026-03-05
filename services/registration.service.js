@@ -1133,8 +1133,42 @@ exports.adminUpdateRegistration = async (id, payload) => {
     }
   });
 
+  // When accommodation is turned off, force-clear all related hotel fields
+  if (payload.accommodationInAmman === false) {
+    updateData.accommodationInAmman = false;
+    updateData.ammanHotelId = null;
+    updateData.ammanRoomId = null;
+    updateData.ammanCheckIn = null;
+    updateData.ammanCheckOut = null;
+    updateData.ammanRoomType = null;
+    updateData.ammanRoommateId = null;
+  }
+  if (payload.accommodationInDeadSea === false) {
+    updateData.accommodationInDeadSea = false;
+    updateData.deadSeaHotelId = null;
+    updateData.deadSeaRoomId = null;
+    updateData.deadSeaCheckIn = null;
+    updateData.deadSeaCheckOut = null;
+    updateData.deadSeaRoomType = null;
+    updateData.deadSeaRoommateId = null;
+  }
+
   if (Object.keys(updateData).length > 0) {
     await Registration.update(updateData, { where: { id } });
+  }
+
+  // Clear reverse roommate links on other registrations when accommodation is cancelled
+  if (payload.accommodationInAmman === false) {
+    await Registration.update(
+      { ammanRoommateId: null },
+      { where: { ammanRoommateId: id } },
+    );
+  }
+  if (payload.accommodationInDeadSea === false) {
+    await Registration.update(
+      { deadSeaRoommateId: null },
+      { where: { deadSeaRoommateId: id } },
+    );
   }
 
   // Handle spouse update
