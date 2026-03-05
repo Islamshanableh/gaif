@@ -408,9 +408,21 @@ const getTransportationInsights = async () => {
     ]);
 
   const types = [
-    { type: 'AIRPORT_TO_AMMAN', label: 'Airport to Amman', count: airportToAmman },
-    { type: 'AIRPORT_TO_DEAD_SEA', label: 'Airport to Dead Sea', count: airportToDeadSea },
-    { type: 'VENUE_TRANSPORTATION', label: 'Venue Transportation', count: venueTransportation },
+    {
+      type: 'AIRPORT_TO_AMMAN',
+      label: 'Airport to Amman',
+      count: airportToAmman,
+    },
+    {
+      type: 'AIRPORT_TO_DEAD_SEA',
+      label: 'Airport to Dead Sea',
+      count: airportToDeadSea,
+    },
+    {
+      type: 'VENUE_TRANSPORTATION',
+      label: 'Venue Transportation',
+      count: venueTransportation,
+    },
   ];
 
   return {

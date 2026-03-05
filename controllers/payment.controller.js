@@ -174,6 +174,102 @@ exports.checkPaymentStatus = catchAsync(async (req, res) => {
  * POST /api/v1/payment/admin/mark-paid
  * Body: { registrationId, paidAmount, paidCurrency }
  */
+/**
+ * Initiate company invoice checkout
+ * GET /api/v1/payment/company-checkout?invoiceId=123
+ */
+exports.initiateCompanyCheckout = catchAsync(async (req, res) => {
+  const { invoiceId } = req.query;
+
+  if (!invoiceId) {
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .json({ message: 'invoiceId is required' });
+  }
+
+  const session = await paymentService.createCompanyCheckoutSession(
+    parseInt(invoiceId, 10),
+  );
+
+  const { meps } = config;
+  const checkoutJsUrl = `${meps.gatewayUrl}/static/checkout/checkout.min.js`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAIF 2026 - Company Payment</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-color: #f5f5f5; }
+    .container { text-align: center; padding: 40px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0066cc; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error { color: #cc0000; display: none; }
+  </style>
+  <script src="${checkoutJsUrl}" data-error="errorCallback" data-cancel="${config.urls.api.replace('/api/v1', '')}/payment/cancelled"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>GAIF 2026 - Company Invoice Payment</h2>
+    <p>Company: <strong>${session.companyName}</strong></p>
+    <p>Invoice: <strong>${session.serialNumber}</strong></p>
+    <p>Amount: <strong>${session.amount.toFixed(2)} ${session.currency}</strong></p>
+    <div class="spinner" id="spinner"></div>
+    <p id="loading">Redirecting to payment page...</p>
+    <p class="error" id="error">An error occurred. Please try again or contact support.</p>
+  </div>
+  <script>
+    function errorCallback(error) {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      console.error('Checkout error:', error);
+    }
+    Checkout.configure({ session: { id: '${session.sessionId}' } });
+    Checkout.showPaymentPage();
+  </script>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html');
+  return res.send(html);
+});
+
+/**
+ * Company invoice payment result callback - MEPS redirects here after payment
+ * GET /api/v1/payment/company-result?companyInvoiceId=123
+ */
+exports.companyPaymentResult = catchAsync(async (req, res) => {
+  const { companyInvoiceId } = req.query;
+
+  if (!companyInvoiceId) {
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .json({ message: 'companyInvoiceId is required' });
+  }
+
+  const result = await paymentService.verifyAndUpdateCompanyPayment(
+    parseInt(companyInvoiceId, 10),
+  );
+
+  const serverBase = config.urls.api.replace('/api/v1', '');
+  if (result.success) {
+    return res.redirect(
+      `${serverBase}/payment/company-success?companyInvoiceId=${companyInvoiceId}`,
+    );
+  }
+  return res.redirect(
+    `${serverBase}/payment/company-failed?companyInvoiceId=${companyInvoiceId}&status=${result.status}`,
+  );
+});
+
+/**
+ * Admin endpoint to mark payment as paid (SYSTEM payment)
+ * POST /api/v1/payment/admin/mark-paid
+ * Body: { registrationId, paidAmount, paidCurrency }
+ */
 exports.adminMarkAsPaid = catchAsync(async (req, res) => {
   const { registrationId, paidAmount, paidCurrency } = req.body;
 

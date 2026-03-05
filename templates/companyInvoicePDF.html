@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GAIF - PRE INVOICE</title>
+  <style>
+    :root {
+      --primary-blue: #4f6ca0;
+      --text-dark: #333333;
+      --accent-peach: #d88a7e;
+      --border-color: #d1d9df;
+    }
+
+    @page { size: A4; margin: 0; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Tahoma, 'Segoe UI', Geneva, Verdana, sans-serif;
+      color: var(--text-dark);
+      font-size: 10.5px;
+      line-height: 1.3;
+      background: #fff;
+    }
+
+    .container { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; }
+
+    /* ---- Header ---- */
+    .header-box { position: relative; width: 100%; }
+    .header-img { width: 100%; display: block; }
+    .pre-invoice-banner {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--primary-blue);
+      font-weight: bold;
+      font-size: 16px;
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    /* Orange separator line below header */
+    .header-separator {
+      border-bottom: 3px solid #c4602a;
+      margin: 0;
+    }
+
+    /* ---- Main content ---- */
+    .main-content { padding: 0 45px; }
+
+    /* ---- Info fields ---- */
+    .field-row { display: flex; gap: 40px; margin-top: 22px; margin-bottom: 18px; }
+    .field-item { flex: 1; }
+    .field-label {
+      color: var(--primary-blue);
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+    .field-value {
+      border-bottom: 1px solid var(--border-color);
+      min-height: 20px;
+      padding-bottom: 3px;
+      font-size: 10.5px;
+      color: var(--text-dark);
+    }
+
+    /* ---- Registration section ---- */
+    .section-header {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      color: var(--accent-peach);
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .inclusive-text { font-size: 9px; color: #666; }
+
+    /* ---- Registration table ---- */
+    table.reg-table { width: 100%; border-collapse: collapse; }
+    table.reg-table th {
+      border: 1px solid var(--border-color);
+      padding: 7px 6px;
+      color: var(--primary-blue);
+      font-weight: bold;
+      text-align: center;
+      font-size: 9.5px;
+      background-color: #f8f9fb;
+    }
+    table.reg-table td {
+      border: 1px solid var(--border-color);
+      padding: 6px;
+      height: 24px;
+      text-align: center;
+      font-size: 9.5px;
+      color: var(--text-dark);
+    }
+    table.reg-table td.left { text-align: left; }
+    table.reg-table td.right { text-align: right; }
+
+    /* ---- Totals ---- */
+    table.totals-table {
+      width: 290px;
+      margin-left: auto;
+      margin-top: 6px;
+      border: none;
+      border-collapse: collapse;
+    }
+    table.totals-table td {
+      border: none;
+      text-align: left;
+      padding: 4px 0;
+      height: auto;
+    }
+    .total-label {
+      color: var(--primary-blue);
+      font-weight: bold;
+      width: 160px;
+      font-size: 10px;
+    }
+    .total-value {
+      border-bottom: 1px solid var(--border-color);
+      text-align: right;
+      width: 130px;
+      color: #555;
+      font-size: 10px;
+      padding-right: 4px;
+    }
+
+    /* ---- Notes ---- */
+    .notes-area { margin-top: 22px; }
+    .notes-title {
+      color: var(--text-dark);
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .notes-body { font-size: 9.5px; color: #444; line-height: 1.5; }
+    .notes-body p { margin-bottom: 5px; }
+
+    .bank-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      margin-top: 10px;
+      font-size: 9px;
+    }
+    .bank-col { flex: 1; line-height: 1.6; }
+    .bank-col .bank-name { font-weight: bold; color: #333; margin-bottom: 2px; }
+    .bank-col .bank-details { color: var(--primary-blue); }
+    .bank-col .bank-details span { display: block; }
+
+    /* ---- Footer ---- */
+    .footer-separator {
+      border-top: 3.5px solid var(--accent-peach);
+      margin-top: 28px;
+      padding-top: 14px;
+      padding-left: 45px;
+      padding-right: 45px;
+      padding-bottom: 14px;
+    }
+    .policy-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 30px;
+    }
+    .policy-col { font-size: 9px; line-height: 1.5; }
+    .policy-title {
+      color: var(--accent-peach);
+      font-weight: bold;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .policy-col ul { padding-left: 14px; margin-bottom: 8px; list-style-type: disc; }
+    .policy-col ul li { margin-bottom: 4px; }
+
+    .exchange-rate {
+      color: var(--accent-peach);
+      font-weight: bold;
+      margin: 12px 0 6px;
+      font-size: 10px;
+    }
+    .exchange-val { color: #555; font-weight: normal; margin-left: 10px; }
+
+    .refund-title {
+      color: var(--accent-peach);
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 5px;
+    }
+    .refund-body { font-size: 9px; line-height: 1.5; color: #444; }
+    .refund-body p { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header-box">
+    <img class="header-img" src="{{HEADER_IMAGE_PATH}}" alt="GAIF Header" />
+    <div class="pre-invoice-banner">PRE INVOICE</div>
+  </div>
+  <div class="header-separator"></div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- Row 1: Serial Number + Tax Number -->
+    <div class="field-row">
+      <div class="field-item">
+        <div class="field-label">SERIAL NUMBER</div>
+        <div class="field-value">{{SERIAL_NUMBER}}</div>
+      </div>
+      <div class="field-item">
+        <div class="field-label">TAX NUMBER</div>
+        <div class="field-value">{{TAX_NUMBER}}</div>
+      </div>
+    </div>
+
+    <!-- Row 2: Company Name + Country + Date -->
+    <div class="field-row">
+      <div class="field-item" style="flex: 2;">
+        <div class="field-label">COMPANY NAME</div>
+        <div class="field-value">{{COMPANY_NAME}}</div>
+      </div>
+      <div class="field-item">
+        <div class="field-label">COUNTRY NAME</div>
+        <div class="field-value">{{COUNTRY_NAME}}</div>
+      </div>
+      <div class="field-item">
+        <div class="field-label">DATE</div>
+        <div class="field-value">{{INVOICE_DATE}}</div>
+      </div>
+    </div>
+
+    <!-- Registration Table -->
+    <div class="section-header">
+      <div class="section-title">REGISTRATION</div>
+      <div class="inclusive-text">(Inclusive of Tax)</div>
+    </div>
+
+    <table class="reg-table">
+      <thead>
+        <tr>
+          <th style="width:8%;">ID</th>
+          <th style="width:30%;">Name</th>
+          <th style="width:16%;">Pre-Invoice #</th>
+          <th style="width:16%;">Registration Date</th>
+          <th style="width:15%;">Amount (USD)</th>
+          <th style="width:15%;">Amount (JD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{TABLE_ROWS}}
+      </tbody>
+    </table>
+
+    <!-- Totals -->
+    <table class="totals-table">
+      <tr>
+        <td class="total-label">Total Value (USD)</td>
+        <td class="total-value">{{TOTAL_USD}}</td>
+      </tr>
+      <tr>
+        <td class="total-label">Total Value (JD)</td>
+        <td class="total-value">{{TOTAL_JD}}</td>
+      </tr>
+    </table>
+
+    <!-- Notes -->
+    <div class="notes-area">
+      <div class="notes-title">NOTES</div>
+      <div class="notes-body">
+        <p>Registration &amp; Hotel accommodation fees can be paid by:</p>
+        <p><strong>A.&nbsp; Credit card (VISA, MASTER),</strong><br>Through the link on received email</p>
+        <p><strong>B.&nbsp; Bank Transfer</strong></p>
+        <div class="bank-container">
+          <div class="bank-col">
+            <div class="bank-name">Jordan Insurance Federation (JIF) Account:</div>
+            <div class="bank-details">
+              <span>Bank Name: Arab Bank/Abdali Branch</span>
+              <span>Bank Account#(30) 0119/060725-501</span>
+              <span>IBAN (JD): 3052 ARAB 1190 0000 0011 9060 7255 01</span>
+              <span>Bank Account (US Dollar) 0119/060725-511</span>
+              <span>IBAN (US Dollar): 3073 ARAB 1190 0000 0011 9060 7255 11</span>
+              <span>SWIFT Code: ARAB20AXTI</span>
+            </div>
+          </div>
+          <div class="bank-col">
+            <div class="bank-name">General Arab Insurance Federation (GAIF) Account:</div>
+            <div class="bank-details">
+              <span>Arab Bank - Manama Branch</span>
+              <span>Manama - Kingdom of Bahrain</span>
+              <span>Account No: 2002 – 104598 – 511 USD</span>
+              <span>Swift Code No: ARABBHBMAN</span>
+              <span>IBAN: BH 31 ARAB 0200 2104 5985 11</span>
+              <span>Account Name: General Arab Insurance Federation</span>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:10px;"><strong>C.&nbsp; Local bank cheque Jordanian Bank to JIF</strong></p>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+
+  <!-- FOOTER -->
+  <div class="footer-separator">
+    <div class="policy-grid">
+
+      <!-- Left: Important Notes + Exchange Rate + Refund Policy -->
+      <div class="policy-col">
+        <div class="policy-title">Important Notes</div>
+        <ul>
+          <li>Registration and hotel accommodation will only be guaranteed once we receive full payment.</li>
+          <li>Registration and hotel accommodation must be paid maximum before August 4, 2026.</li>
+          <li>Extra expenses during accommodation will be paid directly to the hotel.</li>
+          <li>Prices of accommodation are inclusive of breakfast, service charges &amp; applicable taxes at Dead Sea and Amman hotels.</li>
+          <li>The above prices include all applicable taxes in Jordan, as per current laws and regulations.</li>
+        </ul>
+        <div class="exchange-rate">
+          Exchange rate is approximately <span class="exchange-val">USD 1 = JD 0.709</span>
+        </div>
+        <div class="refund-title">Refund Policy</div>
+        <div class="refund-body">
+          <p>The organizers undertake to refund any amounts paid by participants, as outlined above, within 10 working days from the submission date of the cancellation request emailed to registration@GAIF2026.com.</p>
+          <p>In case of unexpected matters (Force Majeure) such as pandemics/epidemics or any other enforceable situations that cancel the event, JIF/GAIF will refund all the prepaid fees within 10 working days.</p>
+        </div>
+      </div>
+
+      <!-- Right: Cancellation Policy -->
+      <div class="policy-col">
+        <div class="policy-title">Cancellation Policy</div>
+        <ul>
+          <li>Free Cancellation of all fees if the conference is cancelled by the GAIF35 Supreme Organizing Committee for any reason.</li>
+          <li>Free Cancellation of all fees if the participant cancels his/her participation for any reason before 11:59 PM (Amman local time) on Tuesday, August 4, 2026.</li>
+          <li>No Refund of any fees if the participant cancels his/her participation for any reason after 11:59 PM (Amman local time) on Tuesday, August 4, 2026.</li>
+          <li>If the participant fails to pay the accommodation fees before 11:59 PM (Amman local time) on Tuesday, August 4, 2026, the Jordan Insurance Federation reserves the right to cancel his/her participation and hotel reservation.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

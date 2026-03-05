@@ -26,6 +26,12 @@
       "value": "",
       "type": "string",
       "description": "Temporary token for MFA verification during login"
+    },
+    {
+      "key": "companyInvoiceId",
+      "value": "1",
+      "type": "string",
+      "description": "ID of the company invoice (CompanyInvoice.id)"
     }
   ],
   "item": [
@@ -49,8 +55,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             },
             "description": "Register a new user account"
           },
@@ -97,8 +108,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             },
             "description": "Login with email and password. If MFA is enabled, returns mfaRequired: true with tempToken."
           },
@@ -148,8 +164,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
             },
             "description": "Refresh access token using refresh token"
           },
@@ -178,8 +199,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/forget-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "forget-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forget-password"
+              ]
             },
             "description": "Request password reset code via email"
           },
@@ -208,8 +234,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/verify-code",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "verify-code"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-code"
+              ]
             },
             "description": "Verify password reset code"
           },
@@ -240,8 +271,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/mfa/setup",
-              "host": ["{{baseUrl}}"],
-              "path": ["mfa", "setup"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mfa",
+                "setup"
+              ]
             },
             "description": "Generate QR code for Google Authenticator setup. Scan the QR code with your authenticator app."
           },
@@ -274,8 +310,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/mfa/verify-setup",
-              "host": ["{{baseUrl}}"],
-              "path": ["mfa", "verify-setup"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mfa",
+                "verify-setup"
+              ]
             },
             "description": "Verify the 6-digit code from Google Authenticator to enable MFA"
           },
@@ -320,8 +361,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/mfa/verify",
-              "host": ["{{baseUrl}}"],
-              "path": ["mfa", "verify"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mfa",
+                "verify"
+              ]
             },
             "description": "Complete login with MFA verification using tempToken from login response"
           },
@@ -354,8 +400,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/mfa/disable",
-              "host": ["{{baseUrl}}"],
-              "path": ["mfa", "disable"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mfa",
+                "disable"
+              ]
             },
             "description": "Disable MFA - requires current MFA code for verification"
           },
@@ -380,8 +431,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/mfa/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["mfa", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "mfa",
+                "status"
+              ]
             },
             "description": "Check if MFA is enabled for the authenticated user"
           },
@@ -405,8 +461,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -414,8 +476,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/user/create",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "create"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "create"
+              ]
             },
             "description": "Create a new user. Email must be unique. Roles: ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"
           },
@@ -433,18 +500,44 @@
           "request": {
             "method": "GET",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/user/list?page=1&limit=10&status=APPROVED&role=GAIF_ADMIN&search=admin",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "list"
+              ],
               "query": [
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "10"},
-                {"key": "status", "value": "APPROVED", "description": "APPROVED or PENDING"},
-                {"key": "role", "value": "GAIF_ADMIN", "description": "ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"},
-                {"key": "search", "value": "admin", "description": "Search by email or fullName"}
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "APPROVED",
+                  "description": "APPROVED or PENDING"
+                },
+                {
+                  "key": "role",
+                  "value": "GAIF_ADMIN",
+                  "description": "ADMINISTRATOR, GAIF_ADMIN, REGISTRATION_ADMIN, USER"
+                },
+                {
+                  "key": "search",
+                  "value": "admin",
+                  "description": "Search by email or fullName"
+                }
               ]
             },
             "description": "Get paginated list of users with optional filters"
@@ -463,14 +556,25 @@
           "request": {
             "method": "GET",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/user/get?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "get"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "get"
+              ],
               "query": [
-                {"key": "id", "value": "1"}
+                {
+                  "key": "id",
+                  "value": "1"
+                }
               ]
             },
             "description": "Get user details by ID"
@@ -489,8 +593,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -498,10 +608,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/user/update?id=2",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "update"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "update"
+              ],
               "query": [
-                {"key": "id", "value": "2"}
+                {
+                  "key": "id",
+                  "value": "2"
+                }
               ]
             },
             "description": "Update user details - supports fullName, email, password, role, status, isActive. Email must be unique."
@@ -520,14 +638,25 @@
           "request": {
             "method": "DELETE",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/user/delete?id=5",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "delete"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "delete"
+              ],
               "query": [
-                {"key": "id", "value": "5"}
+                {
+                  "key": "id",
+                  "value": "5"
+                }
               ]
             },
             "description": "Delete user - soft delete"
@@ -546,8 +675,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -555,8 +690,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/user/approve",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "approve"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "approve"
+              ]
             },
             "description": "Approve a pending user and assign role"
           },
@@ -574,8 +714,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -583,8 +729,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/user/update-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["user", "update-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "update-password"
+              ]
             },
             "description": "Update own password - any authenticated user"
           },
@@ -610,8 +761,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/setting/countries",
-              "host": ["{{baseUrl}}"],
-              "path": ["setting", "countries"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "setting",
+                "countries"
+              ]
             },
             "description": "Get list of all countries"
           },
@@ -650,8 +806,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type",
-              "host": ["{{baseUrl}}"],
-              "path": ["participation-type"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "participation-type"
+              ]
             },
             "description": "Create a new participation type (Admin only)"
           },
@@ -676,8 +836,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["participation-type"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "participation-type"
+              ],
               "query": [
                 {
                   "key": "id",
@@ -716,8 +880,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["participation-type"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "participation-type"
+              ],
               "query": [
                 {
                   "key": "id",
@@ -748,8 +916,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["participation-type"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "participation-type"
+              ],
               "query": [
                 {
                   "key": "id",
@@ -775,8 +947,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/participation-type/list?allowForRegister=true&countryId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["participation-type", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "participation-type",
+                "list"
+              ],
               "query": [
                 {
                   "key": "allowForRegister",
@@ -820,23 +997,73 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "name", "value": "Acme Corporation", "type": "text"},
-                {"key": "email", "value": "contact@acme.com", "type": "text"},
-                {"key": "entryDate", "value": "2024-01-01", "type": "text"},
-                {"key": "expirationDate", "value": "2024-12-31", "type": "text"},
-                {"key": "countryId", "value": "1", "type": "text"},
-                {"key": "participationId", "value": "1", "type": "text"},
-                {"key": "numberOfFreeSeats", "value": "5", "type": "text"},
-                {"key": "available", "value": "5", "type": "text"},
-                {"key": "allowFreeSeats", "value": "true", "type": "text"},
-                {"key": "order", "value": "1", "type": "text", "description": "Display order for sorting"},
-                {"key": "logo", "type": "file", "src": "/path/to/logo.png", "description": "Company logo"}
+                {
+                  "key": "name",
+                  "value": "Acme Corporation",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "contact@acme.com",
+                  "type": "text"
+                },
+                {
+                  "key": "entryDate",
+                  "value": "2024-01-01",
+                  "type": "text"
+                },
+                {
+                  "key": "expirationDate",
+                  "value": "2024-12-31",
+                  "type": "text"
+                },
+                {
+                  "key": "countryId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "participationId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "numberOfFreeSeats",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "available",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "allowFreeSeats",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Display order for sorting"
+                },
+                {
+                  "key": "logo",
+                  "type": "file",
+                  "src": "/path/to/logo.png",
+                  "description": "Company logo"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/company",
-              "host": ["{{baseUrl}}"],
-              "path": ["company"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company"
+              ]
             },
             "description": "Create a new company with optional logo upload. The 'order' field is used for sorting companies."
           },
@@ -856,9 +1083,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/company?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get company by ID"
           },
@@ -876,23 +1112,56 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "name", "value": "Acme Corporation Updated", "type": "text"},
-                {"key": "email", "value": "new-contact@acme.com", "type": "text"},
-                {"key": "numberOfFreeSeats", "value": "10", "type": "text"},
-                {"key": "order", "value": "1", "type": "text", "description": "Display order for sorting"},
-                {"key": "logo", "type": "file", "src": "/path/to/new-logo.png"}
+                {
+                  "key": "name",
+                  "value": "Acme Corporation Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "new-contact@acme.com",
+                  "type": "text"
+                },
+                {
+                  "key": "numberOfFreeSeats",
+                  "value": "10",
+                  "type": "text"
+                },
+                {
+                  "key": "order",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Display order for sorting"
+                },
+                {
+                  "key": "logo",
+                  "type": "file",
+                  "src": "/path/to/new-logo.png"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/company?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Update company (Admin only). The 'order' field is used for sorting companies."
           },
@@ -909,12 +1178,26 @@
           "name": "Delete Company",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Delete company - soft delete (Admin only)"
           },
@@ -934,14 +1217,36 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/company/list?page=1&limit=10&search=acme&countryId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company",
+                "list"
+              ],
               "query": [
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "10"},
-                {"key": "search", "value": "acme", "description": "Search by name or email"},
-                {"key": "countryId", "value": "1"},
-                {"key": "participationId", "value": "1", "disabled": true}
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "acme",
+                  "description": "Search by name or email"
+                },
+                {
+                  "key": "countryId",
+                  "value": "1"
+                },
+                {
+                  "key": "participationId",
+                  "value": "1",
+                  "disabled": true
+                }
               ]
             },
             "description": "Get paginated list of companies with filters"
@@ -965,26 +1270,76 @@
           "name": "Create Trip",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "type", "value": "participation", "type": "text", "description": "participation or spouse"},
-                {"key": "name", "value": "Petra Day Trip", "type": "text"},
-                {"key": "nameAr", "value": "رحلة البتراء", "type": "text"},
-                {"key": "description", "value": "Full day trip to the ancient city of Petra", "type": "text"},
-                {"key": "descriptionAr", "value": "رحلة يوم كامل إلى مدينة البتراء القديمة", "type": "text"},
-                {"key": "price", "value": "150.00", "type": "text"},
-                {"key": "currency", "value": "JD", "type": "text"},
-                {"key": "tripDate", "value": "2024-06-15", "type": "text"},
-                {"key": "maxParticipants", "value": "50", "type": "text"},
-                {"key": "image", "type": "file", "src": "/path/to/petra.jpg"}
+                {
+                  "key": "type",
+                  "value": "participation",
+                  "type": "text",
+                  "description": "participation or spouse"
+                },
+                {
+                  "key": "name",
+                  "value": "Petra Day Trip",
+                  "type": "text"
+                },
+                {
+                  "key": "nameAr",
+                  "value": "رحلة البتراء",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Full day trip to the ancient city of Petra",
+                  "type": "text"
+                },
+                {
+                  "key": "descriptionAr",
+                  "value": "رحلة يوم كامل إلى مدينة البتراء القديمة",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "150.00",
+                  "type": "text"
+                },
+                {
+                  "key": "currency",
+                  "value": "JD",
+                  "type": "text"
+                },
+                {
+                  "key": "tripDate",
+                  "value": "2024-06-15",
+                  "type": "text"
+                },
+                {
+                  "key": "maxParticipants",
+                  "value": "50",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/petra.jpg"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/trip",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip"
+              ]
             },
             "description": "Create a new trip (Admin only)"
           },
@@ -1004,9 +1359,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/trip?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get trip by ID"
           },
@@ -1023,20 +1387,46 @@
           "name": "Update Trip",
           "request": {
             "method": "PUT",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "name", "value": "Petra Day Trip - Premium", "type": "text"},
-                {"key": "price", "value": "175.00", "type": "text"},
-                {"key": "image", "type": "file", "src": "/path/to/new-petra.jpg"}
+                {
+                  "key": "name",
+                  "value": "Petra Day Trip - Premium",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "175.00",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "/path/to/new-petra.jpg"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/trip?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Update trip (Admin only)"
           },
@@ -1053,12 +1443,26 @@
           "name": "Delete Trip",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/trip?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Delete trip - soft delete (Admin only)"
           },
@@ -1075,15 +1479,37 @@
           "name": "Get Trips List",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}", "description": "Required when forAdmin=true"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Required when forAdmin=true"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/trip/list?isActive=true&type=participation&forAdmin=false",
-              "host": ["{{baseUrl}}"],
-              "path": ["trip", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip",
+                "list"
+              ],
               "query": [
-                {"key": "isActive", "value": "true"},
-                {"key": "type", "value": "participation", "description": "participation or spouse"},
-                {"key": "forAdmin", "value": "false", "description": "When true, returns all trips regardless of isActive (admin only)"}
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "type",
+                  "value": "participation",
+                  "description": "participation or spouse"
+                },
+                {
+                  "key": "forAdmin",
+                  "value": "false",
+                  "description": "When true, returns all trips regardless of isActive (admin only)"
+                }
               ]
             },
             "description": "Get list of trips with optional filters. Use forAdmin=true to get all trips including inactive ones (requires admin auth)."
@@ -1107,30 +1533,95 @@
           "name": "Create Accommodation",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "hotelName", "value": "Grand Hyatt Amman", "type": "text"},
-                {"key": "urlTitle", "value": "grand-hyatt-amman", "type": "text"},
-                {"key": "location", "value": "Hussein Bin Ali Street, Amman", "type": "text"},
-                {"key": "stars", "value": "5", "type": "text"},
-                {"key": "hotelTax", "value": "16%", "type": "text"},
-                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant", "type": "text"},
-                {"key": "hotelOrder", "value": "1", "type": "text"},
-                {"key": "hotelNameAr", "value": "جراند حياة عمان", "type": "text"},
-                {"key": "distance", "value": "10 km from airport", "type": "text"},
-                {"key": "time", "value": "20 minutes", "type": "text"},
-                {"key": "timeInArabic", "value": "20 دقيقة", "type": "text"},
-                {"key": "entryDate", "value": "2024-01-01", "type": "text"},
-                {"key": "expirationDate", "value": "2024-12-31", "type": "text"},
-                {"key": "hotelRooms", "value": "[{\"roomCategory\": \"Standard Room\", \"roomCategoryInArabic\": \"غرفة عادية\", \"numberOfRooms\": 50, \"single\": 100, \"double\": 150, \"roomRate\": 120, \"currency\": \"JD\", \"available\": 50}, {\"roomCategory\": \"Deluxe Suite\", \"roomCategoryInArabic\": \"جناح فاخر\", \"numberOfRooms\": 20, \"single\": 200, \"double\": 280, \"roomRate\": 240, \"currency\": \"JD\", \"available\": 20}]", "type": "text"}
+                {
+                  "key": "hotelName",
+                  "value": "Grand Hyatt Amman",
+                  "type": "text"
+                },
+                {
+                  "key": "urlTitle",
+                  "value": "grand-hyatt-amman",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Hussein Bin Ali Street, Amman",
+                  "type": "text"
+                },
+                {
+                  "key": "stars",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelTax",
+                  "value": "16%",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelService",
+                  "value": "Spa, Pool, Gym, Restaurant",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelOrder",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelNameAr",
+                  "value": "جراند حياة عمان",
+                  "type": "text"
+                },
+                {
+                  "key": "distance",
+                  "value": "10 km from airport",
+                  "type": "text"
+                },
+                {
+                  "key": "time",
+                  "value": "20 minutes",
+                  "type": "text"
+                },
+                {
+                  "key": "timeInArabic",
+                  "value": "20 دقيقة",
+                  "type": "text"
+                },
+                {
+                  "key": "entryDate",
+                  "value": "2024-01-01",
+                  "type": "text"
+                },
+                {
+                  "key": "expirationDate",
+                  "value": "2024-12-31",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelRooms",
+                  "value": "[{\"roomCategory\": \"Standard Room\", \"roomCategoryInArabic\": \"غرفة عادية\", \"numberOfRooms\": 50, \"single\": 100, \"double\": 150, \"roomRate\": 120, \"currency\": \"JD\", \"available\": 50}, {\"roomCategory\": \"Deluxe Suite\", \"roomCategoryInArabic\": \"جناح فاخر\", \"numberOfRooms\": 20, \"single\": 200, \"double\": 280, \"roomRate\": 240, \"currency\": \"JD\", \"available\": 20}]",
+                  "type": "text"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation"
+              ]
             },
             "description": "Create a new accommodation/hotel with rooms (Admin only)"
           },
@@ -1150,9 +1641,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/accommodation?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get accommodation by ID with rooms and images"
           },
@@ -1169,20 +1669,47 @@
           "name": "Update Accommodation",
           "request": {
             "method": "PUT",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "hotelName", "value": "Grand Hyatt Amman - Updated", "type": "text"},
-                {"key": "hotelService", "value": "Spa, Pool, Gym, Restaurant, Business Center", "type": "text"},
-                {"key": "hotelRooms", "value": "[{\"id\": 1, \"roomCategory\": \"Standard Room Updated\", \"roomCategoryInArabic\": \"غرفة عادية محدثة\", \"numberOfRooms\": 55, \"single\": 110, \"double\": 160, \"roomRate\": 130, \"currency\": \"USD\", \"available\": 55}]", "type": "text", "description": "Include id to update existing room, omit id to create new room"}
+                {
+                  "key": "hotelName",
+                  "value": "Grand Hyatt Amman - Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelService",
+                  "value": "Spa, Pool, Gym, Restaurant, Business Center",
+                  "type": "text"
+                },
+                {
+                  "key": "hotelRooms",
+                  "value": "[{\"id\": 1, \"roomCategory\": \"Standard Room Updated\", \"roomCategoryInArabic\": \"غرفة عادية محدثة\", \"numberOfRooms\": 55, \"single\": 110, \"double\": 160, \"roomRate\": 130, \"currency\": \"USD\", \"available\": 55}]",
+                  "type": "text",
+                  "description": "Include id to update existing room, omit id to create new room"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Update accommodation (Admin only)"
           },
@@ -1199,12 +1726,26 @@
           "name": "Delete Accommodation",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/accommodation?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Delete accommodation - soft delete (Admin only)"
           },
@@ -1222,8 +1763,15 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}", "description": "Required when forAdmin=true"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Required when forAdmin=true"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1231,8 +1779,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/accommodation/list",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation", "list"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation",
+                "list"
+              ]
             },
             "description": "Get list of accommodations with optional star filter. Use forAdmin=true to get all accommodations including inactive ones (requires admin auth)."
           },
@@ -1249,20 +1802,66 @@
           "name": "Get Accommodation Report",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/accommodation/report?page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["accommodation", "report"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodation",
+                "report"
+              ],
               "query": [
-                {"key": "location", "value": "deadSea", "disabled": true, "description": "amman | deadSea"},
-                {"key": "hotelId", "value": "1", "disabled": true, "description": "Filter by hotel ID"},
-                {"key": "hotelCategory", "value": "5", "disabled": true, "description": "Filter by star rating"},
-                {"key": "roomCategory", "value": "Standard Room", "disabled": true, "description": "Filter by room category"},
-                {"key": "roomType", "value": "single", "disabled": true, "description": "single | double"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"},
-                {"key": "exportAll", "value": "true", "disabled": true, "description": "Set true to export all records without pagination"}
+                {
+                  "key": "location",
+                  "value": "deadSea",
+                  "disabled": true,
+                  "description": "amman | deadSea"
+                },
+                {
+                  "key": "hotelId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Filter by hotel ID"
+                },
+                {
+                  "key": "hotelCategory",
+                  "value": "5",
+                  "disabled": true,
+                  "description": "Filter by star rating"
+                },
+                {
+                  "key": "roomCategory",
+                  "value": "Standard Room",
+                  "disabled": true,
+                  "description": "Filter by room category"
+                },
+                {
+                  "key": "roomType",
+                  "value": "single",
+                  "disabled": true,
+                  "description": "single | double"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "exportAll",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Set true to export all records without pagination"
+                }
               ]
             },
             "description": "Get paginated report of registrations with accommodation details. Filter by location, hotel, room category, and room type. Admin only."
@@ -1287,8 +1886,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1296,8 +1901,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule",
-              "host": ["{{baseUrl}}"],
-              "path": ["transportation-schedule"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transportation-schedule"
+              ]
             },
             "description": "Create a new transportation schedule (Admin only)"
           },
@@ -1317,9 +1926,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["transportation-schedule"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transportation-schedule"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get transportation schedule by ID"
           },
@@ -1337,8 +1955,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1346,9 +1970,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["transportation-schedule"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transportation-schedule"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Update transportation schedule (Admin only)"
           },
@@ -1365,12 +1998,26 @@
           "name": "Delete Transportation Schedule",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["transportation-schedule"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transportation-schedule"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Delete transportation schedule - soft delete (Admin only)"
           },
@@ -1390,12 +2037,28 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/transportation-schedule/list?direction=AMMAN_TO_DEAD_SEA&isActive=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["transportation-schedule", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transportation-schedule",
+                "list"
+              ],
               "query": [
-                {"key": "direction", "value": "AMMAN_TO_DEAD_SEA", "description": "AMMAN_TO_DEAD_SEA or DEAD_SEA_TO_AMMAN"},
-                {"key": "scheduleDate", "value": "2024-06-10", "disabled": true},
-                {"key": "isActive", "value": "true"}
+                {
+                  "key": "direction",
+                  "value": "AMMAN_TO_DEAD_SEA",
+                  "description": "AMMAN_TO_DEAD_SEA or DEAD_SEA_TO_AMMAN"
+                },
+                {
+                  "key": "scheduleDate",
+                  "value": "2024-06-10",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
               ]
             },
             "description": "Get list of transportation schedules with filters"
@@ -1423,53 +2086,224 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "participationId", "value": "1", "type": "text"},
-                {"key": "companyId", "value": "1", "type": "text"},
-                {"key": "title", "value": "MR", "type": "text", "description": "Any string value (e.g., MR, MRS, MS, DR, PROF, etc.)"},
-                {"key": "firstName", "value": "John", "type": "text"},
-                {"key": "middleName", "value": "William", "type": "text"},
-                {"key": "lastName", "value": "Doe", "type": "text"},
-                {"key": "position", "value": "CEO", "type": "text"},
-                {"key": "nationalityId", "value": "1", "type": "text"},
-                {"key": "email", "value": "john.doe@acme.com", "type": "text"},
-                {"key": "telephone", "value": "+962-6-1234567", "type": "text"},
-                {"key": "mobile", "value": "+962791234567", "type": "text"},
-                {"key": "whatsapp", "value": "+962791234567", "type": "text"},
-                {"key": "hasSpouse", "value": "true", "type": "text"},
-                {"key": "spouse", "value": "{\"title\": \"Mrs.\", \"firstName\": \"Jane\", \"middleName\": \"Marie\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}", "type": "text", "description": "Spouse data - title can be any string"},
-                {"key": "accommodationInAmman", "value": "true", "type": "text"},
-                {"key": "ammanHotelId", "value": "1", "type": "text"},
-                {"key": "ammanRoomId", "value": "1", "type": "text"},
-                {"key": "ammanCheckIn", "value": "2024-06-09", "type": "text"},
-                {"key": "ammanCheckOut", "value": "2024-06-12", "type": "text"},
-                {"key": "accommodationInDeadSea", "value": "true", "type": "text"},
-                {"key": "deadSeaHotelId", "value": "2", "type": "text"},
-                {"key": "deadSeaRoomId", "value": "3", "type": "text"},
-                {"key": "deadSeaCheckIn", "value": "2024-06-12", "type": "text"},
-                {"key": "deadSeaCheckOut", "value": "2024-06-15", "type": "text"},
-                {"key": "trips", "value": "[{\"tripId\": 1, \"forSpouse\": false}, {\"tripId\": 1, \"forSpouse\": true}]", "type": "text"},
-                {"key": "needsVisa", "value": "true", "type": "text"},
-                {"key": "airportPickupOption", "value": "NEED_PICKUP", "type": "text", "description": "NEED_PICKUP, NO_PICKUP, PROVIDE_LATER"},
-                {"key": "arrivalDate", "value": "2024-06-09", "type": "text"},
-                {"key": "arrivalAirline", "value": "Royal Jordanian", "type": "text"},
-                {"key": "arrivalFlightNumber", "value": "RJ115", "type": "text"},
-                {"key": "arrivalTime", "value": "14:30", "type": "text"},
-                {"key": "departureDate", "value": "2024-06-16", "type": "text"},
-                {"key": "departureAirline", "value": "Royal Jordanian", "type": "text"},
-                {"key": "departureFlightNumber", "value": "RJ116", "type": "text"},
-                {"key": "departureTime", "value": "10:00", "type": "text"},
-                {"key": "specialRequest", "value": "Vegetarian meals please", "type": "text"},
-                {"key": "photographyConsent", "value": "true", "type": "text"},
-                {"key": "participantPicture", "type": "file", "src": "/path/to/photo.jpg"},
-                {"key": "passportCopy", "type": "file", "src": "/path/to/passport.pdf"},
-                {"key": "residency", "type": "file", "src": "/path/to/residency.pdf"},
-                {"key": "visaForm", "type": "file", "src": "/path/to/visa-form.pdf"}
+                {
+                  "key": "participationId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "companyId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "MR",
+                  "type": "text",
+                  "description": "Any string value (e.g., MR, MRS, MS, DR, PROF, etc.)"
+                },
+                {
+                  "key": "firstName",
+                  "value": "John",
+                  "type": "text"
+                },
+                {
+                  "key": "middleName",
+                  "value": "William",
+                  "type": "text"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "position",
+                  "value": "CEO",
+                  "type": "text"
+                },
+                {
+                  "key": "nationalityId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john.doe@acme.com",
+                  "type": "text"
+                },
+                {
+                  "key": "telephone",
+                  "value": "+962-6-1234567",
+                  "type": "text"
+                },
+                {
+                  "key": "mobile",
+                  "value": "+962791234567",
+                  "type": "text"
+                },
+                {
+                  "key": "whatsapp",
+                  "value": "+962791234567",
+                  "type": "text"
+                },
+                {
+                  "key": "hasSpouse",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "spouse",
+                  "value": "{\"title\": \"Mrs.\", \"firstName\": \"Jane\", \"middleName\": \"Marie\", \"lastName\": \"Doe\", \"nationalityId\": 1, \"whatsapp\": \"+962791234568\", \"needsVisaHelp\": true}",
+                  "type": "text",
+                  "description": "Spouse data - title can be any string"
+                },
+                {
+                  "key": "accommodationInAmman",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "ammanHotelId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "ammanRoomId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "ammanCheckIn",
+                  "value": "2024-06-09",
+                  "type": "text"
+                },
+                {
+                  "key": "ammanCheckOut",
+                  "value": "2024-06-12",
+                  "type": "text"
+                },
+                {
+                  "key": "accommodationInDeadSea",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "deadSeaHotelId",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "deadSeaRoomId",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "deadSeaCheckIn",
+                  "value": "2024-06-12",
+                  "type": "text"
+                },
+                {
+                  "key": "deadSeaCheckOut",
+                  "value": "2024-06-15",
+                  "type": "text"
+                },
+                {
+                  "key": "trips",
+                  "value": "[{\"tripId\": 1, \"forSpouse\": false}, {\"tripId\": 1, \"forSpouse\": true}]",
+                  "type": "text"
+                },
+                {
+                  "key": "needsVisa",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "airportPickupOption",
+                  "value": "NEED_PICKUP",
+                  "type": "text",
+                  "description": "NEED_PICKUP, NO_PICKUP, PROVIDE_LATER"
+                },
+                {
+                  "key": "arrivalDate",
+                  "value": "2024-06-09",
+                  "type": "text"
+                },
+                {
+                  "key": "arrivalAirline",
+                  "value": "Royal Jordanian",
+                  "type": "text"
+                },
+                {
+                  "key": "arrivalFlightNumber",
+                  "value": "RJ115",
+                  "type": "text"
+                },
+                {
+                  "key": "arrivalTime",
+                  "value": "14:30",
+                  "type": "text"
+                },
+                {
+                  "key": "departureDate",
+                  "value": "2024-06-16",
+                  "type": "text"
+                },
+                {
+                  "key": "departureAirline",
+                  "value": "Royal Jordanian",
+                  "type": "text"
+                },
+                {
+                  "key": "departureFlightNumber",
+                  "value": "RJ116",
+                  "type": "text"
+                },
+                {
+                  "key": "departureTime",
+                  "value": "10:00",
+                  "type": "text"
+                },
+                {
+                  "key": "specialRequest",
+                  "value": "Vegetarian meals please",
+                  "type": "text"
+                },
+                {
+                  "key": "photographyConsent",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "participantPicture",
+                  "type": "file",
+                  "src": "/path/to/photo.jpg"
+                },
+                {
+                  "key": "passportCopy",
+                  "type": "file",
+                  "src": "/path/to/passport.pdf"
+                },
+                {
+                  "key": "residency",
+                  "type": "file",
+                  "src": "/path/to/residency.pdf"
+                },
+                {
+                  "key": "visaForm",
+                  "type": "file",
+                  "src": "/path/to/visa-form.pdf"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration"
+              ]
             },
             "description": "Create a full registration with all data and files"
           },
@@ -1489,9 +2323,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get full registration details by ID"
           },
@@ -1512,16 +2355,37 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "firstName", "value": "John Updated", "type": "text"},
-                {"key": "email", "value": "john.updated@example.com", "type": "text"},
-                {"key": "participantPicture", "type": "file", "src": "/path/to/new-photo.jpg"}
+                {
+                  "key": "firstName",
+                  "value": "John Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john.updated@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "participantPicture",
+                  "type": "file",
+                  "src": "/path/to/new-photo.jpg"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Update registration with optional file uploads"
           },
@@ -1539,8 +2403,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1548,9 +2418,19 @@
             },
             "url": {
               "raw": "{{baseUrl}}/registration/admin-update?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "admin-update"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "admin-update"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Admin update registration - supports ALL fields including status, participation, company, spouse (with file fields), trips, accommodation (with roomType and roommateId), files (participantPictureId, passportCopyId, residencyId, visaFormId), flights, transportation, visa, and payment status. Send null to remove a file reference. Only send the fields you want to update (partial update supported). Requires admin authentication."
           },
@@ -1570,9 +2450,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Delete registration - soft delete"
           },
@@ -1589,25 +2478,94 @@
           "name": "Get Registrations List",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/registration/list?page=1&limit=10&companyId=1&status=CONFIRMED",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "list"
+              ],
               "query": [
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "10"},
-                {"key": "companyId", "value": "1", "description": "Filter by company ID"},
-                {"key": "participationId", "value": "1", "disabled": true, "description": "Filter by participation type ID"},
-                {"key": "status", "value": "CONFIRMED", "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"},
-                {"key": "paymentStatus", "value": "PENDING", "disabled": true, "description": "PENDING, PAID, PARTIAL, REFUNDED"},
-                {"key": "search", "value": "john", "disabled": true, "description": "Search by first name, last name, email, or mobile"},
-                {"key": "exportAll", "value": "true", "disabled": true, "description": "Set to true to return all results without pagination (for export)"},
-                {"key": "profileId", "value": "1001", "disabled": true, "description": "Filter by exact profile ID"},
-                {"key": "firstName", "value": "John", "disabled": true, "description": "Filter by first name (partial match)"},
-                {"key": "middleName", "value": "William", "disabled": true, "description": "Filter by middle name (partial match)"},
-                {"key": "lastName", "value": "Doe", "disabled": true, "description": "Filter by last name (partial match)"},
-                {"key": "countryId", "value": "1", "disabled": true, "description": "Filter by nationality/country ID"}
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "companyId",
+                  "value": "1",
+                  "description": "Filter by company ID"
+                },
+                {
+                  "key": "participationId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Filter by participation type ID"
+                },
+                {
+                  "key": "status",
+                  "value": "CONFIRMED",
+                  "description": "DRAFT, SUBMITTED, CONFIRMED, CANCELLED"
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "PENDING",
+                  "disabled": true,
+                  "description": "PENDING, PAID, PARTIAL, REFUNDED"
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "disabled": true,
+                  "description": "Search by first name, last name, email, or mobile"
+                },
+                {
+                  "key": "exportAll",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Set to true to return all results without pagination (for export)"
+                },
+                {
+                  "key": "profileId",
+                  "value": "1001",
+                  "disabled": true,
+                  "description": "Filter by exact profile ID"
+                },
+                {
+                  "key": "firstName",
+                  "value": "John",
+                  "disabled": true,
+                  "description": "Filter by first name (partial match)"
+                },
+                {
+                  "key": "middleName",
+                  "value": "William",
+                  "disabled": true,
+                  "description": "Filter by middle name (partial match)"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Doe",
+                  "disabled": true,
+                  "description": "Filter by last name (partial match)"
+                },
+                {
+                  "key": "countryId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Filter by nationality/country ID"
+                }
               ]
             },
             "description": "Get paginated list of registrations with filters, tokens, invoice data, and summary stats (Admin only)"
@@ -1628,9 +2586,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/submit?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "submit"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "submit"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Submit registration - calculates total price and changes status to SUBMITTED"
           },
@@ -1651,17 +2619,43 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "needsVisa", "value": "true", "type": "text"},
-                {"key": "passportCopy", "type": "file", "src": "/path/to/passport.pdf"},
-                {"key": "residency", "type": "file", "src": "/path/to/residency.pdf"},
-                {"key": "visaForm", "type": "file", "src": "/path/to/visa-form.pdf"}
+                {
+                  "key": "needsVisa",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "passportCopy",
+                  "type": "file",
+                  "src": "/path/to/passport.pdf"
+                },
+                {
+                  "key": "residency",
+                  "type": "file",
+                  "src": "/path/to/residency.pdf"
+                },
+                {
+                  "key": "visaForm",
+                  "type": "file",
+                  "src": "/path/to/visa-form.pdf"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration/visa-documents?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "visa-documents"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "visa-documents"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Upload visa documents for a registration"
           },
@@ -1682,16 +2676,38 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "passportCopy", "type": "file", "src": "/path/to/spouse-passport.pdf"},
-                {"key": "residency", "type": "file", "src": "/path/to/spouse-residency.pdf"},
-                {"key": "visaForm", "type": "file", "src": "/path/to/spouse-visa-form.pdf"}
+                {
+                  "key": "passportCopy",
+                  "type": "file",
+                  "src": "/path/to/spouse-passport.pdf"
+                },
+                {
+                  "key": "residency",
+                  "type": "file",
+                  "src": "/path/to/spouse-residency.pdf"
+                },
+                {
+                  "key": "visaForm",
+                  "type": "file",
+                  "src": "/path/to/spouse-visa-form.pdf"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/registration/spouse-visa-documents?id=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "spouse-visa-documents"],
-              "query": [{"key": "id", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "spouse-visa-documents"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Upload visa documents for spouse"
           },
@@ -1711,9 +2727,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/roommate?companyId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "roommate"],
-              "query": [{"key": "companyId", "value": "1"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "roommate"
+              ],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "1"
+                }
+              ]
             },
             "description": "Get confirmed registrations for roommate selection"
           },
@@ -1733,9 +2759,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/check-whatsapp?whatsapp=+962791234567",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "check-whatsapp"],
-              "query": [{"key": "whatsapp", "value": "+962791234567"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "check-whatsapp"
+              ],
+              "query": [
+                {
+                  "key": "whatsapp",
+                  "value": "+962791234567"
+                }
+              ]
             },
             "description": "Check if WhatsApp number is already registered"
           },
@@ -1761,9 +2797,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/company-action/confirm?token=abc123def456",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "company-action", "confirm"],
-              "query": [{"key": "token", "value": "abc123def456"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "company-action",
+                "confirm"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "abc123def456"
+                }
+              ]
             },
             "description": "Company confirms participant registration via secure token (from email)"
           },
@@ -1783,9 +2830,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/company-action/decline?token=abc123def456",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "company-action", "decline"],
-              "query": [{"key": "token", "value": "abc123def456"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "company-action",
+                "decline"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "abc123def456"
+                }
+              ]
             },
             "description": "Company declines participant registration via secure token (from email)"
           },
@@ -1805,9 +2863,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/view?token=view-token-abc123",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "view"],
-              "query": [{"key": "token", "value": "view-token-abc123"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "view"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "view-token-abc123"
+                }
+              ]
             },
             "description": "View registration details via secure token (public access)"
           },
@@ -1827,9 +2895,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/file/1?token=view-token-abc123",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "file", "1"],
-              "query": [{"key": "token", "value": "view-token-abc123"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "file",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "view-token-abc123"
+                }
+              ]
             },
             "description": "View a file (participant picture, passport, residency, visa form, or spouse documents) using the same view-registration token. The file must belong to the registration associated with the token. Returns the file binary content inline."
           },
@@ -1838,7 +2917,12 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "header": [{"key": "Content-Type", "value": "image/jpeg"}],
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "image/jpeg"
+                }
+              ],
               "body": "[File Binary Content]"
             },
             {
@@ -1856,9 +2940,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/registration/invoice?token=invoice-token-abc123",
-              "host": ["{{baseUrl}}"],
-              "path": ["registration", "invoice"],
-              "query": [{"key": "token", "value": "invoice-token-abc123"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "registration",
+                "invoice"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "invoice-token-abc123"
+                }
+              ]
             },
             "description": "View or download invoice PDF via secure token (public access)"
           },
@@ -1868,7 +2962,12 @@
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "Text",
-              "header": [{"key": "Content-Type", "value": "application/pdf"}],
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                }
+              ],
               "body": "[PDF Binary Data]"
             }
           ]
@@ -1883,20 +2982,46 @@
           "name": "Upload Single File",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "file", "type": "file", "src": "/path/to/file.pdf"},
-                {"key": "entityType", "value": "registration", "type": "text"},
-                {"key": "entityId", "value": "1", "type": "text"},
-                {"key": "fieldName", "value": "passportCopy", "type": "text"}
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/file.pdf"
+                },
+                {
+                  "key": "entityType",
+                  "value": "registration",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "fieldName",
+                  "value": "passportCopy",
+                  "type": "text"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/file/upload",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "upload"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "upload"
+              ]
             },
             "description": "Upload a single file to the database"
           },
@@ -1913,20 +3038,46 @@
           "name": "Upload Multiple Files",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "files", "type": "file", "src": "/path/to/file1.pdf"},
-                {"key": "files", "type": "file", "src": "/path/to/file2.pdf"},
-                {"key": "entityType", "value": "registration", "type": "text"},
-                {"key": "entityId", "value": "1", "type": "text"}
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/file1.pdf"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/file2.pdf"
+                },
+                {
+                  "key": "entityType",
+                  "value": "registration",
+                  "type": "text"
+                },
+                {
+                  "key": "entityId",
+                  "value": "1",
+                  "type": "text"
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/file/upload-multiple",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "upload-multiple"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "upload-multiple"
+              ]
             },
             "description": "Upload multiple files at once"
           },
@@ -1943,11 +3094,21 @@
           "name": "Get File by ID",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "1"
+              ]
             },
             "description": "Get file content by ID (displays inline)"
           },
@@ -1964,11 +3125,22 @@
           "name": "Get File by Key",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/key/registrations-1-passport-abc123.pdf",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "key", "registrations-1-passport-abc123.pdf"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "key",
+                "registrations-1-passport-abc123.pdf"
+              ]
             },
             "description": "Get file content by file key"
           },
@@ -1985,11 +3157,22 @@
           "name": "Download File",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/1/download",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "1", "download"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "1",
+                "download"
+              ]
             },
             "description": "Download file by ID (forces download)"
           },
@@ -1998,7 +3181,12 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "header": [{"key": "Content-Disposition", "value": "attachment; filename=\"passport.pdf\""}],
+              "header": [
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=\"passport.pdf\""
+                }
+              ],
               "body": "[File Binary Content]"
             }
           ]
@@ -2007,11 +3195,22 @@
           "name": "Get File Metadata",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/1/metadata",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "1", "metadata"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "1",
+                "metadata"
+              ]
             },
             "description": "Get file metadata without content"
           },
@@ -2028,11 +3227,23 @@
           "name": "Get Files by Entity",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/entity/registration/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "entity", "registration", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "entity",
+                "registration",
+                "1"
+              ]
             },
             "description": "Get all files associated with an entity"
           },
@@ -2050,8 +3261,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2059,8 +3276,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/file/1/entity",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "1", "entity"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "1",
+                "entity"
+              ]
             },
             "description": "Update file's entity association"
           },
@@ -2077,11 +3300,21 @@
           "name": "Delete File by ID",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "1"
+              ]
             },
             "description": "Delete file by ID - soft delete"
           },
@@ -2098,11 +3331,22 @@
           "name": "Delete File by Key",
           "request": {
             "method": "DELETE",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/file/key/registrations-1-passport-abc123.pdf",
-              "host": ["{{baseUrl}}"],
-              "path": ["file", "key", "registrations-1-passport-abc123.pdf"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "file",
+                "key",
+                "registrations-1-passport-abc123.pdf"
+              ]
             },
             "description": "Delete file by file key - soft delete"
           },
@@ -2125,20 +3369,68 @@
           "name": "Get Audit Logs",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/logs?page=1&limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "logs"
+              ],
               "query": [
-                {"key": "page", "value": "1", "description": "Page number (default: 1)"},
-                {"key": "limit", "value": "50", "description": "Items per page (default: 50)"},
-                {"key": "userId", "value": "", "description": "Filter by user who performed action", "disabled": true},
-                {"key": "action", "value": "", "description": "Filter by action: CREATE, UPDATE, DELETE", "disabled": true},
-                {"key": "entityType", "value": "", "description": "Filter by entity: User, Company, Registration, etc.", "disabled": true},
-                {"key": "entityId", "value": "", "description": "Filter by specific entity ID", "disabled": true},
-                {"key": "startDate", "value": "", "description": "Filter from date (ISO format)", "disabled": true},
-                {"key": "endDate", "value": "", "description": "Filter to date (ISO format)", "disabled": true}
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Items per page (default: 50)"
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "Filter by user who performed action",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "description": "Filter by action: CREATE, UPDATE, DELETE",
+                  "disabled": true
+                },
+                {
+                  "key": "entityType",
+                  "value": "",
+                  "description": "Filter by entity: User, Company, Registration, etc.",
+                  "disabled": true
+                },
+                {
+                  "key": "entityId",
+                  "value": "",
+                  "description": "Filter by specific entity ID",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "Filter from date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "Filter to date (ISO format)",
+                  "disabled": true
+                }
               ]
             },
             "description": "Get audit logs with filters and pagination. Available filters: userId, action (CREATE/UPDATE/DELETE), entityType, entityId, startDate, endDate"
@@ -2156,15 +3448,34 @@
           "name": "Get Audit Logs - Filter by Action",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/logs?action=DELETE&page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "logs"
+              ],
               "query": [
-                {"key": "action", "value": "DELETE"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"}
+                {
+                  "key": "action",
+                  "value": "DELETE"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Get all DELETE actions from audit logs"
@@ -2182,15 +3493,34 @@
           "name": "Get Audit Logs - Filter by Entity Type",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/logs?entityType=Registration&page=1&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "logs"
+              ],
               "query": [
-                {"key": "entityType", "value": "Registration"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"}
+                {
+                  "key": "entityType",
+                  "value": "Registration"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             },
             "description": "Get all audit logs for Registration entity type"
@@ -2208,16 +3538,38 @@
           "name": "Get Audit Logs - Filter by Date Range",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/logs?startDate=2026-02-01&endDate=2026-02-03&page=1&limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "logs"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "logs"
+              ],
               "query": [
-                {"key": "startDate", "value": "2026-02-01"},
-                {"key": "endDate", "value": "2026-02-03"},
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "50"}
+                {
+                  "key": "startDate",
+                  "value": "2026-02-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-02-03"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
               ]
             },
             "description": "Get audit logs within a specific date range"
@@ -2235,11 +3587,23 @@
           "name": "Get Entity History",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/entity/Registration/115",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "entity", "Registration", "115"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "entity",
+                "Registration",
+                "115"
+              ]
             },
             "description": "Get complete audit history for a specific entity. Shows all CREATE, UPDATE, DELETE actions for that entity."
           },
@@ -2256,11 +3620,23 @@
           "name": "Get User Entity History",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/entity/User/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "entity", "User", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "entity",
+                "User",
+                "1"
+              ]
             },
             "description": "Get complete audit history for a specific User"
           },
@@ -2277,11 +3653,23 @@
           "name": "Get Company Entity History",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/audit/entity/Company/5",
-              "host": ["{{baseUrl}}"],
-              "path": ["audit", "entity", "Company", "5"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "audit",
+                "entity",
+                "Company",
+                "5"
+              ]
             },
             "description": "Get complete audit history for a specific Company"
           },
@@ -2304,11 +3692,21 @@
           "name": "Get Accommodation Insights",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights/accommodation",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights", "accommodation"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "accommodation"
+              ]
             },
             "description": "Get accommodation booking statistics for Amman and Dead Sea hotels"
           },
@@ -2325,11 +3723,21 @@
           "name": "Get Visa Insights",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights/visa",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights", "visa"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "visa"
+              ]
             },
             "description": "Get entry visa assistance statistics"
           },
@@ -2346,11 +3754,21 @@
           "name": "Get Payment Insights",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights/payment",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights", "payment"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "payment"
+              ]
             },
             "description": "Get payment method statistics (Online vs System payments)"
           },
@@ -2367,11 +3785,21 @@
           "name": "Get Monthly Registrations",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights/registrations",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights", "registrations"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "registrations"
+              ]
             },
             "description": "Get number of registrations per month"
           },
@@ -2388,11 +3816,21 @@
           "name": "Get Dashboard Totals",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights/totals",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights", "totals"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "totals"
+              ]
             },
             "description": "Get dashboard totals: Total Participants, Total Spouses, Total Paid (JOD), Total Paid (USD)"
           },
@@ -2409,11 +3847,20 @@
           "name": "Get All Insights",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/insights",
-              "host": ["{{baseUrl}}"],
-              "path": ["insights"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights"
+              ]
             },
             "description": "Get all insights in a single call: accommodation, visa, payment, monthly registrations, and dashboard totals. Admin only."
           },
@@ -2436,22 +3883,77 @@
           "name": "Get Invoice List",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/invoice/list?page=1&limit=20&balanceFilter=hasBalance",
-              "host": ["{{baseUrl}}"],
-              "path": ["invoice", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoice",
+                "list"
+              ],
               "query": [
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"},
-                {"key": "profileId", "value": "1001", "disabled": true, "description": "Filter by profile ID"},
-                {"key": "companyId", "value": "5", "disabled": true, "description": "Filter by company ID"},
-                {"key": "firstName", "value": "John", "disabled": true, "description": "Filter by first name"},
-                {"key": "middleName", "value": "", "disabled": true, "description": "Filter by middle name"},
-                {"key": "lastName", "value": "Doe", "disabled": true, "description": "Filter by last name"},
-                {"key": "dateFrom", "value": "2026-01-01", "disabled": true, "description": "Filter by date from"},
-                {"key": "dateTo", "value": "2026-12-31", "disabled": true, "description": "Filter by date to"},
-                {"key": "balanceFilter", "value": "hasBalance", "description": "all | zero | hasBalance"}
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "profileId",
+                  "value": "1001",
+                  "disabled": true,
+                  "description": "Filter by profile ID"
+                },
+                {
+                  "key": "companyId",
+                  "value": "5",
+                  "disabled": true,
+                  "description": "Filter by company ID"
+                },
+                {
+                  "key": "firstName",
+                  "value": "John",
+                  "disabled": true,
+                  "description": "Filter by first name"
+                },
+                {
+                  "key": "middleName",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by middle name"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Doe",
+                  "disabled": true,
+                  "description": "Filter by last name"
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01",
+                  "disabled": true,
+                  "description": "Filter by date from"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-12-31",
+                  "disabled": true,
+                  "description": "Filter by date to"
+                },
+                {
+                  "key": "balanceFilter",
+                  "value": "hasBalance",
+                  "description": "all | zero | hasBalance"
+                }
               ]
             },
             "description": "Get paginated list of invoices with filters. Returns the latest invoice per registration."
@@ -2469,11 +3971,21 @@
           "name": "Get Invoice by ID",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/invoice/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["invoice", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoice",
+                "1"
+              ]
             },
             "description": "Get detailed invoice by ID with all fee items, discounts, and payment status"
           },
@@ -2491,8 +4003,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2500,8 +4018,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/invoice/1/save",
-              "host": ["{{baseUrl}}"],
-              "path": ["invoice", "1", "save"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoice",
+                "1",
+                "save"
+              ]
             },
             "description": "Consolidated endpoint to save invoice changes. Handles: update discounts/disclosures, update paid status per item, calculate totals/balance, process Fawaterkom if needed, generate receipt, and send confirmation email."
           },
@@ -2518,11 +4042,22 @@
           "name": "Download Invoice PDF",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/invoice/1/pdf",
-              "host": ["{{baseUrl}}"],
-              "path": ["invoice", "1", "pdf"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoice",
+                "1",
+                "pdf"
+              ]
             },
             "description": "Generate and download invoice PDF"
           },
@@ -2532,8 +4067,14 @@
               "status": "OK",
               "code": 200,
               "header": [
-                {"key": "Content-Type", "value": "application/pdf"},
-                {"key": "Content-Disposition", "value": "attachment; filename=invoice_G260001.pdf"}
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=invoice_G260001.pdf"
+                }
               ],
               "body": "[PDF Binary Data]"
             }
@@ -2543,11 +4084,22 @@
           "name": "Download Receipt PDF",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/invoice/1/receipt",
-              "host": ["{{baseUrl}}"],
-              "path": ["invoice", "1", "receipt"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoice",
+                "1",
+                "receipt"
+              ]
             },
             "description": "Generate and download payment receipt PDF. Only available for paid invoices."
           },
@@ -2557,8 +4109,14 @@
               "status": "OK",
               "code": 200,
               "header": [
-                {"key": "Content-Type", "value": "application/pdf"},
-                {"key": "Content-Disposition", "value": "attachment; filename=receipt_G260001.pdf"}
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=receipt_G260001.pdf"
+                }
               ],
               "body": "[PDF Binary Data]"
             },
@@ -2581,19 +4139,34 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"companyId\": 1,\n  \"totalAmount\": 5000,\n  \"discount\": 500,\n  \"description\": \"Registration fees for GAIF35 Conference - 10 delegates\",\n  \"invoiceDate\": \"2026-02-15\",\n  \"dueDate\": \"2026-03-15\",\n  \"sendEmail\": true\n}"
+              "raw": "{\n  \"companyId\": 1,\n  \"registrationIds\": [\n    1,\n    2,\n    3\n  ],\n  \"discount\": 0,\n  \"description\": \"Company invoice for conference registrations\",\n  \"invoiceDate\": \"2026-03-01\",\n  \"dueDate\": \"2026-03-15\",\n  \"sendEmail\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/company-invoice",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice"
+              ]
             },
-            "description": "Create a company invoice with total amount, discount, and description. Currency is automatically fetched from the company's participation type. Generates PDF and sends email to company with payment link. Returns both JOD and USD totals."
+            "description": "Create a company invoice linked to multiple registrations. Provide registrationIds[] to auto-compute totals per registration, or provide totalAmount for a manual amount. At least one is required."
           },
           "response": [
             {
@@ -2608,18 +4181,50 @@
           "name": "Get Company Invoice List",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company-invoice/list?page=1&limit=20&status=PENDING",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "list"
+              ],
               "query": [
-                {"key": "page", "value": "1"},
-                {"key": "limit", "value": "20"},
-                {"key": "companyId", "value": "1", "disabled": true},
-                {"key": "status", "value": "PENDING", "description": "PENDING | PAID | CANCELLED"},
-                {"key": "dateFrom", "value": "2026-01-01", "disabled": true},
-                {"key": "dateTo", "value": "2026-12-31", "disabled": true}
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "companyId",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "PENDING | PAID | CANCELLED"
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-12-31",
+                  "disabled": true
+                }
               ]
             },
             "description": "Get paginated list of company invoices with filters"
@@ -2637,11 +4242,21 @@
           "name": "Get Company Invoice by ID",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1"
+              ]
             },
             "description": "Get company invoice details by ID"
           },
@@ -2658,11 +4273,22 @@
           "name": "Get Invoices by Company",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company-invoice/company/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "company", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "company",
+                "1"
+              ]
             },
             "description": "Get all invoices for a specific company"
           },
@@ -2680,8 +4306,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2689,8 +4321,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1"
+              ]
             },
             "description": "Update company invoice details"
           },
@@ -2707,11 +4344,22 @@
           "name": "Download Company Invoice PDF",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1/pdf",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1", "pdf"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1",
+                "pdf"
+              ]
             },
             "description": "Download company invoice as PDF"
           },
@@ -2721,8 +4369,14 @@
               "status": "OK",
               "code": 200,
               "header": [
-                {"key": "Content-Type", "value": "application/pdf"},
-                {"key": "Content-Disposition", "value": "attachment; filename=invoice_C260001.pdf"}
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=invoice_C260001.pdf"
+                }
               ],
               "body": "[PDF Binary Data]"
             }
@@ -2732,11 +4386,22 @@
           "name": "Resend Company Invoice Email",
           "request": {
             "method": "POST",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1/send-email",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1", "send-email"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1",
+                "send-email"
+              ]
             },
             "description": "Resend company invoice email with PDF attachment"
           },
@@ -2754,8 +4419,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2763,8 +4434,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1/mark-paid",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1", "mark-paid"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1",
+                "mark-paid"
+              ]
             },
             "description": "Mark company invoice as paid"
           },
@@ -2782,8 +4459,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2791,8 +4474,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/company-invoice/1/save",
-              "host": ["{{baseUrl}}"],
-              "path": ["company-invoice", "1", "save"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "company-invoice",
+                "1",
+                "save"
+              ]
             },
             "description": "Consolidated endpoint for editing company invoice. Handles: update total amount, discount, description, dates, mark as paid, and send email - all in one API call."
           },
@@ -2810,6 +4499,37 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"Invoice updated successfully\",\n  \"invoice\": {\n    \"id\": 1,\n    \"serialNumber\": \"C260001\",\n    \"totalAmount\": 6000,\n    \"discount\": 600,\n    \"netAmount\": 5400,\n    \"currency\": \"JD\",\n    \"totalValueJD\": 5400,\n    \"totalValueUSD\": 7714.29,\n    \"exchangeRate\": 0.7,\n    \"status\": \"PAID\",\n    \"paidAmount\": 5400,\n    \"paidCurrency\": \"JD\",\n    \"paidAt\": \"2026-02-20T14:30:00.000Z\",\n    \"paymentReference\": \"BANK-TXN-54321\"\n  },\n  \"emailSent\": false,\n  \"emailError\": null\n}"
             }
           ]
+        },
+        {
+          "name": "Get Registration Items by Company Invoice",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/company-invoices/{{companyInvoiceId}}/registrations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "company-invoices",
+                "{{companyInvoiceId}}",
+                "registrations"
+              ]
+            },
+            "description": "Get all registration items (with individual invoice amounts) linked to a company invoice."
+          },
+          "response": []
         }
       ]
     },
@@ -2824,9 +4544,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment/checkout?registrationId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment", "checkout"],
-              "query": [{"key": "registrationId", "value": "1", "description": "Registration ID to pay for"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "checkout"
+              ],
+              "query": [
+                {
+                  "key": "registrationId",
+                  "value": "1",
+                  "description": "Registration ID to pay for"
+                }
+              ]
             },
             "description": "Initiate MEPS hosted checkout session. Returns an HTML page that auto-redirects the user to the MEPS payment gateway. Typically accessed via the link in the approval email."
           },
@@ -2852,11 +4583,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment/result?registrationId=1&invoiceId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment", "result"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "result"
+              ],
               "query": [
-                {"key": "registrationId", "value": "1", "description": "Registration ID"},
-                {"key": "invoiceId", "value": "1", "description": "Invoice ID"}
+                {
+                  "key": "registrationId",
+                  "value": "1",
+                  "description": "Registration ID"
+                },
+                {
+                  "key": "invoiceId",
+                  "value": "1",
+                  "description": "Invoice ID"
+                }
               ]
             },
             "description": "Callback endpoint MEPS redirects to after a payment attempt. Verifies payment status with MEPS, updates the registration and invoice, then redirects the user to the success or failed page. Not called directly — triggered by MEPS after checkout."
@@ -2880,12 +4624,28 @@
           "name": "Check Payment Status",
           "request": {
             "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/payment/status?registrationId=1",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment", "status"],
-              "query": [{"key": "registrationId", "value": "1", "description": "Registration ID to check"}]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "registrationId",
+                  "value": "1",
+                  "description": "Registration ID to check"
+                }
+              ]
             },
             "description": "Poll the current payment status of a registration. Use this to check if payment has been completed after the user goes through the MEPS checkout flow."
           },
@@ -2915,8 +4675,14 @@
           "request": {
             "method": "POST",
             "header": [
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"},
-              {"key": "Content-Type", "value": "application/json"}
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -2924,8 +4690,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/payment/admin/mark-paid",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment", "admin", "mark-paid"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "admin",
+                "mark-paid"
+              ]
             },
             "description": "Admin endpoint to manually mark a registration as paid (SYSTEM payment source). Used for cash/check payments received outside the online system. Also submits to Fawaterkom e-invoice."
           },
@@ -2937,6 +4709,155 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"Payment marked as paid (SYSTEM)\",\n  \"registrationId\": 1,\n  \"invoiceId\": 1,\n  \"paidAmount\": 450.00,\n  \"paidCurrency\": \"JOD\",\n  \"fawaterkomResult\": {\n    \"success\": true\n  }\n}"
             }
           ]
+        },
+        {
+          "name": "Initiate Company Checkout",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/company-checkout?invoiceId={{companyInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "company-checkout"
+              ],
+              "query": [
+                {
+                  "key": "invoiceId",
+                  "value": "{{companyInvoiceId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Creates a MEPS hosted checkout session for a company invoice and returns an HTML page that redirects the user to the payment gateway. The invoiceId must correspond to a CompanyInvoice with status != PAID."
+          },
+          "response": []
+        },
+        {
+          "name": "Company Payment Result Callback",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/company-result?companyInvoiceId={{companyInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "company-result"
+              ],
+              "query": [
+                {
+                  "key": "companyInvoiceId",
+                  "value": "{{companyInvoiceId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "MEPS redirects to this endpoint after the company payment attempt. Verifies the order status with MEPS, marks the company invoice and all linked individual registrations as PAID, submits each to Fawaterkom, generates receipt PDFs and sends receipt emails to each participant."
+          },
+          "response": []
+        },
+        {
+          "name": "Company Payment Success Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/company-success?companyInvoiceId={{companyInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "company-success"
+              ],
+              "query": [
+                {
+                  "key": "companyInvoiceId",
+                  "value": "{{companyInvoiceId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "HTML success page shown after a successful company invoice payment. Served at /payment/company-success (not under /api/v1)."
+          },
+          "response": []
+        },
+        {
+          "name": "Company Payment Failed Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/company-failed?companyInvoiceId={{companyInvoiceId}}&status=DECLINED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                "company-failed"
+              ],
+              "query": [
+                {
+                  "key": "companyInvoiceId",
+                  "value": "{{companyInvoiceId}}",
+                  "disabled": false
+                },
+                {
+                  "key": "status",
+                  "value": "DECLINED",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "HTML failure page shown after a failed/declined company invoice payment. Includes a retry link back to the company checkout. Served at /payment/company-failed (not under /api/v1)."
+          },
+          "response": []
         }
       ]
     }

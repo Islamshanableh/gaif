@@ -1615,6 +1615,56 @@ const CompanyInvoice = sequelize.define(
   },
 );
 
+// CompanyInvoiceRegistration Model (junction table linking company invoices to registrations)
+const CompanyInvoiceRegistration = sequelize.define(
+  'CompanyInvoiceRegistration',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    companyInvoiceId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'CompanyInvoices',
+        key: 'id',
+      },
+    },
+    registrationId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Registrations',
+        key: 'id',
+      },
+    },
+    invoiceId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Invoices',
+        key: 'id',
+      },
+    },
+    totalJD: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+    totalUSD: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+      defaultValue: 0,
+    },
+  },
+  {
+    tableName: 'CompanyInvoiceRegistrations',
+    timestamps: true,
+  },
+);
+
 // AuditLog Model (for tracking admin actions)
 const AUDIT_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
 
@@ -1892,6 +1942,24 @@ Company.hasMany(CompanyInvoice, {
 });
 CompanyInvoice.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
 
+// CompanyInvoiceRegistration Associations
+CompanyInvoice.hasMany(CompanyInvoiceRegistration, {
+  foreignKey: 'companyInvoiceId',
+  as: 'registrationItems',
+});
+CompanyInvoiceRegistration.belongsTo(CompanyInvoice, {
+  foreignKey: 'companyInvoiceId',
+  as: 'companyInvoice',
+});
+CompanyInvoiceRegistration.belongsTo(Registration, {
+  foreignKey: 'registrationId',
+  as: 'registration',
+});
+CompanyInvoiceRegistration.belongsTo(Invoice, {
+  foreignKey: 'invoiceId',
+  as: 'invoice',
+});
+
 // ============================================================================
 
 module.exports = {
@@ -1914,5 +1982,6 @@ module.exports = {
   RegistrationToken,
   Invoice,
   CompanyInvoice,
+  CompanyInvoiceRegistration,
   AuditLog,
 };

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GAIF - PRE INVOICE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&display=swap');
+
+        :root {
+            --primary-blue: #4f6ca0;
+            --text-dark: #333333;
+            --accent-peach: #d88a7e;
+            --border-color: #d1d9df;
+        }
+
+        @page { size: A4; margin: 0; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-dark);
+            font-size: 10.5px;
+            line-height: 1.3;
+        }
+
+        .container { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; }
+
+        /* --- Header Section --- */
+        .header-box { position: relative; width: 100%; }
+        .header-img { width: 100%; display: block; }
+        .pre-invoice-banner {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--primary-blue);
+            font-weight: bold;
+            font-size: 15px;
+            letter-spacing: 1.5px;
+        }
+
+        .main-content { padding: 0 45px; }
+
+        /* --- Top Fields --- */
+        .field-row { display: flex; gap: 40px; margin-top: 25px; margin-bottom: 20px; }
+        .field-item { flex: 1; }
+        .field-label { color: var(--primary-blue); font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+        .field-value { border-bottom: 1px solid var(--border-color); height: 22px; width: 100%; }
+
+        /* --- Registration Section --- */
+        .section-header { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .section-title { color: var(--accent-peach); font-weight: bold; font-size: 13px; text-transform: uppercase; }
+        .inclusive-text { font-size: 9px; color: #666; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { border: 1px solid var(--border-color); padding: 8px; color: var(--primary-blue); font-weight: bold; text-align: center; }
+        td { border: 1px solid var(--border-color); padding: 8px; height: 25px; text-align: center; }
+
+        /* --- Totals --- */
+        .totals-table { width: 280px; margin-left: auto; margin-top: 5px; border: none; }
+        .totals-table td { border: none; text-align: left; padding: 4px 0; height: auto; }
+        .total-label { color: var(--primary-blue); font-weight: bold; width: 150px; }
+        .total-value { border-bottom: 1px solid var(--border-color); text-align: right; width: 120px; color: #555; }
+
+        /* --- Notes Section --- */
+        .notes-area { margin-top: 30px; }
+        .notes-title { color: var(--primary-blue); font-weight: bold; font-size: 12px; margin-bottom: 5px; }
+        .bank-container { display: flex; justify-content: space-between; gap: 30px; margin-top: 12px; font-size: 9.5px; }
+        .bank-col { flex: 1; line-height: 1.5; color: #4f6ca0; }
+        .bank-col b { color: #333; }
+        .bank-col span { display: block; color: var(--primary-blue); }
+
+        /* --- Footer & Policies --- */
+        .footer-separator { border-top: 3.5px solid var(--accent-peach); margin-top: 35px; padding-top: 15px; }
+        .policy-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; }
+        .policy-col { font-size: 9.5px; }
+        .policy-title { color: var(--accent-peach); font-weight: bold; font-size: 13px; margin-bottom: 10px; }
+        
+        ul { padding-left: 15px; margin: 0; list-style-type: disc; }
+        li { margin-bottom: 6px; }
+        
+        .exchange-rate { color: var(--accent-peach); font-weight: bold; margin: 15px 0; font-size: 11px; }
+        .exchange-val { color: #666; font-weight: normal; margin-left: 30px; }
+        .refund-policy p { margin: 4px 0; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-box">
+            <img src="emailHeader.png" class="header-img">
+            <div class="pre-invoice-banner">PRE INVOICE</div>
+        </div>
+
+        <div class="main-content">
+            <div class="field-row">
+                <div class="field-item">
+                    <div class="field-label">SERIAL NUMBER</div>
+                    <div class="field-value"></div>
+                </div>
+                <div class="field-item">
+                    <div class="field-label">TAX NUMBER</div>
+                    <div class="field-value"></div>
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field-item" style="flex: 2;">
+                    <div class="field-label">COMPANY NAME</div>
+                    <div class="field-value"></div>
+                </div>
+                <div class="field-item">
+                    <div class="field-label">COUNTRY NAME</div>
+                    <div class="field-value"></div>
+                </div>
+                <div class="field-item">
+                    <div class="field-label">DATE</div>
+                    <div class="field-value"></div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">REGISTRATION</div>
+                <div class="inclusive-text">(Inclusive of Tax)</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">ID</th>
+                        <th style="width: 32%;">Name</th>
+                        <th style="width: 15%;">Pre-Invoice #</th>
+                        <th style="width: 15%;">Registration Date</th>
+                        <th style="width: 15%;">Amount (USD)</th>
+                        <th style="width: 15%;">Amount (JD)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+
+            <table class="totals-table">
+                <tr>
+                    <td class="total-label">Total Value (USD)</td>
+                    <td class="total-value"></td>
+                </tr>
+                <tr>
+                    <td class="total-label">Total Value (JD)</td>
+                    <td class="total-value"></td>
+                </tr>
+            </table>
+
+            <div class="notes-area">
+                <div class="notes-title">NOTES</div>
+                <p>Registration & Hotel accommodation fees can be paid by:</p>
+                <p>A. Credit card (VISA, MASTER).<br>Through the link on received email</p>
+                <p>B. Bank Transfer</p>
+                
+                <div class="bank-container">
+                    <div class="bank-col">
+                        <b>Jordan insurance Federation (JIF) Account:</b>
+                        <span>Bank Name: Arab Bank/Abdali Branch</span>
+                        <span>Bank Account#(30) 0119/060725-501</span>
+                        <span>IBAN (JD): 3052 ARAB 1190 0000 0011 9060 7255 01</span>
+                        <span>Bank Account (US Dollar) 0119/060725-511</span>
+                        <span>IBAN (US Dollar: 3073 ARAB 1190 0000 0011 9060 7255 11</span>
+                        <span>SWIFT Code: ARAB20AXTI</span>
+                    </div>
+                    <div class="bank-col">
+                        <b>General Arab Insurance Federation (GAIF) Account:</b>
+                        <span>Arab Bank - Manama Branch</span>
+                        <span>Manama - Kingdom of Bahrain</span>
+                        <span>Account No: 2002 - 104598 - 511 USD</span>
+                        <span>Swift Code No: ARABBHBMAN</span>
+                        <span>IBAN: BH 31 ARAB 0200 2104 5985 11</span>
+                        <span>Account Name: General Arab Insurance Federation</span>
+                    </div>
+                </div>
+                <p style="margin-top: 15px;">C. Local bank cheque Jordanian Bank to JIF</p>
+            </div>
+
+            <div class="footer-separator">
+                <div class="policy-grid">
+                    <div class="policy-col">
+                        <div class="policy-title">Important Notes</div>
+                        <ul>
+                            <li>Registration and hotel accommodation will only be guaranteed once we receive full payment.</li>
+                            <li>Registration and hotel accommodation must be paid maximum before August 4, 2026.</li>
+                            <li>Extra expenses during accommodation will be paid directly to the hotel.</li>
+                            <li>Prices of accommodation are inclusive of breakfast, service charges & applicable taxes at Dead Sea and Amman hotels.</li>
+                            <li>The above prices include all applicable taxes in Jordan, as per current laws and regulations.</li>
+                        </ul>
+                        <div class="exchange-rate">
+                            Exchange rate is approximately <span class="exchange-val">USD 1 = JD 0.709</span>
+                        </div>
+                        <div class="refund-policy">
+                            <div class="policy-title">Refund Policy</div>
+                            <p>The organizers undertake to refund any amounts paid by participants, as outlined above, within 10 working days from the submission date of the cancellation request emailed to registration@GAIF2026.com.</p>
+                            <p>In case of unexpected matters (Force Majeure) such as pandemics/epidemics or any other enforceable situations that cancel the event, JIF/GAIF will refund all the prepaid fees within 10 working days.</p>
+                        </div>
+                    </div>
+                    <div class="policy-col">
+                        <div class="policy-title">Cancellation Policy</div>
+                        <ul>
+                            <li>Free Cancellation of all fees if the conference is cancelled by the GAIF35 Supreme Organizing Committee for any reason.</li>
+                            <li>Free Cancellation of all fees if the participant cancels his/her participation for any reason before 11:59 PM (Amman local time) on Tuesday, August 4, 2026.</li>
+                            <li>No Refund of any fees if the participant cancels his/her participation for any reason after 11:59 PM (Amman local time) on Tuesday, August 4, 2026.</li>
+                            <li>If the participant fails to pay the accommodation fees before 11:59 PM (Amman local time) on Tuesday, August 4, 2026, the Jordan Insurance Federation reserves the right to cancel his/her participation and hotel reservation.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

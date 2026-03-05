@@ -1,16 +1,23 @@
 const Joi = require('joi');
 
 exports.createCompanyInvoice = {
-  body: Joi.object().keys({
-    companyId: Joi.number().required(),
-    totalAmount: Joi.number().min(0).required(),
-    discount: Joi.number().min(0).default(0),
-    // Currency is automatically fetched from company's participation type
-    description: Joi.string().max(1000).allow('', null).optional(),
-    invoiceDate: Joi.date().required(),
-    dueDate: Joi.date().optional(),
-    sendEmail: Joi.boolean().default(true),
-  }),
+  body: Joi.object()
+    .keys({
+      companyId: Joi.number().required(),
+      // Provide registrationIds for automatic total calculation, or totalAmount for manual entry
+      registrationIds: Joi.array()
+        .items(Joi.number().integer().min(1))
+        .min(1)
+        .optional(),
+      totalAmount: Joi.number().min(0).optional(),
+      discount: Joi.number().min(0).default(0),
+      // Currency is automatically fetched from company's participation type
+      description: Joi.string().max(1000).allow('', null).optional(),
+      invoiceDate: Joi.date().required(),
+      dueDate: Joi.date().optional(),
+      sendEmail: Joi.boolean().default(true),
+    })
+    .or('registrationIds', 'totalAmount'),
 };
 
 exports.getById = {

@@ -8,4 +8,8 @@ router.get('/success', paymentPagesController.successPage);
 router.get('/failed', paymentPagesController.failedPage);
 router.get('/cancelled', paymentPagesController.cancelledPage);
 
+// Company invoice payment result pages
+router.get('/company-success', paymentPagesController.companySuccessPage);
+router.get('/company-failed', paymentPagesController.companyFailedPage);
+
 module.exports = router;

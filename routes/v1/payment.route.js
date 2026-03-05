@@ -15,6 +15,12 @@ router.get('/result', paymentController.paymentResult);
 // Check payment status (for frontend polling)
 router.get('/status', paymentController.checkPaymentStatus);
 
+// Company invoice checkout - creates MEPS session for company invoice total
+router.get('/company-checkout', paymentController.initiateCompanyCheckout);
+
+// Company invoice payment result callback - MEPS redirects here after payment
+router.get('/company-result', paymentController.companyPaymentResult);
+
 // Admin endpoint to mark payment as paid (SYSTEM payment)
 router.post(
   '/admin/mark-paid',

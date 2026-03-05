@@ -156,3 +156,63 @@ exports.cancelledPage = (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   return res.send(html);
 };
+
+/**
+ * GET /payment/company-success?companyInvoiceId=123
+ */
+exports.companySuccessPage = (req, res) => {
+  const { companyInvoiceId } = req.query;
+
+  const html = pageTemplate('Payment Successful', `
+    <div class="icon success">✓</div>
+    <h1 class="success">Payment Successful</h1>
+    <p>Thank you! Your company invoice payment has been confirmed.</p>
+    <p>Payment receipts have been sent to all registered participants by email.</p>
+    ${companyInvoiceId ? `<p class="ref">Invoice ID: <strong>${parseInt(companyInvoiceId, 10)}</strong></p>` : ''}
+    <hr class="divider">
+    <p class="support">For any questions, please contact us at<br><strong>info@gaif2026.com</strong></p>
+  `);
+
+  res.setHeader('Content-Type', 'text/html');
+  return res.send(html);
+};
+
+/**
+ * GET /payment/company-failed?companyInvoiceId=123&status=DECLINED
+ */
+exports.companyFailedPage = (req, res) => {
+  const { companyInvoiceId, status } = req.query;
+  const apiBase = config.urls.api || '';
+  const retryUrl = companyInvoiceId
+    ? `${apiBase}/payment/company-checkout?invoiceId=${parseInt(
+        companyInvoiceId,
+        10,
+      )}`
+    : null;
+
+  const statusMessages = {
+    DECLINED:
+      'Your payment was declined by the bank. Please check your card details or try a different card.',
+    EXPIRED: 'The payment session has expired. Please try again.',
+    CANCELLED: 'The payment was cancelled.',
+    FAILED: 'The payment could not be processed. Please try again.',
+  };
+
+  const statusText =
+    statusMessages[status] ||
+    'The payment could not be processed. Please try again or contact support.';
+
+  const html = pageTemplate('Payment Failed', `
+    <div class="icon error">✕</div>
+    <h1 class="error">Payment Failed</h1>
+    <p>${statusText}</p>
+    ${status ? `<p class="ref">Status: <strong>${status}</strong></p>` : ''}
+    ${companyInvoiceId ? `<p class="ref">Invoice ID: <strong>${parseInt(companyInvoiceId, 10)}</strong></p>` : ''}
+    <hr class="divider">
+    ${retryUrl ? `<a class="btn btn-primary" href="${retryUrl}">Try Again</a>` : ''}
+    <p class="support" style="margin-top:20px;">Need help? Contact us at<br><strong>info@gaif2026.com</strong></p>
+  `);
+
+  res.setHeader('Content-Type', 'text/html');
+  return res.send(html);
+};

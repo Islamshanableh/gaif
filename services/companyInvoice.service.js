@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
 const moment = require('moment');
 const path = require('path');
 const fs = require('fs');
@@ -7,8 +7,11 @@ const config = require('../config/config');
 const { Op } = require('sequelize');
 const {
   CompanyInvoice,
+  CompanyInvoiceRegistration,
   Company,
   Country,
+  Registration,
+  Invoice,
   ParticipationType,
   sequelize,
 } = require('./db.service');
@@ -17,12 +20,19 @@ const { sendEmailWithAttachment } = require('./common/email.service');
 // Exchange rate configuration (same as invoice.service.js)
 const EXCHANGE_RATE = 0.709; // USD 1 = JD 0.70
 
-// Template image path (using existing invoice template)
-const TEMPLATE_PATH = path.join(
+// Template paths
+const HTML_TEMPLATE_PATH = path.join(
   __dirname,
   '..',
   'templates',
-  'invoice-template.jpg',
+  'companyInvoicePDF.html',
+);
+
+const HEADER_IMAGE_PATH = path.join(
+  __dirname,
+  '..',
+  'templates',
+  'emailHeader.png',
 );
 
 /**
@@ -71,7 +81,8 @@ const calculateDualTotals = (netAmount, currency) => {
  * Create a company invoice
  * @param {Object} data - Invoice data
  * @param {number} data.companyId - Company ID
- * @param {number} data.totalAmount - Total amount before discount
+ * @param {number[]} [data.registrationIds] - Registration IDs to include (totals computed automatically)
+ * @param {number} [data.totalAmount] - Manual total (used only if no registrationIds)
  * @param {number} data.discount - Discount amount
  * @param {string} data.description - Invoice description
  * @param {Date} data.invoiceDate - Invoice date
@@ -82,6 +93,7 @@ const calculateDualTotals = (netAmount, currency) => {
 const createCompanyInvoice = async (data, userId) => {
   const {
     companyId,
+    registrationIds,
     totalAmount,
     discount = 0,
     description,
@@ -107,8 +119,58 @@ const createCompanyInvoice = async (data, userId) => {
   // Get currency from company's participation type (default to JD)
   const currency = company.participation?.currency || 'JD';
 
+  // Build per-registration items if registrationIds provided
+  let registrationItems = [];
+  let computedTotalAmount = parseFloat(totalAmount) || 0;
+
+  if (registrationIds && registrationIds.length > 0) {
+    // Fetch registrations without nested invoice include (avoid Oracle issues with separate+limit)
+    const registrations = await Registration.findAll({
+      where: { id: { [Op.in]: registrationIds }, companyId },
+      attributes: ['id', 'firstName', 'lastName', 'position'],
+    });
+
+    // Fetch latest invoice for each registration in parallel
+    const latestInvoices = await Promise.all(
+      registrations.map(reg =>
+        Invoice.findOne({
+          where: { registrationId: reg.id },
+          order: [['createdAt', 'DESC']],
+          attributes: ['id', 'totalValueJD', 'totalValueUSD', 'serialNumber'],
+        }),
+      ),
+    );
+
+    // Build a map: registrationId → { reg, invoice }
+    const regMap = {};
+    registrations.forEach((reg, idx) => {
+      regMap[reg.id] = { reg, invoice: latestInvoices[idx] };
+    });
+
+    // Preserve order from registrationIds input
+    registrationItems = registrationIds
+      .filter(rid => regMap[rid])
+      .map(rid => {
+        const { reg, invoice: latestInvoice } = regMap[rid];
+        return {
+          registrationId: reg.id,
+          invoiceId: latestInvoice?.id || null,
+          totalJD: parseFloat(latestInvoice?.totalValueJD) || 0,
+          totalUSD: parseFloat(latestInvoice?.totalValueUSD) || 0,
+          name: `${reg.firstName} ${reg.lastName}`,
+          position: reg.position,
+        };
+      });
+
+    // Sum grand total from per-registration JD totals
+    computedTotalAmount = registrationItems.reduce(
+      (sum, item) => sum + item.totalJD,
+      0,
+    );
+  }
+
   // Calculate net amount
-  const netAmount = totalAmount - discount;
+  const netAmount = computedTotalAmount - discount;
 
   // Calculate both JOD and USD totals
   const { totalValueJD, totalValueUSD } = calculateDualTotals(
@@ -122,7 +184,7 @@ const createCompanyInvoice = async (data, userId) => {
   const invoice = await CompanyInvoice.create({
     companyId,
     serialNumber,
-    totalAmount,
+    totalAmount: computedTotalAmount,
     discount,
     netAmount,
     currency,
@@ -136,11 +198,24 @@ const createCompanyInvoice = async (data, userId) => {
     createdBy: userId,
   });
 
+  // Create junction records linking invoice to each registration
+  if (registrationItems.length > 0) {
+    await CompanyInvoiceRegistration.bulkCreate(
+      registrationItems.map(item => ({
+        companyInvoiceId: invoice.id,
+        registrationId: item.registrationId,
+        invoiceId: item.invoiceId,
+        totalJD: item.totalJD,
+        totalUSD: item.totalUSD,
+      })),
+    );
+  }
+
   return invoice;
 };
 
 /**
- * Get company invoice by ID with company details
+ * Get company invoice by ID with company details and registration items
  * @param {number} id - Invoice ID
  * @returns {Promise<Object|null>}
  */
@@ -153,6 +228,29 @@ const getCompanyInvoiceById = async id => {
         include: [
           { model: Country, as: 'country' },
           { model: ParticipationType, as: 'participation' },
+        ],
+      },
+      {
+        model: CompanyInvoiceRegistration,
+        as: 'registrationItems',
+        include: [
+          {
+            model: Registration,
+            as: 'registration',
+            attributes: [
+              'id',
+              'profileId',
+              'firstName',
+              'lastName',
+              'position',
+              'createdAt',
+            ],
+          },
+          {
+            model: Invoice,
+            as: 'invoice',
+            attributes: ['id', 'serialNumber', 'totalValueJD', 'totalValueUSD'],
+          },
         ],
       },
     ],
@@ -175,6 +273,17 @@ const getCompanyInvoices = async companyId => {
         include: [
           { model: Country, as: 'country' },
           { model: ParticipationType, as: 'participation' },
+        ],
+      },
+      {
+        model: CompanyInvoiceRegistration,
+        as: 'registrationItems',
+        include: [
+          {
+            model: Registration,
+            as: 'registration',
+            attributes: ['id', 'profileId', 'firstName', 'lastName', 'position'],
+          },
         ],
       },
     ],
@@ -253,137 +362,107 @@ const updateCompanyInvoice = async (id, data) => {
 };
 
 /**
- * Format currency value
- * @param {number} value - The value to format
- * @param {string} currency - Currency suffix
- * @returns {string} Formatted string
+ * Build the HTML table rows for registrations
+ * @param {Array} registrationItems - Registration items with linked registration/invoice
+ * @returns {string} HTML string for tbody rows
  */
-const formatCurrency = (value, currency = 'JD') => {
-  const num = parseFloat(value) || 0;
-  return `${num.toFixed(2)} ${currency}`;
+const MIN_TABLE_ROWS = 5;
+
+const buildTableRows = registrationItems => {
+  const dataRows = (registrationItems || []).map(item => {
+    const reg = item.registration;
+    const inv = item.invoice;
+    const profileId = reg?.profileId || item.registrationId || '';
+    const name = reg ? `${reg.firstName} ${reg.lastName}` : '';
+    const invoiceSerial = inv?.serialNumber || '';
+    const regDate = reg?.createdAt
+      ? moment(reg.createdAt).format('DD/MM/YYYY')
+      : '';
+    const amountUSD = parseFloat(item.totalUSD) || 0;
+    const amountJD = parseFloat(item.totalJD) || 0;
+
+    return `<tr>
+      <td>${profileId}</td>
+      <td class="left">${name}</td>
+      <td>${invoiceSerial}</td>
+      <td>${regDate}</td>
+      <td class="right">${amountUSD > 0 ? amountUSD.toFixed(2) : ''}</td>
+      <td class="right">${amountJD > 0 ? amountJD.toFixed(2) : ''}</td>
+    </tr>`;
+  });
+
+  // Pad to minimum row count so the table always looks full
+  const emptyCount = Math.max(0, MIN_TABLE_ROWS - dataRows.length);
+  const emptyRows = Array(emptyCount)
+    .fill(
+      `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>`,
+    );
+
+  return [...dataRows, ...emptyRows].join('\n');
 };
 
 /**
- * Generate company invoice PDF
- * @param {Object} invoice - Invoice with company data
+ * Generate company invoice PDF using HTML → Puppeteer
+ * @param {Object} invoice - Invoice with company data and registrationItems
  * @returns {Promise<Buffer>} PDF buffer
  */
 const generateCompanyInvoicePDF = async invoice => {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({
-        size: 'A4',
-        margin: 0,
-        bufferPages: true,
-        info: {
-          Title: `GAIF Company Invoice - ${invoice.serialNumber}`,
-          Author: 'GAIF 2026',
-        },
-      });
+  const company = invoice.company;
+  const registrationItems = invoice.registrationItems || [];
 
-      const buffers = [];
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        const pdfBuffer = Buffer.concat(buffers);
-        resolve(pdfBuffer);
-      });
+  const invoiceDate = moment(invoice.invoiceDate).format('DD/MM/YYYY');
+  const countryName = company?.country?.name || '';
 
-      const company = invoice.company;
-      const invoiceDate = moment(invoice.invoiceDate).format('DD/MM/YYYY');
+  const totalJD =
+    parseFloat(invoice.totalValueJD) || parseFloat(invoice.netAmount) || 0;
+  const totalUSD =
+    parseFloat(invoice.totalValueUSD) ||
+    Math.round((totalJD / EXCHANGE_RATE) * 100) / 100;
 
-      // Add the template image as background (full page)
-      doc.image(TEMPLATE_PATH, 0, 0, {
-        width: 595.28, // A4 width in points
-        height: 841.89, // A4 height in points
-      });
+  // Read HTML template
+  let html = fs.readFileSync(HTML_TEMPLATE_PATH, 'utf8');
 
-      // Set font color for all text
-      const textColor = '#333333';
-      doc.fillColor(textColor);
+  // Convert header image to base64 so puppeteer can render it in any environment
+  const headerImageBase64 = fs
+    .readFileSync(HEADER_IMAGE_PATH)
+    .toString('base64');
+  const headerImageSrc = `data:image/png;base64,${headerImageBase64}`;
 
-      // ============================================================
-      // HEADER SECTION
-      // ============================================================
-      doc.fontSize(10).font('Helvetica');
+  // Build table rows
+  const tableRows = buildTableRows(registrationItems);
 
-      // SERIAL NUMBER
-      doc.text(invoice.serialNumber, 40, 130, { width: 200 });
+  // Replace template placeholders
+  html = html
+    .replace('{{HEADER_IMAGE_PATH}}', headerImageSrc)
+    .replace('{{SERIAL_NUMBER}}', invoice.serialNumber || '')
+    .replace('{{TAX_NUMBER}}', config.taxNumber || '')
+    .replace('{{COMPANY_NAME}}', company?.name || '')
+    .replace('{{COUNTRY_NAME}}', countryName)
+    .replace('{{INVOICE_DATE}}', invoiceDate)
+    .replace('{{TABLE_ROWS}}', tableRows)
+    .replace('{{TOTAL_USD}}', `${totalUSD.toFixed(2)} USD`)
+    .replace('{{TOTAL_JD}}', `${totalJD.toFixed(2)} JD`);
 
-      // TAX NUMBER
-      if (config.taxNumber) {
-        doc.text(config.taxNumber, 450, 130, { width: 200 });
-      }
-
-      // COMPANY NAME
-      doc.text(company?.name || '', 42, 183, { width: 200 });
-
-      // INVOICE DATE
-      doc.text(invoiceDate, 450, 183, { width: 90 });
-
-      // ============================================================
-      // DESCRIPTION SECTION
-      // ============================================================
-      doc.fontSize(9).font('Helvetica');
-
-      // Description text (multi-line support)
-      if (invoice.description) {
-        doc.text(invoice.description, 42, 270, {
-          width: 400,
-          height: 60,
-          lineGap: 3,
-        });
-      }
-
-      // ============================================================
-      // AMOUNTS SECTION
-      // ============================================================
-      const valueX = 162;
-      const valueWidth = 70;
-
-      // Total Amount
-      doc.text(
-        formatCurrency(invoice.totalAmount, invoice.currency),
-        valueX,
-        355,
-        { width: valueWidth, align: 'right' },
-      );
-
-      // Discount (if any)
-      if (parseFloat(invoice.discount) > 0) {
-        doc.text(
-          `-${formatCurrency(invoice.discount, invoice.currency)}`,
-          valueX,
-          385,
-          { width: valueWidth, align: 'right' },
-        );
-      }
-
-      // ============================================================
-      // TOTAL SECTION - Show both JOD and USD totals
-      // ============================================================
-      doc.font('Helvetica-Bold');
-
-      // Total in JD
-      const totalJD = invoice.totalValueJD || invoice.netAmount;
-      doc.text(formatCurrency(totalJD, 'JD'), valueX, 540, {
-        width: valueWidth,
-        align: 'right',
-      });
-
-      // Total in USD
-      const totalUSD =
-        invoice.totalValueUSD ||
-        Math.round((totalJD / EXCHANGE_RATE) * 100) / 100;
-      doc.text(formatCurrency(totalUSD, 'USD'), valueX, 560, {
-        width: valueWidth,
-        align: 'right',
-      });
-
-      doc.end();
-    } catch (error) {
-      reject(error);
-    }
+  // Launch puppeteer and render to PDF
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
+
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '10mm', bottom: '10mm', left: '0mm', right: '0mm' },
+    });
+
+    return pdfBuffer;
+  } finally {
+    await browser.close();
+  }
 };
 
 /**
@@ -615,6 +694,30 @@ const adminSaveCompanyInvoice = async (invoiceId, data) => {
   };
 };
 
+/**
+ * Get registration items linked to a company invoice
+ * @param {number} companyInvoiceId - Company invoice ID
+ * @returns {Promise<Array>}
+ */
+const getRegistrationItemsByInvoice = async companyInvoiceId => {
+  return CompanyInvoiceRegistration.findAll({
+    where: { companyInvoiceId },
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        attributes: ['id', 'profileId', 'firstName', 'lastName', 'position'],
+      },
+      {
+        model: Invoice,
+        as: 'invoice',
+        attributes: ['id', 'serialNumber', 'totalValueJD', 'totalValueUSD'],
+      },
+    ],
+    order: [['id', 'ASC']],
+  });
+};
+
 module.exports = {
   getNextSerialNumber,
   createCompanyInvoice,
@@ -626,4 +729,5 @@ module.exports = {
   sendCompanyInvoiceEmail,
   createAndSendCompanyInvoice,
   adminSaveCompanyInvoice,
+  getRegistrationItemsByInvoice,
 };

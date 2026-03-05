@@ -53,6 +53,7 @@
     "nodemailer": "^7.0.12",
     "oracledb": "^6.3.0",
     "pdfkit": "^0.17.2",
+    "puppeteer": "^24.38.0",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.0",
     "speakeasy": "^2.0.0",

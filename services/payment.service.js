@@ -2,7 +2,16 @@
 const axios = require('axios');
 const querystring = require('querystring');
 const config = require('../config/config');
-const { Invoice, Registration, Company, Country } = require('./db.service');
+const {
+  Invoice,
+  Registration,
+  Company,
+  Country,
+  CompanyInvoice,
+  CompanyInvoiceRegistration,
+} = require('./db.service');
+// eslint-disable-next-line import/no-cycle
+const invoiceService = require('./invoice.service');
 
 const { meps } = config;
 
@@ -216,8 +225,263 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
   };
 };
 
+/**
+ * Create a Hosted Checkout session for a company invoice
+ * @param {number} companyInvoiceId - CompanyInvoice ID
+ * @returns {Promise<Object>} Session data
+ */
+const createCompanyCheckoutSession = async companyInvoiceId => {
+  const invoice = await CompanyInvoice.findByPk(companyInvoiceId, {
+    include: [
+      {
+        model: Company,
+        as: 'company',
+        include: [{ model: Country, as: 'country', attributes: ['id', 'name'] }],
+      },
+    ],
+  });
+
+  if (!invoice) {
+    throw new Error('Company invoice not found');
+  }
+
+  if (invoice.status === 'PAID') {
+    throw new Error('This invoice has already been paid');
+  }
+
+  // Determine currency based on company country (Jordan → JOD, otherwise → USD)
+  const companyCountry = invoice.company?.country?.name?.toLowerCase();
+  const isJordan = companyCountry === 'jordan';
+  const currency = isJordan ? 'JOD' : 'USD';
+  const amount = isJordan
+    ? parseFloat(invoice.totalValueJD) || 0
+    : parseFloat(invoice.totalValueUSD) || 0;
+
+  if (amount <= 0) {
+    throw new Error('Invoice amount must be greater than zero');
+  }
+
+  const orderId = `CI-${companyInvoiceId}`;
+  const returnUrl = `${config.urls.api}/payment/company-result?companyInvoiceId=${companyInvoiceId}`;
+
+  const postData = querystring.stringify({
+    apiOperation: 'INITIATE_CHECKOUT',
+    apiUsername: `merchant.${meps.merchantId}`,
+    apiPassword: meps.apiPassword,
+    merchant: meps.merchantId,
+    'interaction.operation': 'PURCHASE',
+    'interaction.returnUrl': returnUrl,
+    'interaction.merchant.name': 'GAIF 2026',
+    'interaction.displayControl.billingAddress': 'HIDE',
+    'interaction.displayControl.customerEmail': 'HIDE',
+    'interaction.displayControl.shipping': 'HIDE',
+    'order.id': orderId,
+    'order.amount': amount.toFixed(2),
+    'order.currency': currency,
+    'order.description': `GAIF 2026 - Company Invoice ${invoice.serialNumber}`,
+  });
+
+  const url = `${meps.gatewayUrl}/api/nvp/version/${meps.apiVersion}`;
+  const response = await axios.post(url, postData, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  const parsed = parseNvpResponse(response.data);
+
+  if (parsed.result !== 'SUCCESS') {
+    console.error('MEPS company session creation failed:', parsed);
+    throw new Error(
+      `Failed to create checkout session: ${
+        parsed['error.explanation'] || parsed.result
+      }`,
+    );
+  }
+
+  return {
+    sessionId: parsed['session.id'],
+    successIndicator: parsed.successIndicator,
+    orderId,
+    amount,
+    currency,
+    serialNumber: invoice.serialNumber,
+    companyName: invoice.company?.name || '',
+  };
+};
+
+/**
+ * Verify company invoice payment and process per-registration receipts
+ * Called after MEPS redirects back with payment result
+ * @param {number} companyInvoiceId - CompanyInvoice ID
+ * @returns {Promise<Object>} Payment result
+ */
+const verifyAndUpdateCompanyPayment = async companyInvoiceId => {
+  // Fetch company invoice with all linked registration items
+  const companyInvoice = await CompanyInvoice.findByPk(companyInvoiceId, {
+    include: [
+      {
+        model: Company,
+        as: 'company',
+        include: [{ model: Country, as: 'country', attributes: ['id', 'name'] }],
+      },
+      {
+        model: CompanyInvoiceRegistration,
+        as: 'registrationItems',
+        include: [
+          {
+            model: Registration,
+            as: 'registration',
+            attributes: [
+              'id',
+              'firstName',
+              'lastName',
+              'email',
+              'profileId',
+              'position',
+              'companyId',
+            ],
+          },
+          {
+            model: Invoice,
+            as: 'invoice',
+            attributes: [
+              'id',
+              'registrationId',
+              'totalValueJD',
+              'totalValueUSD',
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!companyInvoice) {
+    throw new Error('Company invoice not found');
+  }
+
+  const orderId = `CI-${companyInvoiceId}`;
+  const orderData = await retrieveOrder(orderId);
+
+  const isPaid =
+    orderData.result === 'SUCCESS' &&
+    (orderData['order.status'] === 'CAPTURED' ||
+      orderData['order.status'] === 'PURCHASED');
+
+  if (!isPaid) {
+    return {
+      success: false,
+      status: orderData['order.status'] || orderData.result,
+      orderId,
+    };
+  }
+
+  // Determine currency
+  const companyCountry = companyInvoice.company?.country?.name?.toLowerCase();
+  const isJordan = companyCountry === 'jordan';
+  const paidCurrency = isJordan ? 'JOD' : 'USD';
+  const paidAmount =
+    parseFloat(orderData['order.amount']) ||
+    (isJordan
+      ? parseFloat(companyInvoice.totalValueJD)
+      : parseFloat(companyInvoice.totalValueUSD)) ||
+    0;
+
+  // 1. Mark company invoice as PAID
+  await CompanyInvoice.update(
+    {
+      status: 'PAID',
+      paidAmount,
+      paidCurrency,
+      paidAt: new Date(),
+      paymentReference: orderId,
+    },
+    { where: { id: companyInvoiceId } },
+  );
+
+  // 2. Process each registration: update invoice + registration, submit to Fawaterkom, send receipt
+  const processRegistrationItem = async item => {
+    const { invoice: individualInvoice, registration } = item;
+
+    if (!individualInvoice || !registration) {
+      return {
+        registrationId: item.registrationId,
+        success: false,
+        error: 'Missing invoice or registration data',
+      };
+    }
+
+    const itemAmount = isJordan
+      ? parseFloat(individualInvoice.totalValueJD) || 0
+      : parseFloat(individualInvoice.totalValueUSD) || 0;
+
+    // Update individual invoice with payment details
+    await Invoice.update(
+      {
+        paidAmount: itemAmount,
+        paidCurrency,
+        paidAt: new Date(),
+        paymentSource: 'ONLINE',
+      },
+      { where: { id: individualInvoice.id } },
+    );
+
+    // Mark registration as PAID
+    await Registration.update(
+      { paymentStatus: 'PAID' },
+      { where: { id: registration.id } },
+    );
+
+    // Submit to Fawaterkom + generate receipt PDF + send receipt email
+    const fawaterkomResult = await invoiceService.submitToFawaterkom(
+      individualInvoice.id,
+      itemAmount,
+      paidCurrency,
+    );
+
+    return {
+      registrationId: registration.id,
+      invoiceId: individualInvoice.id,
+      success: true,
+      fawaterkomResult,
+    };
+  };
+
+  const settled = await Promise.allSettled(
+    companyInvoice.registrationItems.map(item =>
+      processRegistrationItem(item).catch(err => {
+        console.error(
+          `Error processing registration ${item.registrationId}:`,
+          err.message,
+        );
+        return {
+          registrationId: item.registrationId,
+          success: false,
+          error: err.message,
+        };
+      }),
+    ),
+  );
+
+  const results = settled.map(s =>
+    s.status === 'fulfilled'
+      ? s.value
+      : { success: false, error: s.reason?.message },
+  );
+
+  return {
+    success: true,
+    status: 'PAID',
+    orderId,
+    companyInvoiceId,
+    registrationsProcessed: results.length,
+    results,
+  };
+};
+
 module.exports = {
   createCheckoutSession,
   retrieveOrder,
   verifyAndUpdatePayment,
+  createCompanyCheckoutSession,
+  verifyAndUpdateCompanyPayment,
 };
