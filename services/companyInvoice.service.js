@@ -444,9 +444,11 @@ const generateCompanyInvoicePDF = async invoice => {
     .replace('{{TOTAL_JD}}', `${totalJD.toFixed(2)} JD`);
 
   // Launch puppeteer and render to PDF
+  // Use system Chromium when PUPPETEER_EXECUTABLE_PATH is set (Docker environments)
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
 
   try {

@@ -1,5 +1,18 @@
 FROM node:20-alpine
 
+# Install Chromium + system libs required by puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Tell puppeteer to skip downloading its own Chromium and use the system one
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json first
