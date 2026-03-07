@@ -24,6 +24,16 @@ const ApiError = require('../utils/ApiError');
 // File attributes to include (without content)
 const fileAttributes = ['id', 'fileKey', 'fileName', 'fileType', 'fileSize'];
 
+// Helper: resolve profileId → registration.id for roommate fields
+const resolveRoommateId = async profileIdValue => {
+  if (!profileIdValue) return null;
+  const roommate = await Registration.findOne({
+    where: { profileId: profileIdValue },
+    attributes: ['id'],
+  });
+  return roommate ? roommate.id : null;
+};
+
 // Helper to add CDN prefix to file object
 const processFile = file => {
   if (file && file.fileKey) {
@@ -494,7 +504,9 @@ exports.updateAccommodation = async (id, payload) => {
       ammanRoomType: payload.accommodationInAmman
         ? payload.ammanRoomType
         : null,
-      ammanRoommateId: payload.ammanRoommateId,
+      ammanRoommateId: payload.ammanRoommateId
+        ? await resolveRoommateId(payload.ammanRoommateId)
+        : payload.ammanRoommateId,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.accommodationInDeadSea
         ? payload.deadSeaHotelId
@@ -509,7 +521,9 @@ exports.updateAccommodation = async (id, payload) => {
       deadSeaRoomType: payload.accommodationInDeadSea
         ? payload.deadSeaRoomType
         : null,
-      deadSeaRoommateId: payload.deadSeaRoommateId,
+      deadSeaRoommateId: payload.deadSeaRoommateId
+        ? await resolveRoommateId(payload.deadSeaRoommateId)
+        : payload.deadSeaRoommateId,
     },
     { where: { id } },
   );
@@ -1133,6 +1147,14 @@ exports.adminUpdateRegistration = async (id, payload) => {
     }
   });
 
+  // Resolve profileId → registration.id for roommate fields
+  if (payload.ammanRoommateId) {
+    updateData.ammanRoommateId = await resolveRoommateId(payload.ammanRoommateId);
+  }
+  if (payload.deadSeaRoommateId) {
+    updateData.deadSeaRoommateId = await resolveRoommateId(payload.deadSeaRoommateId);
+  }
+
   // When accommodation is turned off, force-clear all related hotel fields
   if (payload.accommodationInAmman === false) {
     updateData.accommodationInAmman = false;
@@ -1702,14 +1724,18 @@ exports.createFullRegistration = async payload => {
       ammanCheckIn: payload.ammanCheckIn,
       ammanCheckOut: payload.ammanCheckOut,
       ammanRoomType: payload.ammanRoomType,
-      ammanRoommateId: payload.ammanRoommateId,
+      ammanRoommateId: payload.ammanRoommateId
+        ? await resolveRoommateId(payload.ammanRoommateId)
+        : null,
       accommodationInDeadSea: payload.accommodationInDeadSea || false,
       deadSeaHotelId: payload.deadSeaHotelId,
       deadSeaRoomId: payload.deadSeaRoomId,
       deadSeaCheckIn: payload.deadSeaCheckIn,
       deadSeaCheckOut: payload.deadSeaCheckOut,
       deadSeaRoomType: payload.deadSeaRoomType,
-      deadSeaRoommateId: payload.deadSeaRoommateId,
+      deadSeaRoommateId: payload.deadSeaRoommateId
+        ? await resolveRoommateId(payload.deadSeaRoommateId)
+        : null,
       airportPickupOption: payload.airportPickupOption,
       arrivalDate: payload.arrivalDate,
       arrivalAirline: payload.arrivalAirline,
