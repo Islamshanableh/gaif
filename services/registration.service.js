@@ -90,12 +90,12 @@ const getRegistrationIncludes = () => [
   {
     model: Registration,
     as: 'ammanRoommate',
-    attributes: ['id', 'firstName', 'middleName', 'lastName'],
+    attributes: ['id', 'firstName', 'middleName', 'lastName', 'profileId'],
   },
   {
     model: Registration,
     as: 'deadSeaRoommate',
-    attributes: ['id', 'firstName', 'middleName', 'lastName'],
+    attributes: ['id', 'firstName', 'middleName', 'lastName', 'profileId'],
   },
   // Registration file associations
   { model: File, as: 'participantPicture', attributes: fileAttributes },
