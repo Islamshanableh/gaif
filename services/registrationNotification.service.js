@@ -274,8 +274,19 @@ const handleRegistrationComplete = async registration => {
       registration.participation?.requireConfirmationFromCompany === true;
 
     if (requiresCompanyConfirmation) {
-      // Flow 1: Send email to company for confirmation
-      await sendCompanyConfirmationEmail(registration);
+      // Flow 1: Send email to company for confirmation + send approved email to participant
+      try {
+        await invoiceService.createInvoice(registration);
+      } catch (invoiceError) {
+        console.error(
+          'Error creating invoice for pending confirmation registration:',
+          invoiceError,
+        );
+      }
+      await Promise.all([
+        sendCompanyConfirmationEmail(registration),
+        sendRegistrationApprovedEmail(registration),
+      ]);
     } else {
       // Flow 2: Auto-confirmed — create invoice before sending approval email
       try {
