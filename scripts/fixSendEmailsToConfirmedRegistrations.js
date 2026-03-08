@@ -29,9 +29,13 @@ const {
 const { Op } = Sequelize;
 const registrationNotificationService = require('../services/registrationNotification.service');
 
+const isDryRun = process.argv.includes('--dry-run');
+
 async function main() {
   console.log(
-    'Starting data fix: send approved emails to confirmed registrations without tokens...',
+    isDryRun
+      ? '[DRY RUN] Checking confirmed registrations without tokens (no emails will be sent)...'
+      : 'Starting data fix: send approved emails to confirmed registrations without tokens...',
   );
 
   try {
@@ -76,6 +80,13 @@ async function main() {
       ),
     );
     console.log('');
+
+    if (isDryRun) {
+      console.log(
+        `[DRY RUN] Would send emails to ${registrations.length} registration(s). No emails sent.`,
+      );
+      return;
+    }
 
     // Step 3: Load full registration data and send approved email for each
     let successCount = 0;
