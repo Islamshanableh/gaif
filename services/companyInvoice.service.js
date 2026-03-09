@@ -192,7 +192,7 @@ const createCompanyInvoice = async (data, userId) => {
     totalValueUSD,
     exchangeRate: EXCHANGE_RATE,
     description,
-    invoiceDate,
+    invoiceDate: invoiceDate || new Date(),
     dueDate,
     status: 'PENDING',
     createdBy: userId,
@@ -597,6 +597,99 @@ const createAndSendCompanyInvoice = async (data, userId, sendEmail = true) => {
 };
 
 /**
+ * Update registrations linked to a company invoice (add/remove)
+ * @param {number} invoiceId - Company invoice ID
+ * @param {number[]} registrationIds - New complete list of registration IDs
+ * @returns {Promise<Object>} Updated invoice
+ */
+const updateCompanyInvoiceRegistrations = async (
+  invoiceId,
+  registrationIds,
+) => {
+  const invoice = await getCompanyInvoiceById(invoiceId);
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  // Current registration IDs in the invoice
+  const currentIds = (invoice.registrationItems || []).map(
+    item => item.registrationId,
+  );
+
+  const toAdd = registrationIds.filter(id => !currentIds.includes(id));
+  const toRemove = currentIds.filter(id => !registrationIds.includes(id));
+
+  // Remove junction records for removed registrations
+  if (toRemove.length > 0) {
+    await CompanyInvoiceRegistration.destroy({
+      where: {
+        companyInvoiceId: invoiceId,
+        registrationId: { [Op.in]: toRemove },
+      },
+    });
+  }
+
+  // Add junction records for new registrations
+  if (toAdd.length > 0) {
+    const newRegistrations = await Registration.findAll({
+      where: { id: { [Op.in]: toAdd } },
+      attributes: ['id', 'firstName', 'lastName', 'position'],
+    });
+
+    const newInvoices = await Promise.all(
+      newRegistrations.map(reg =>
+        Invoice.findOne({
+          where: { registrationId: reg.id },
+          order: [['createdAt', 'DESC']],
+          attributes: ['id', 'totalValueJD', 'totalValueUSD', 'serialNumber'],
+        }),
+      ),
+    );
+
+    await CompanyInvoiceRegistration.bulkCreate(
+      newRegistrations.map((reg, idx) => ({
+        companyInvoiceId: invoiceId,
+        registrationId: reg.id,
+        invoiceId: newInvoices[idx]?.id || null,
+        totalJD: parseFloat(newInvoices[idx]?.totalValueJD) || 0,
+        totalUSD: parseFloat(newInvoices[idx]?.totalValueUSD) || 0,
+      })),
+    );
+  }
+
+  // Recalculate totals from all current junction records
+  const allItems = await CompanyInvoiceRegistration.findAll({
+    where: { companyInvoiceId: invoiceId },
+    attributes: ['totalJD', 'totalUSD'],
+  });
+
+  const totalAmount = allItems.reduce(
+    (sum, item) => sum + (parseFloat(item.totalJD) || 0),
+    0,
+  );
+  const discount = parseFloat(invoice.discount) || 0;
+  const netAmount = totalAmount - discount;
+  const invoiceCurrency = invoice.currency || 'JD';
+  const { totalValueJD, totalValueUSD } = calculateDualTotals(
+    netAmount,
+    invoiceCurrency,
+  );
+
+  await CompanyInvoice.update(
+    {
+      totalAmount,
+      netAmount,
+      totalValueJD,
+      totalValueUSD,
+      exchangeRate: EXCHANGE_RATE,
+    },
+    { where: { id: invoiceId } },
+  );
+
+  return getCompanyInvoiceById(invoiceId);
+};
+
+/**
  * Admin Save Company Invoice - Consolidated endpoint that handles:
  * - Update total amount and discount
  * - Update description and dates
@@ -742,5 +835,6 @@ module.exports = {
   sendCompanyInvoiceEmail,
   createAndSendCompanyInvoice,
   adminSaveCompanyInvoice,
+  updateCompanyInvoiceRegistrations,
   getRegistrationItemsByInvoice,
 };

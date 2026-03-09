@@ -194,6 +194,20 @@ const adminSaveCompanyInvoice = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+/**
+ * Update registrations linked to a company invoice
+ * PUT /api/v1/company-invoice/:id/registrations
+ */
+const updateCompanyInvoiceRegistrations = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { registrationIds } = req.body;
+  const result = await companyInvoiceService.updateCompanyInvoiceRegistrations(
+    parseInt(id, 10),
+    registrationIds,
+  );
+  res.status(httpStatus.OK).send({ result });
+});
+
 module.exports = {
   createCompanyInvoice,
   getCompanyInvoiceById,
@@ -204,4 +218,5 @@ module.exports = {
   resendCompanyInvoiceEmail,
   markCompanyInvoiceAsPaid,
   adminSaveCompanyInvoice,
+  updateCompanyInvoiceRegistrations,
 };

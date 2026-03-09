@@ -13,7 +13,7 @@ exports.createCompanyInvoice = {
       discount: Joi.number().min(0).default(0),
       // Currency is automatically fetched from company's participation type
       description: Joi.string().max(1000).allow('', null).optional(),
-      invoiceDate: Joi.date().required(),
+      invoiceDate: Joi.date().optional(),
       dueDate: Joi.date().optional(),
       sendEmail: Joi.boolean().default(true),
     })
@@ -65,6 +65,18 @@ exports.markAsPaid = {
   body: Joi.object().keys({
     paidAmount: Joi.number().min(0).optional(),
     paymentReference: Joi.string().max(100).allow('', null).optional(),
+  }),
+};
+
+exports.updateCompanyInvoiceRegistrations = {
+  params: Joi.object().keys({
+    id: Joi.number().required(),
+  }),
+  body: Joi.object().keys({
+    registrationIds: Joi.array()
+      .items(Joi.number().integer().min(1))
+      .min(0)
+      .required(),
   }),
 };
 

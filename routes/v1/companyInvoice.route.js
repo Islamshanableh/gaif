@@ -80,6 +80,15 @@ router
     companyInvoiceController.markCompanyInvoiceAsPaid,
   );
 
+// Update registrations linked to a company invoice (add/remove)
+router
+  .route('/:id/registrations')
+  .put(
+    auth(routePermissions.ADMINISTRATOR.update),
+    validate(companyInvoiceValidation.updateCompanyInvoiceRegistrations),
+    companyInvoiceController.updateCompanyInvoiceRegistrations,
+  );
+
 // Admin Save Company Invoice - Consolidated endpoint (admin only)
 // Handles: update amounts, discounts, description, mark as paid, send email
 router
