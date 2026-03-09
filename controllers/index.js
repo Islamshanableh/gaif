@@ -10,3 +10,4 @@ module.exports.mfaController = require('./mfa.controller');
 module.exports.userController = require('./user.controller');
 module.exports.insightsController = require('./insights.controller');
 module.exports.invoiceController = require('./invoice.controller');
+module.exports.meetingRoomController = require('./meetingRoom.controller');

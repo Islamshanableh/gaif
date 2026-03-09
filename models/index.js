@@ -1960,6 +1960,59 @@ CompanyInvoiceRegistration.belongsTo(Invoice, {
   as: 'invoice',
 });
 
+// MeetingRoom Model
+const MeetingRoom = sequelize.define(
+  'MeetingRoom',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    type: {
+      type: DataTypes.ENUM('room', 'table'),
+      allowNull: false,
+    },
+    floor: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    name: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    banquet: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    area: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    code: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      unique: true,
+    },
+    priceUSD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.ENUM('active', 'inactive'),
+      defaultValue: 'active',
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+  },
+  {
+    tableName: 'MeetingRooms',
+    timestamps: true,
+  },
+);
+
 // ============================================================================
 
 module.exports = {
@@ -1984,4 +2037,5 @@ module.exports = {
   CompanyInvoice,
   CompanyInvoiceRegistration,
   AuditLog,
+  MeetingRoom,
 };

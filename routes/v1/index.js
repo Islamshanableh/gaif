@@ -17,6 +17,7 @@ const auditRoute = require('./audit.route');
 const insightsRoute = require('./insights.route');
 const invoiceRoute = require('./invoice.route');
 const companyInvoiceRoute = require('./companyInvoice.route');
+const meetingRoomRoute = require('./meetingRoom.route');
 
 const defaultRoutes = [
   {
@@ -78,6 +79,10 @@ const defaultRoutes = [
   {
     path: '/company-invoice',
     route: companyInvoiceRoute,
+  },
+  {
+    path: '/meeting-room',
+    route: meetingRoomRoute,
   },
 ];
 
