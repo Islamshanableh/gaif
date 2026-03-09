@@ -32,6 +32,12 @@
       "value": "1",
       "type": "string",
       "description": "ID of the company invoice (CompanyInvoice.id)"
+    },
+    {
+      "key": "meetingRoomId",
+      "value": "1",
+      "type": "string",
+      "description": "ID of the meeting room"
     }
   ],
   "item": [
@@ -4856,6 +4862,189 @@
               ]
             },
             "description": "HTML failure page shown after a failed/declined company invoice payment. Includes a retry link back to the company checkout. Served at /payment/company-failed (not under /api/v1)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Meeting Room",
+      "item": [
+        {
+          "name": "Create Meeting Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room"
+              ]
+            },
+            "description": "Create a new meeting room. type: room|table. status: active|inactive.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"room\",\n  \"floor\": \"Ground Floor\",\n  \"name\": \"Wadi Rum 1\",\n  \"banquet\": \"10\",\n  \"area\": \"50\",\n  \"code\": \"WR1\",\n  \"priceUSD\": 500,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Room List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Get paginated list of meeting rooms. Optional filters: type, floor, status, page, limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Room by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room",
+                "{{meetingRoomId}}"
+              ]
+            },
+            "description": "Get a single meeting room by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Meeting Room",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room",
+                "{{meetingRoomId}}"
+              ]
+            },
+            "description": "Update an existing meeting room by ID.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wadi Rum 1 Updated\",\n  \"floor\": \"First Floor\",\n  \"banquet\": \"15\",\n  \"area\": \"60\",\n  \"priceUSD\": 600,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Meeting Room",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room",
+                "{{meetingRoomId}}"
+              ]
+            },
+            "description": "Soft delete a meeting room by ID."
           },
           "response": []
         }

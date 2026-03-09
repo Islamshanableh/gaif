@@ -189,6 +189,89 @@ if (!hasCompanyInvoiceIdVar) {
   console.log('– "companyInvoiceId" variable already exists, skipped');
 }
 
+// ─── 5. Add Meeting Room folder ───────────────────────────────────────────────
+
+const meetingRoomFolderExists = collection.item.some(f => f.name === 'Meeting Room');
+
+if (!meetingRoomFolderExists) {
+  const meetingRoomFolder = {
+    name: 'Meeting Room',
+    item: [
+      makeRequest(
+        'Create Meeting Room',
+        'POST',
+        '{{baseUrl}}/api/v1/meeting-room',
+        {
+          type: 'room',
+          floor: 'Ground Floor',
+          name: 'Wadi Rum 1',
+          banquet: '10',
+          area: '50',
+          code: 'WR1',
+          priceUSD: 500,
+          status: 'active',
+        },
+        'Create a new meeting room. type: room|table. status: active|inactive.',
+      ),
+      makeRequest(
+        'Get Meeting Room List',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room?page=1&limit=20',
+        null,
+        'Get paginated list of meeting rooms. Optional filters: type, floor, status, page, limit.',
+      ),
+      makeRequest(
+        'Get Meeting Room by ID',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}',
+        null,
+        'Get a single meeting room by ID.',
+      ),
+      makeRequest(
+        'Update Meeting Room',
+        'PUT',
+        '{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}',
+        {
+          name: 'Wadi Rum 1 Updated',
+          floor: 'First Floor',
+          banquet: '15',
+          area: '60',
+          priceUSD: 600,
+          status: 'active',
+        },
+        'Update an existing meeting room by ID.',
+      ),
+      makeRequest(
+        'Delete Meeting Room',
+        'DELETE',
+        '{{baseUrl}}/api/v1/meeting-room/{{meetingRoomId}}',
+        null,
+        'Soft delete a meeting room by ID.',
+      ),
+    ],
+  };
+
+  collection.item.push(meetingRoomFolder);
+  console.log('✓ Added "Meeting Room" folder with 5 requests');
+} else {
+  console.log('– "Meeting Room" folder already exists, skipped');
+}
+
+// ─── 6. Add meetingRoomId variable ────────────────────────────────────────────
+
+const hasMeetingRoomIdVar = collection.variable.some(v => v.key === 'meetingRoomId');
+if (!hasMeetingRoomIdVar) {
+  collection.variable.push({
+    key: 'meetingRoomId',
+    value: '1',
+    type: 'string',
+    description: 'ID of the meeting room',
+  });
+  console.log('✓ Added "meetingRoomId" collection variable');
+} else {
+  console.log('– "meetingRoomId" variable already exists, skipped');
+}
+
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2));
