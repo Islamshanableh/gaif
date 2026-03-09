@@ -282,7 +282,13 @@ const getCompanyInvoices = async companyId => {
           {
             model: Registration,
             as: 'registration',
-            attributes: ['id', 'profileId', 'firstName', 'lastName', 'position'],
+            attributes: [
+              'id',
+              'profileId',
+              'firstName',
+              'lastName',
+              'position',
+            ],
           },
         ],
       },
@@ -366,7 +372,7 @@ const updateCompanyInvoice = async (id, data) => {
  * @param {Array} registrationItems - Registration items with linked registration/invoice
  * @returns {string} HTML string for tbody rows
  */
-const MIN_TABLE_ROWS = 5;
+const MIN_TABLE_ROWS = 3;
 
 const buildTableRows = registrationItems => {
   const dataRows = (registrationItems || []).map(item => {
@@ -393,10 +399,9 @@ const buildTableRows = registrationItems => {
 
   // Pad to minimum row count so the table always looks full
   const emptyCount = Math.max(0, MIN_TABLE_ROWS - dataRows.length);
-  const emptyRows = Array(emptyCount)
-    .fill(
-      `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>`,
-    );
+  const emptyRows = Array(emptyCount).fill(
+    `<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>`,
+  );
 
   return [...dataRows, ...emptyRows].join('\n');
 };
@@ -448,7 +453,11 @@ const generateCompanyInvoicePDF = async invoice => {
   const browser = await puppeteer.launch({
     headless: true,
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+    ],
   });
 
   try {
@@ -458,7 +467,7 @@ const generateCompanyInvoicePDF = async invoice => {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '10mm', bottom: '10mm', left: '0mm', right: '0mm' },
+      margin: { top: '0mm', bottom: '0mm', left: '0mm', right: '0mm' },
     });
 
     return pdfBuffer;
@@ -523,7 +532,9 @@ const sendCompanyInvoiceEmail = async invoice => {
   });
 
   // Generate invoice PDF
-  const pdfBuffer = await generateCompanyInvoicePDF(invoice);
+  const invoiceData =
+    typeof invoice.toJSON === 'function' ? invoice.toJSON() : invoice;
+  const pdfBuffer = await generateCompanyInvoicePDF(invoiceData);
 
   // Prepare attachments
   const attachments = [
