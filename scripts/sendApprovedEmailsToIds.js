@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * One-off: Send approved email to specific registration IDs.
+ * One-off: Send approved email to specific profile IDs.
  * No invoice creation, no status changes — email only.
  *
  * Run with: NODE_ENV=production node scripts/sendApprovedEmailsToIds.js
@@ -22,14 +22,11 @@ const {
 
 const registrationNotificationService = require('../services/registrationNotification.service');
 
-const TARGET_IDS = [
-  89, 91, 95, 107, 111, 88, 90, 100, 70, 75, 98, 105, 106, 50, 44, 169, 123,
-  127,
-];
+const TARGET_PROFILE_IDS = [187, 189, 190, 191, 192, 193, 194, 195, 196];
 
 async function main() {
   console.log(
-    `Sending approved emails to ${TARGET_IDS.length} registrations...\n`,
+    `Sending approved emails to ${TARGET_PROFILE_IDS.length} registrations...\n`,
   );
 
   try {
@@ -39,9 +36,10 @@ async function main() {
     let successCount = 0;
     let failCount = 0;
 
-    for (const id of TARGET_IDS) {
+    for (const profileId of TARGET_PROFILE_IDS) {
       try {
-        const registration = await Registration.findByPk(id, {
+        const registration = await Registration.findOne({
+          where: { profileId },
           include: [
             {
               model: Company,
@@ -95,7 +93,7 @@ async function main() {
         });
 
         if (!registration) {
-          console.log(`  - ID ${id}: NOT FOUND — skipped`);
+          console.log(`  - Profile ID ${profileId}: NOT FOUND — skipped`);
           failCount += 1;
           continue;
         }
@@ -104,16 +102,18 @@ async function main() {
           registration.toJSON(),
         );
 
-        console.log(`  ✓ ID ${id} — email sent to ${registration.email}`);
+        console.log(
+          `  ✓ Profile ID ${profileId} — email sent to ${registration.email}`,
+        );
         successCount += 1;
       } catch (err) {
-        console.error(`  ✗ ID ${id} — failed: ${err.message}`);
+        console.error(`  ✗ Profile ID ${profileId} — failed: ${err.message}`);
         failCount += 1;
       }
     }
 
     console.log(
-      `\nDone. Success: ${successCount}, Failed: ${failCount} out of ${TARGET_IDS.length}.`,
+      `\nDone. Success: ${successCount}, Failed: ${failCount} out of ${TARGET_PROFILE_IDS.length}.`,
     );
   } catch (error) {
     console.error('Fatal error:', error.message);
