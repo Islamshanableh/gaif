@@ -18,6 +18,8 @@ const insightsRoute = require('./insights.route');
 const invoiceRoute = require('./invoice.route');
 const companyInvoiceRoute = require('./companyInvoice.route');
 const meetingRoomRoute = require('./meetingRoom.route');
+const meetingRoomReservationRoute = require('./meetingRoomReservation.route');
+const meetingRoomInvoiceRoute = require('./meetingRoomInvoice.route');
 
 const defaultRoutes = [
   {
@@ -83,6 +85,14 @@ const defaultRoutes = [
   {
     path: '/meeting-room',
     route: meetingRoomRoute,
+  },
+  {
+    path: '/meeting-room-reservation',
+    route: meetingRoomReservationRoute,
+  },
+  {
+    path: '/meeting-room-invoice',
+    route: meetingRoomInvoiceRoute,
   },
 ];
 

@@ -21,6 +21,8 @@ const {
   CompanyInvoiceRegistration,
   AuditLog,
   MeetingRoom,
+  MeetingRoomReservation,
+  MeetingRoomInvoice,
 } = require('../models');
 
 // Export sequelize instance and all models
@@ -48,4 +50,6 @@ module.exports = {
   CompanyInvoiceRegistration,
   AuditLog,
   MeetingRoom,
+  MeetingRoomReservation,
+  MeetingRoomInvoice,
 };

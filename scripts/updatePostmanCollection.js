@@ -272,6 +272,192 @@ if (!hasMeetingRoomIdVar) {
   console.log('– "meetingRoomId" variable already exists, skipped');
 }
 
+// ─── 7. Add Meeting Room Reservation folder ───────────────────────────────────
+
+const meetingRoomReservationFolderExists = collection.item.some(
+  f => f.name === 'Meeting Room Reservation',
+);
+
+if (!meetingRoomReservationFolderExists) {
+  const meetingRoomReservationFolder = {
+    name: 'Meeting Room Reservation',
+    item: [
+      makeRequest(
+        'Get Available Rooms',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room-reservation/rooms?page=1&limit=20',
+        null,
+        'Public. List available (unreserved) meeting rooms. Optional filters: type, floor, page, limit.',
+      ),
+      makeRequest(
+        'Create Reservation',
+        'POST',
+        '{{baseUrl}}/api/v1/meeting-room-reservation',
+        {
+          meetingRoomId: 1,
+          country: 'Jordan',
+          company: 'Acme Corp',
+          contactPerson: 'John Doe',
+          email: 'john@example.com',
+          mobile: '+962791234567',
+          branding: false,
+          description: 'Meeting room reservation for GAIF35',
+        },
+        'Public. Submit a meeting room reservation. The room becomes unavailable to others until admin deletes the request.',
+      ),
+      makeRequest(
+        'Get Reservation List (Admin)',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room-reservation?page=1&limit=20',
+        null,
+        'Admin only. List all reservation requests.',
+      ),
+      makeRequest(
+        'Delete Reservation (Admin)',
+        'DELETE',
+        '{{baseUrl}}/api/v1/meeting-room-reservation/{{meetingRoomReservationId}}',
+        null,
+        'Admin only. Delete a reservation request — frees the meeting room for others.',
+      ),
+    ],
+  };
+
+  collection.item.push(meetingRoomReservationFolder);
+  console.log('✓ Added "Meeting Room Reservation" folder with 4 requests');
+} else {
+  console.log('– "Meeting Room Reservation" folder already exists, skipped');
+}
+
+// ─── 8. Add Meeting Room Invoice folder ───────────────────────────────────────
+
+const meetingRoomInvoiceFolderExists = collection.item.some(
+  f => f.name === 'Meeting Room Invoice',
+);
+
+if (!meetingRoomInvoiceFolderExists) {
+  const meetingRoomInvoiceFolder = {
+    name: 'Meeting Room Invoice',
+    item: [
+      makeRequest(
+        'Create Meeting Room Invoice',
+        'POST',
+        '{{baseUrl}}/api/v1/meeting-room-invoice',
+        {
+          country: 'Jordan',
+          company: 'Acme Corp',
+          contactPerson: 'John Doe',
+          email: 'john@example.com',
+          mobile: '+962791234567',
+          amountJD: 500,
+          discount: 50,
+          description: 'Meeting room booking for GAIF35 conference.',
+        },
+        'Admin only. Create a meeting room invoice. Generates serial number (GAIF26CM0001), converts JD → USD, generates PDF and sends invoice email with payment link automatically.',
+      ),
+      makeRequest(
+        'Get Meeting Room Invoice List',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room-invoice?page=1&limit=20',
+        null,
+        'Admin only. List all meeting room invoices. Optional filter: status (pending|paid|cancelled).',
+      ),
+      makeRequest(
+        'Get Meeting Room Invoice by ID',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}',
+        null,
+        'Admin only. Get a single meeting room invoice by ID.',
+      ),
+      makeRequest(
+        'Download Meeting Room Invoice PDF',
+        'GET',
+        '{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}/pdf',
+        null,
+        'Admin only. Download the invoice as a PDF file.',
+      ),
+      makeRequest(
+        'Resend Meeting Room Invoice Email',
+        'POST',
+        '{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}/resend-email',
+        null,
+        'Admin only. Resend the invoice email with PDF attachment and payment link.',
+      ),
+      makeRequest(
+        'Delete Meeting Room Invoice',
+        'DELETE',
+        '{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}',
+        null,
+        'Admin only. Permanently delete a meeting room invoice.',
+      ),
+    ],
+  };
+
+  collection.item.push(meetingRoomInvoiceFolder);
+  console.log('✓ Added "Meeting Room Invoice" folder with 6 requests');
+} else {
+  console.log('– "Meeting Room Invoice" folder already exists, skipped');
+}
+
+// ─── 9. Add Meeting Room payment endpoints to Payment folder ──────────────────
+
+const meetingRoomPaymentRequests = [
+  {
+    name: 'Initiate Meeting Room Checkout',
+    method: 'GET',
+    url: '{{baseUrl}}/api/v1/payment/meeting-room-checkout?invoiceId={{meetingRoomInvoiceId}}',
+    body: null,
+    description:
+      'Creates a MEPS hosted checkout session for a meeting room invoice and returns an HTML page ' +
+      'that redirects the user to the payment gateway. Currency: JOD.',
+  },
+  {
+    name: 'Meeting Room Payment Result Callback',
+    method: 'GET',
+    url: '{{baseUrl}}/api/v1/payment/meeting-room-result?meetingRoomInvoiceId={{meetingRoomInvoiceId}}',
+    body: null,
+    description:
+      'MEPS redirects to this endpoint after the meeting room payment attempt. ' +
+      'Verifies order with MEPS and updates invoice status to "paid".',
+  },
+];
+
+meetingRoomPaymentRequests.forEach(r => {
+  const exists = payFolder.item.some(i => i.name === r.name);
+  if (!exists) {
+    payFolder.item.push(makeRequest(r.name, r.method, r.url, r.body, r.description));
+    console.log(`✓ Added "${r.name}"`);
+  } else {
+    console.log(`– "${r.name}" already exists, skipped`);
+  }
+});
+
+// ─── 10. Add new collection variables ─────────────────────────────────────────
+
+const newVars = [
+  {
+    key: 'meetingRoomReservationId',
+    value: '1',
+    type: 'string',
+    description: 'ID of the meeting room reservation',
+  },
+  {
+    key: 'meetingRoomInvoiceId',
+    value: '1',
+    type: 'string',
+    description: 'ID of the meeting room invoice (MeetingRoomInvoice.id)',
+  },
+];
+
+newVars.forEach(v => {
+  const exists = collection.variable.some(cv => cv.key === v.key);
+  if (!exists) {
+    collection.variable.push(v);
+    console.log(`✓ Added "${v.key}" collection variable`);
+  } else {
+    console.log(`– "${v.key}" variable already exists, skipped`);
+  }
+});
+
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2));

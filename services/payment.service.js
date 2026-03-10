@@ -9,6 +9,7 @@ const {
   Country,
   CompanyInvoice,
   CompanyInvoiceRegistration,
+  MeetingRoomInvoice,
 } = require('./db.service');
 // eslint-disable-next-line import/no-cycle
 const invoiceService = require('./invoice.service');
@@ -478,10 +479,134 @@ const verifyAndUpdateCompanyPayment = async companyInvoiceId => {
   };
 };
 
+/**
+ * Create a Hosted Checkout session for a meeting room invoice
+ * @param {number} meetingRoomInvoiceId
+ * @returns {Promise<Object>} Session data
+ */
+const createMeetingRoomCheckoutSession = async meetingRoomInvoiceId => {
+  const invoice = await MeetingRoomInvoice.findByPk(meetingRoomInvoiceId);
+
+  if (!invoice) {
+    throw new Error('Meeting room invoice not found');
+  }
+
+  if (invoice.status === 'paid') {
+    throw new Error('This invoice has already been paid');
+  }
+
+  const amount = parseFloat(invoice.totalValueJD) || 0;
+  const currency = 'JOD';
+
+  if (amount <= 0) {
+    throw new Error('Invoice amount must be greater than zero');
+  }
+
+  const orderId = `MRI-${meetingRoomInvoiceId}`;
+  const returnUrl = `${config.urls.api}/payment/meeting-room-result?meetingRoomInvoiceId=${meetingRoomInvoiceId}`;
+
+  const postData = querystring.stringify({
+    apiOperation: 'INITIATE_CHECKOUT',
+    apiUsername: `merchant.${meps.merchantId}`,
+    apiPassword: meps.apiPassword,
+    merchant: meps.merchantId,
+    'interaction.operation': 'PURCHASE',
+    'interaction.returnUrl': returnUrl,
+    'interaction.merchant.name': 'GAIF 2026',
+    'interaction.displayControl.billingAddress': 'HIDE',
+    'interaction.displayControl.customerEmail': 'HIDE',
+    'interaction.displayControl.shipping': 'HIDE',
+    'order.id': orderId,
+    'order.amount': amount.toFixed(2),
+    'order.currency': currency,
+    'order.description': `GAIF 2026 - Meeting Room Invoice ${invoice.serialNumber}`,
+  });
+
+  const url = `${meps.gatewayUrl}/api/nvp/version/${meps.apiVersion}`;
+  const response = await axios.post(url, postData, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  const parsed = parseNvpResponse(response.data);
+
+  if (parsed.result !== 'SUCCESS') {
+    console.error('MEPS meeting room session creation failed:', parsed);
+    throw new Error(
+      `Failed to create checkout session: ${parsed['error.explanation'] || parsed.result}`,
+    );
+  }
+
+  return {
+    sessionId: parsed['session.id'],
+    successIndicator: parsed.successIndicator,
+    orderId,
+    amount,
+    currency,
+    serialNumber: invoice.serialNumber,
+    company: invoice.company,
+  };
+};
+
+/**
+ * Verify meeting room invoice payment and update status
+ * @param {number} meetingRoomInvoiceId
+ * @returns {Promise<Object>} Payment result
+ */
+const verifyAndUpdateMeetingRoomPayment = async meetingRoomInvoiceId => {
+  const invoice = await MeetingRoomInvoice.findByPk(meetingRoomInvoiceId);
+
+  if (!invoice) {
+    throw new Error('Meeting room invoice not found');
+  }
+
+  const orderId = `MRI-${meetingRoomInvoiceId}`;
+  const orderData = await retrieveOrder(orderId);
+
+  const isPaid =
+    orderData.result === 'SUCCESS' &&
+    (orderData['order.status'] === 'CAPTURED' ||
+      orderData['order.status'] === 'PURCHASED');
+
+  if (!isPaid) {
+    return {
+      success: false,
+      status: orderData['order.status'] || orderData.result,
+      orderId,
+    };
+  }
+
+  const paidAmount =
+    parseFloat(orderData['order.amount']) ||
+    parseFloat(invoice.totalValueJD) ||
+    0;
+
+  await MeetingRoomInvoice.update(
+    {
+      status: 'paid',
+      paidAmount,
+      paidCurrency: 'JOD',
+      paidAt: new Date(),
+    },
+    { where: { id: meetingRoomInvoiceId } },
+  );
+
+  console.log(`Meeting room invoice ${invoice.serialNumber} marked as PAID`);
+
+  return {
+    success: true,
+    status: 'paid',
+    orderId,
+    meetingRoomInvoiceId,
+    serialNumber: invoice.serialNumber,
+  };
+};
+
 module.exports = {
   createCheckoutSession,
   retrieveOrder,
   verifyAndUpdatePayment,
   createCompanyCheckoutSession,
   verifyAndUpdateCompanyPayment,
+  createMeetingRoomCheckoutSession,
+  verifyAndUpdateMeetingRoomPayment,
 };

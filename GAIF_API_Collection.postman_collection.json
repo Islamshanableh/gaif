@@ -38,6 +38,18 @@
       "value": "1",
       "type": "string",
       "description": "ID of the meeting room"
+    },
+    {
+      "key": "meetingRoomReservationId",
+      "value": "1",
+      "type": "string",
+      "description": "ID of the meeting room reservation"
+    },
+    {
+      "key": "meetingRoomInvoiceId",
+      "value": "1",
+      "type": "string",
+      "description": "ID of the meeting room invoice (MeetingRoomInvoice.id)"
     }
   ],
   "item": [
@@ -4864,6 +4876,80 @@
             "description": "HTML failure page shown after a failed/declined company invoice payment. Includes a retry link back to the company checkout. Served at /payment/company-failed (not under /api/v1)."
           },
           "response": []
+        },
+        {
+          "name": "Initiate Meeting Room Checkout",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/meeting-room-checkout?invoiceId={{meetingRoomInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "meeting-room-checkout"
+              ],
+              "query": [
+                {
+                  "key": "invoiceId",
+                  "value": "{{meetingRoomInvoiceId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Creates a MEPS hosted checkout session for a meeting room invoice and returns an HTML page that redirects the user to the payment gateway. Currency: JOD."
+          },
+          "response": []
+        },
+        {
+          "name": "Meeting Room Payment Result Callback",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/meeting-room-result?meetingRoomInvoiceId={{meetingRoomInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "meeting-room-result"
+              ],
+              "query": [
+                {
+                  "key": "meetingRoomInvoiceId",
+                  "value": "{{meetingRoomInvoiceId}}",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "MEPS redirects to this endpoint after the meeting room payment attempt. Verifies order with MEPS and updates invoice status to \"paid\"."
+          },
+          "response": []
         }
       ]
     },
@@ -5045,6 +5131,368 @@
               ]
             },
             "description": "Soft delete a meeting room by ID."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Meeting Room Reservation",
+      "item": [
+        {
+          "name": "Get Available Rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-reservation/rooms?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-reservation",
+                "rooms"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Public. List available (unreserved) meeting rooms. Optional filters: type, floor, page, limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-reservation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-reservation"
+              ]
+            },
+            "description": "Public. Submit a meeting room reservation. The room becomes unavailable to others until admin deletes the request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meetingRoomId\": 1,\n  \"country\": \"Jordan\",\n  \"company\": \"Acme Corp\",\n  \"contactPerson\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"mobile\": \"+962791234567\",\n  \"branding\": false,\n  \"description\": \"Meeting room reservation for GAIF35\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation List (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-reservation?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-reservation"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Admin only. List all reservation requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Reservation (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-reservation/{{meetingRoomReservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-reservation",
+                "{{meetingRoomReservationId}}"
+              ]
+            },
+            "description": "Admin only. Delete a reservation request — frees the meeting room for others."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Meeting Room Invoice",
+      "item": [
+        {
+          "name": "Create Meeting Room Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice"
+              ]
+            },
+            "description": "Admin only. Create a meeting room invoice. Generates serial number (GAIF26CM0001), converts JD → USD, generates PDF and sends invoice email with payment link automatically.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country\": \"Jordan\",\n  \"company\": \"Acme Corp\",\n  \"contactPerson\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"mobile\": \"+962791234567\",\n  \"amountJD\": 500,\n  \"discount\": 50,\n  \"description\": \"Meeting room booking for GAIF35 conference.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Room Invoice List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Admin only. List all meeting room invoices. Optional filter: status (pending|paid|cancelled)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Room Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice",
+                "{{meetingRoomInvoiceId}}"
+              ]
+            },
+            "description": "Admin only. Get a single meeting room invoice by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Meeting Room Invoice PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice",
+                "{{meetingRoomInvoiceId}}",
+                "pdf"
+              ]
+            },
+            "description": "Admin only. Download the invoice as a PDF file."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Meeting Room Invoice Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}/resend-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice",
+                "{{meetingRoomInvoiceId}}",
+                "resend-email"
+              ]
+            },
+            "description": "Admin only. Resend the invoice email with PDF attachment and payment link."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Meeting Room Invoice",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/meeting-room-invoice/{{meetingRoomInvoiceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "meeting-room-invoice",
+                "{{meetingRoomInvoiceId}}"
+              ]
+            },
+            "description": "Admin only. Permanently delete a meeting room invoice."
           },
           "response": []
         }

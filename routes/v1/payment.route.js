@@ -21,6 +21,12 @@ router.get('/company-checkout', paymentController.initiateCompanyCheckout);
 // Company invoice payment result callback - MEPS redirects here after payment
 router.get('/company-result', paymentController.companyPaymentResult);
 
+// Meeting room invoice checkout - creates MEPS session
+router.get('/meeting-room-checkout', paymentController.initiateMeetingRoomCheckout);
+
+// Meeting room invoice payment result callback - MEPS redirects here after payment
+router.get('/meeting-room-result', paymentController.meetingRoomPaymentResult);
+
 // Admin endpoint to mark payment as paid (SYSTEM payment)
 router.post(
   '/admin/mark-paid',

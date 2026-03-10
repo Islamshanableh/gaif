@@ -2013,6 +2013,143 @@ const MeetingRoom = sequelize.define(
   },
 );
 
+// MeetingRoomReservation Model
+const MeetingRoomReservation = sequelize.define(
+  'MeetingRoomReservation',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    meetingRoomId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'MeetingRooms', key: 'id' },
+    },
+    country: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    company: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    contactPerson: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    mobile: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    branding: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'MeetingRoomReservations',
+    timestamps: true,
+  },
+);
+
+MeetingRoomReservation.belongsTo(MeetingRoom, { foreignKey: 'meetingRoomId', as: 'meetingRoom' });
+MeetingRoom.hasOne(MeetingRoomReservation, { foreignKey: 'meetingRoomId', as: 'reservation' });
+
+// MeetingRoomInvoice Model
+const MeetingRoomInvoice = sequelize.define(
+  'MeetingRoomInvoice',
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    serialNumber: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: true,
+    },
+    country: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    company: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    contactPerson: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    mobile: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    amountJD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    discount: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+    },
+    netAmountJD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    totalValueJD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    totalValueUSD: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'paid', 'cancelled'),
+      defaultValue: 'pending',
+    },
+    paidAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
+    paidCurrency: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    emailSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: 'MeetingRoomInvoices',
+    timestamps: true,
+  },
+);
+
 // ============================================================================
 
 module.exports = {
@@ -2038,4 +2175,6 @@ module.exports = {
   CompanyInvoiceRegistration,
   AuditLog,
   MeetingRoom,
+  MeetingRoomReservation,
+  MeetingRoomInvoice,
 };
