@@ -22,7 +22,7 @@ const {
 
 const registrationNotificationService = require('../services/registrationNotification.service');
 
-const TARGET_PROFILE_IDS = [187, 189, 190, 191, 192, 193, 194, 195, 196];
+const TARGET_PROFILE_IDS = [183];
 
 async function main() {
   console.log(
