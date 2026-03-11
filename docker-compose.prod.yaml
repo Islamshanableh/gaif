@@ -56,6 +56,37 @@ services:
     networks:
       - gaif-network
 
+  # ExpressionEngine CMS container (aqabaconf.com)
+  aqabacms:
+    build:
+      context: ./aqabacms
+      dockerfile: Dockerfile
+    container_name: aqabacms
+    hostname: aqabacms
+    restart: unless-stopped
+    volumes:
+      - /var/www/aqabaconf.com:/var/www/html
+    depends_on:
+      - aqaba-db
+    networks:
+      - gaif-network
+
+  # MySQL database for aqabaconf.com CMS
+  aqaba-db:
+    image: mysql:8.0
+    container_name: aqaba-db
+    hostname: aqaba-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AQABA_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${AQABA_DB_NAME}
+      MYSQL_USER: ${AQABA_DB_USER}
+      MYSQL_PASSWORD: ${AQABA_DB_PASSWORD}
+    volumes:
+      - aqaba_mysql_data:/var/lib/mysql
+    networks:
+      - gaif-network
+
   nginx:
     image: nginx:alpine
     container_name: gaif-nginx
@@ -70,6 +101,7 @@ services:
       - api
       - frontend
       - wordpress
+      - aqabacms
     restart: unless-stopped
     networks:
       - gaif-network
@@ -90,3 +122,4 @@ networks:
 
 volumes:
   cms_mysql_data:
+  aqaba_mysql_data:
