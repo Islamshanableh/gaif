@@ -250,6 +250,7 @@ exports.getRegistrations = {
       .optional(),
     roomType: Joi.string().valid('single', 'double').optional(),
     needsVisa: Joi.boolean().optional(),
+    needsVenueTransportation: Joi.boolean().optional(),
     pickupLocation: Joi.string().valid('AMMAN', 'DEAD_SEA').optional(),
     hotelId: Joi.number().optional(),
     hotelStars: Joi.string().allow('', null).optional(),

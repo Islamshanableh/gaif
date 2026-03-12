@@ -20,6 +20,7 @@ const getInvoiceList = catchAsync(async (req, res) => {
     page: parseInt(req.query.page, 10) || 1,
     limit: parseInt(req.query.limit, 10) || 20,
     exportAll: req.query.exportAll === 'true', // Flag to return all data without pagination
+    sortOrder: req.query.sortOrder || 'ASC',
   };
 
   const result = await invoiceService.getInvoiceList(filters);

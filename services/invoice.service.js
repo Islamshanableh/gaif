@@ -1180,6 +1180,7 @@ const getInvoiceList = async (filters = {}) => {
     page = 1,
     limit = 20,
     exportAll = false, // Flag to return all data without pagination
+    sortOrder = 'ASC',
   } = filters;
 
   // Build registration where clause
@@ -1252,10 +1253,40 @@ const getInvoiceList = async (filters = {}) => {
   // Get all matching invoices with registration data
   const offset = (page - 1) * limit;
 
-  // First, get registration IDs that match the filters
-  // Then get the latest invoice for each registration
-  const invoices = await Invoice.findAll({
+  // Step 1: Get the max (latest) invoice id per registrationId
+  const latestIdRows = await Invoice.findAll({
+    attributes: ['registrationId', [sequelize.fn('MAX', sequelize.col('id')), 'maxId']],
     where: invoiceWhere,
+    include: [
+      {
+        model: Registration,
+        as: 'registration',
+        where: registrationWhere,
+        required: true,
+        attributes: [],
+      },
+    ],
+    group: ['registrationId'],
+    raw: true,
+  });
+
+  const latestIds = latestIdRows.map(r => r.maxId);
+  const totalCount = latestIds.length;
+
+  if (totalCount === 0) {
+    return {
+      invoices: [],
+      pagination: exportAll
+        ? { total: 0, exportAll: true }
+        : { total: 0, page, limit, totalPages: 0 },
+    };
+  }
+
+  // Step 2: Fetch full invoice data for those IDs, sorted and paginated in the query
+  const invoiceWhereFinal = { ...invoiceWhere, id: { [Op.in]: latestIds } };
+
+  const paginatedInvoices = await Invoice.findAll({
+    where: invoiceWhereFinal,
     include: [
       {
         model: Registration,
@@ -1283,28 +1314,9 @@ const getInvoiceList = async (filters = {}) => {
         ],
       },
     ],
-    order: [['createdAt', 'DESC']],
+    order: [['id', sortOrder]],
+    ...(exportAll ? {} : { limit, offset }),
   });
-
-  // Group by registrationId and keep only the latest invoice
-  const latestInvoicesByRegistration = {};
-  invoices.forEach(invoice => {
-    const regId = invoice.registrationId;
-    if (
-      !latestInvoicesByRegistration[regId] ||
-      invoice.createdAt > latestInvoicesByRegistration[regId].createdAt
-    ) {
-      latestInvoicesByRegistration[regId] = invoice;
-    }
-  });
-
-  const uniqueInvoices = Object.values(latestInvoicesByRegistration);
-
-  // Apply pagination (skip if exportAll is true)
-  const totalCount = uniqueInvoices.length;
-  const paginatedInvoices = exportAll
-    ? uniqueInvoices
-    : uniqueInvoices.slice(offset, offset + limit);
 
   // Format response with all fee items
   const formattedInvoices = paginatedInvoices.map(invoice => {
