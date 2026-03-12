@@ -978,9 +978,20 @@ exports.getRegistrations = async query => {
   });
 
   // Summary stats: respects all active filters
+  // Avoid includes to prevent Oracle ORA-00918 (ambiguous columns with raw + joins).
+  // countryId is the only filter that uses a JOIN — handle it via subquery literal instead.
+  const summaryWhere = { ...where };
+  if (countryId) {
+    summaryWhere[Op.and] = summaryWhere[Op.and] ? [...summaryWhere[Op.and]] : [];
+    summaryWhere[Op.and].push(
+      sequelize.literal(
+        `"Registration"."companyId" IN (SELECT "id" FROM "Companies" WHERE "countryId" = ${parseInt(countryId, 10)})`,
+      ),
+    );
+  }
+
   const [summaryRow] = await Registration.findAll({
-    where,
-    include: baseIncludes,
+    where: summaryWhere,
     attributes: [
       [sequelize.fn('COUNT', sequelize.col('Registration.id')), 'totalRegistrations'],
       [
