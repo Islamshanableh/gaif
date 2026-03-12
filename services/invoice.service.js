@@ -1255,7 +1255,10 @@ const getInvoiceList = async (filters = {}) => {
 
   // Step 1: Get the max (latest) invoice id per registrationId
   const latestIdRows = await Invoice.findAll({
-    attributes: ['registrationId', [sequelize.fn('MAX', sequelize.col('id')), 'maxId']],
+    attributes: [
+      'registrationId',
+      [sequelize.fn('MAX', sequelize.col('Invoice.id')), 'maxId'],
+    ],
     where: invoiceWhere,
     include: [
       {
@@ -1266,7 +1269,7 @@ const getInvoiceList = async (filters = {}) => {
         attributes: [],
       },
     ],
-    group: ['registrationId'],
+    group: [sequelize.col('Invoice.registrationId')],
     raw: true,
   });
 
@@ -1401,10 +1404,10 @@ const getInvoiceList = async (filters = {}) => {
         },
       },
       // Totals
-      totalFees: parseFloat(invoice.totalValueJD) || 0,
+      totalFees: parseFloat(invoice.totalValueUSD) || 0,
       totalDiscount: parseFloat(invoice.totalDiscount) || 0,
       totalPayment:
-        (parseFloat(invoice.totalValueJD) || 0) -
+        (parseFloat(invoice.totalValueUSD) || 0) -
         (parseFloat(invoice.totalDiscount) || 0),
       balance: parseFloat(invoice.balance) || 0,
       // Payment info
