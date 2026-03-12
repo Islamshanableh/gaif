@@ -977,24 +977,34 @@ exports.getRegistrations = async query => {
     return processRegistrationData(regData);
   });
 
-  // Summary stats: total registrations, total spouses, total double rooms
-  // totalWithRooms counts each double room selection separately (Amman + Dead Sea)
-  const [summaryResults] = await sequelize.query(
-    `SELECT
-      COUNT(*) AS "totalRegistrations",
-      SUM(CASE WHEN "hasSpouse" = 1 THEN 1 ELSE 0 END) AS "totalSpouses",
-      SUM(CASE WHEN "ammanRoomType" = 'double' THEN 1 ELSE 0 END) +
-      SUM(CASE WHEN "deadSeaRoomType" = 'double' THEN 1 ELSE 0 END) AS "totalWithRooms"
-    FROM "Registrations"
-    WHERE "isActive" = 1`,
-    { raw: true },
-  );
+  // Summary stats: respects all active filters
+  const [summaryRow] = await Registration.findAll({
+    where,
+    include: baseIncludes,
+    attributes: [
+      [sequelize.fn('COUNT', sequelize.col('Registration.id')), 'totalRegistrations'],
+      [
+        sequelize.fn('SUM', sequelize.literal(`CASE WHEN "hasSpouse" = 1 THEN 1 ELSE 0 END`)),
+        'totalSpouses',
+      ],
+      [
+        sequelize.fn('SUM', sequelize.literal(`CASE WHEN "ammanRoomType" = 'double' THEN 1 ELSE 0 END`)),
+        'ammanDoubles',
+      ],
+      [
+        sequelize.fn('SUM', sequelize.literal(`CASE WHEN "deadSeaRoomType" = 'double' THEN 1 ELSE 0 END`)),
+        'deadSeaDoubles',
+      ],
+    ],
+    raw: true,
+  });
 
   const summary = {
-    totalRegistrations:
-      parseInt(summaryResults?.[0]?.totalRegistrations, 10) || 0,
-    totalSpouses: parseInt(summaryResults?.[0]?.totalSpouses, 10) || 0,
-    totalWithRooms: parseInt(summaryResults?.[0]?.totalWithRooms, 10) || 0,
+    totalRegistrations: parseInt(summaryRow?.totalRegistrations, 10) || 0,
+    totalSpouses: parseInt(summaryRow?.totalSpouses, 10) || 0,
+    totalWithRooms:
+      (parseInt(summaryRow?.ammanDoubles, 10) || 0) +
+      (parseInt(summaryRow?.deadSeaDoubles, 10) || 0),
   };
 
   return {

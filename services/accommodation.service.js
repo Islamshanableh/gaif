@@ -450,28 +450,44 @@ exports.getAccommodationReport = async (filters = {}) => {
     };
   });
 
-  // Calculate room counts
-  let roomCount = 0;
+  // Calculate room counts from ALL filtered registrations (not just current page)
   let roomReserved = 0;
 
-  formattedResults.forEach(r => {
+  registrations.forEach(reg => {
+    const r = reg.toJSON ? reg.toJSON() : reg;
     if (location === 'amman' || !location) {
       if (r.accommodationInAmman && r.ammanRoomId) {
-        roomReserved++;
+        roomReserved += 1;
       }
     }
     if (location === 'deadSea' || !location) {
       if (r.accommodationInDeadSea && r.deadSeaRoomId) {
-        roomReserved++;
+        roomReserved += 1;
       }
     }
   });
 
-  // Get total available rooms for the filtered hotels
-  if (hotelId) {
-    const rooms = await HotelRoom.findAll({
-      where: { accommodationId: hotelId, isActive: true },
-    });
+  // Get total available rooms based on all hotel/room filters
+  const accommodationWhere = { isActive: true };
+  if (hotelCategory) accommodationWhere.stars = hotelCategory;
+  if (hotelId) accommodationWhere.id = hotelId;
+
+  const matchingHotels = await Accommodation.findAll({
+    where: accommodationWhere,
+    attributes: ['id'],
+  });
+  const matchingHotelIds = matchingHotels.map(h => h.id);
+
+  let roomCount = 0;
+  if (matchingHotelIds.length > 0) {
+    const roomQueryWhere = {
+      accommodationId: { [Op.in]: matchingHotelIds },
+      isActive: true,
+    };
+    if (roomCategory) {
+      roomQueryWhere.roomCategory = { [Op.like]: `%${roomCategory}%` };
+    }
+    const rooms = await HotelRoom.findAll({ where: roomQueryWhere });
     roomCount = rooms.reduce((sum, room) => sum + (room.numberOfRooms || 0), 0);
   }
 
