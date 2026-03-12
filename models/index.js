@@ -192,6 +192,16 @@ const ParticipationType = sequelize.define(
       allowNull: true,
       defaultValue: 0,
     },
+    discount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+      defaultValue: null,
+    },
+    discountValidDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+    },
   },
   {
     tableName: 'ParticipationTypes',

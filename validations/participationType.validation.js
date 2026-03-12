@@ -18,6 +18,8 @@ exports.createParticipationType = {
     accommodationAqaba: Joi.boolean().required(),
     accommodationAmman: Joi.boolean().required(),
     order: Joi.number().min(0).optional(),
+    discount: Joi.number().min(0).allow(null).optional(),
+    discountValidDate: Joi.date().allow(null).optional(),
   }),
 };
 
@@ -45,6 +47,8 @@ exports.updateParticipationType = {
     accommodationAqaba: Joi.boolean(),
     accommodationAmman: Joi.boolean(),
     order: Joi.number().min(0).optional(),
+    discount: Joi.number().min(0).allow(null).optional(),
+    discountValidDate: Joi.date().allow(null).optional(),
   }),
   query: Joi.object().keys({
     id: Joi.number().required(),

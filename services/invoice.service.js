@@ -55,6 +55,7 @@ const calculateFees = registration => {
 
   const fees = {
     participationFees: 0,
+    participationDiscount: 0,
     spouseFees: 0,
     tripFees: 0,
     spouseTripFees: 0,
@@ -96,6 +97,18 @@ const calculateFees = registration => {
     const base = participation.price || 0;
     fees.participationFees = applyTax(base);
     fees.participationCurrency = participation.currency || 'USD';
+
+    // Apply participation type discount if valid (discountValidDate >= today)
+    if (participation.discount && participation.discountValidDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const validUntil = new Date(participation.discountValidDate);
+      validUntil.setHours(23, 59, 59, 999);
+      if (today <= validUntil) {
+        fees.participationDiscount = parseFloat(participation.discount) || 0;
+        fees.totalDiscount += fees.participationDiscount;
+      }
+    }
   }
 
   // Spouse fees: charge only if spouse flag is NOT true (not exempt)
@@ -337,6 +350,7 @@ const createInvoice = async registration => {
     serialNumber,
     taxNumber: config.taxNumber,
     participationFees: fees.participationFees,
+    participationDiscount: fees.participationDiscount,
     spouseFees: fees.spouseFees,
     tripFees: fees.tripFees,
     spouseTripFees: fees.spouseTripFees,
@@ -394,6 +408,7 @@ const createVersionedInvoice = async registration => {
     serialNumber: newSerial,
     taxNumber: config.taxNumber,
     participationFees: fees.participationFees,
+    participationDiscount: fees.participationDiscount,
     spouseFees: fees.spouseFees,
     tripFees: fees.tripFees,
     spouseTripFees: fees.spouseTripFees,
