@@ -6,8 +6,9 @@ const auditService = require('../services/audit.service');
 exports.createParticipationType = catchAsync(async (req, res) => {
   const payload = req?.body;
 
-  const result =
-    await participationTypeService.createParticipationType(payload);
+  const result = await participationTypeService.createParticipationType(
+    payload,
+  );
 
   // Audit log
   await auditService.logCreate({
@@ -82,7 +83,6 @@ exports.getParticipationTypeList = catchAsync(async (req, res) => {
   if (query.page) query.page = parseInt(query.page, 10);
   if (query.limit) query.limit = parseInt(query.limit, 10);
 
-  const result =
-    await participationTypeService.getParticipationTypeList(query);
+  const result = await participationTypeService.getParticipationTypeList(query);
   res.status(httpStatus.OK).send({ result });
 });

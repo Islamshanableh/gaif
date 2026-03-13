@@ -126,7 +126,11 @@ exports.getParticipationTypeList = async query => {
     });
 
   return {
-    data: participationTypes.map(p => p.toJSON()),
+    data: participationTypes.map(p => {
+      const obj = p.toJSON();
+      obj.discount = obj.discount != null ? parseFloat(obj.discount) : null;
+      return obj;
+    }),
     pagination: {
       page,
       limit,
@@ -149,7 +153,10 @@ exports.getParticipationTypeById = async id => {
     order: [[{ model: Country, as: 'countries' }, 'name', 'ASC']],
   });
 
-  return result ? result.toJSON() : null;
+  if (!result) return null;
+  const obj = result.toJSON();
+  obj.discount = obj.discount != null ? parseFloat(obj.discount) : null;
+  return obj;
 };
 
 exports.deleteParticipationType = async id => {
