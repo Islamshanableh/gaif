@@ -105,7 +105,7 @@ const calculateFees = registration => {
       const validUntil = new Date(participation.discountValidDate);
       validUntil.setHours(23, 59, 59, 999);
       if (today <= validUntil) {
-        fees.participationDiscount = parseFloat(participation.discount) || 0;
+        fees.participationDiscount = applyTax(parseFloat(participation.discount) || 0);
         fees.totalDiscount += fees.participationDiscount;
       }
     }
@@ -1202,7 +1202,7 @@ const getInvoiceList = async (filters = {}) => {
     page = 1,
     limit = 20,
     exportAll = false, // Flag to return all data without pagination
-    sortOrder = 'ASC',
+    sortOrder = 'DESC',
   } = filters;
 
   // Build registration where clause

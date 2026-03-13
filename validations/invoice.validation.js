@@ -13,7 +13,7 @@ exports.getInvoiceList = {
     page: Joi.number().min(1).default(1),
     limit: Joi.number().min(1).max(100).default(20),
     exportAll: Joi.string().valid('true', 'false').optional(),
-    sortOrder: Joi.string().valid('ASC', 'DESC').default('ASC'),
+    sortOrder: Joi.string().valid('ASC', 'DESC').default('DESC'),
   }),
 };
 
