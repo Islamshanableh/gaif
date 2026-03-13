@@ -686,7 +686,7 @@ const generateInvoicePDF = async (registration, invoice) => {
       doc.fontSize(9).font('Helvetica');
 
       // Total Discount (JD)
-      doc.text(formatCurrency(fees.totalDiscount), totalValueX, 525, {
+      doc.text(formatCurrency(fees.totalDiscount, 'USD'), totalValueX, 525, {
         width: totalWidth,
         align: 'right',
       });
