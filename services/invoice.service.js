@@ -241,6 +241,9 @@ const calculateFees = registration => {
   // Participation-related fees: convert if in JD/JOD
   if (isJordanianDinar(fees.participationCurrency)) {
     fees.participationFees = jdToUsd(fees.participationFees);
+    if (fees.participationDiscount) {
+      fees.participationDiscount = jdToUsd(fees.participationDiscount);
+    }
     fees.participationCurrency = 'USD';
   }
   if (isJordanianDinar(fees.spouseCurrency)) {
@@ -284,6 +287,10 @@ const calculateFees = registration => {
 
   fees.hotelAccommodationTotal =
     Math.round((fees.ammanTotal + fees.deadSeaTotal) * 100) / 100;
+
+  // Recalculate totalDiscount after currency conversion
+  fees.totalDiscount =
+    Math.round((fees.participationDiscount || 0) * 100) / 100;
 
   // Calculate grand totals — all fees are now in USD
   const allFeesUSD =
