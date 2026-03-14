@@ -314,20 +314,6 @@ exports.adminMarkAsPaid = catchAsync(async (req, res) => {
     { where: { id: invoice.id } },
   );
 
-  // Submit to Fawaterkom e-invoice system
-  let fawaterkomResult = null;
-  try {
-    fawaterkomResult = await invoiceService.submitToFawaterkom(
-      invoice.id,
-      amount,
-      currency,
-    );
-  } catch (error) {
-    // Log error but don't fail - payment was recorded
-    console.error('Fawaterkom submission error:', error.message);
-    fawaterkomResult = { success: false, error: error.message };
-  }
-
   return res.json({
     success: true,
     message: 'Payment marked as paid (SYSTEM)',
@@ -335,7 +321,6 @@ exports.adminMarkAsPaid = catchAsync(async (req, res) => {
     invoiceId: invoice.id,
     paidAmount: amount,
     paidCurrency: currency,
-    fawaterkomResult,
   });
 });
 

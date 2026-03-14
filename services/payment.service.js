@@ -177,8 +177,6 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
     orderData.result === 'SUCCESS' &&
     (orderData.status === 'CAPTURED' || orderData.status === 'PURCHASED');
 
-  let fawaterkomResult = null;
-
   if (isPaid) {
     // Update registration payment status
     await Registration.update(
@@ -199,30 +197,12 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
       { where: { id: invoiceId } },
     );
 
-    // Submit to Jordan Fawaterkom e-invoice system
-    try {
-      const invoiceService = require('./invoice.service');
-      fawaterkomResult = await invoiceService.submitToFawaterkom(
-        invoiceId,
-        paidAmount,
-        paidCurrency,
-      );
-      console.log(
-        'Fawaterkom submission completed:',
-        fawaterkomResult.fawaterkomResult?.success,
-      );
-    } catch (fawaterkomError) {
-      // Log error but don't fail payment - payment was successful
-      console.error('Fawaterkom submission error:', fawaterkomError.message);
-      fawaterkomResult = { success: false, error: fawaterkomError.message };
-    }
   }
 
   return {
     success: isPaid,
     status: orderData['order.status'] || orderData.result,
     orderId,
-    fawaterkomResult,
   };
 };
 
@@ -432,18 +412,10 @@ const verifyAndUpdateCompanyPayment = async companyInvoiceId => {
       { where: { id: registration.id } },
     );
 
-    // Submit to Fawaterkom + generate receipt PDF + send receipt email
-    const fawaterkomResult = await invoiceService.submitToFawaterkom(
-      individualInvoice.id,
-      itemAmount,
-      paidCurrency,
-    );
-
     return {
       registrationId: registration.id,
       invoiceId: individualInvoice.id,
       success: true,
-      fawaterkomResult,
     };
   };
 
@@ -591,6 +563,15 @@ const verifyAndUpdateMeetingRoomPayment = async meetingRoomInvoiceId => {
   );
 
   console.log(`Meeting room invoice ${invoice.serialNumber} marked as PAID`);
+
+  // Send receipt email after payment success
+  try {
+    const meetingRoomInvoiceService = require('./meetingRoomInvoice.service');
+    const updatedInvoice = await MeetingRoomInvoice.findByPk(meetingRoomInvoiceId);
+    await meetingRoomInvoiceService.sendMeetingRoomReceiptEmail(updatedInvoice.toJSON());
+  } catch (emailErr) {
+    console.error('Error sending meeting room receipt email:', emailErr.message);
+  }
 
   return {
     success: true,

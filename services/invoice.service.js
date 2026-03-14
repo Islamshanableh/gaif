@@ -1630,9 +1630,6 @@ const adminSaveInvoice = async (invoiceId, data) => {
     (ammanPaid && !previousPaidItems.amman) ||
     (deadSeaPaid && !previousPaidItems.deadSea);
 
-  // Determine if we need to process Fawaterkom
-  const needsFawaterkom = hasNewlyPaidItems && paidAmount > 0;
-  const needsReverse = wasPreviouslyPaid && hasNewlyPaidItems;
 
   // Update invoice with all data
   const updateData = {
@@ -1686,32 +1683,6 @@ const adminSaveInvoice = async (invoiceId, data) => {
       { paymentStatus: 'PARTIAL' },
       { where: { id: registration.id } },
     );
-  }
-
-  let fawaterkomResult = null;
-  let reverseResult = null;
-
-  // Handle Fawaterkom submission
-  if (needsFawaterkom) {
-    // If was previously paid and needs changes, reverse first
-    if (needsReverse && currentInvoice.fawaterkomInvoiceId) {
-      try {
-        reverseResult = await reverseFawaterkomInvoice(invoiceId);
-      } catch (reverseError) {
-        console.error(
-          'Error reversing Fawaterkom invoice:',
-          reverseError.message,
-        );
-      }
-    }
-
-    // Submit new/updated invoice to Fawaterkom
-    try {
-      fawaterkomResult = await submitToFawaterkom(invoiceId, paidAmount, 'JOD');
-    } catch (fawaterkomError) {
-      console.error('Error submitting to Fawaterkom:', fawaterkomError.message);
-      fawaterkomResult = { success: false, error: fawaterkomError.message };
-    }
   }
 
   // Get updated invoice
@@ -1777,8 +1748,6 @@ const adminSaveInvoice = async (invoiceId, data) => {
         paid: deadSeaPaid,
       },
     },
-    fawaterkomResult,
-    reverseResult,
     emailResult,
   };
 };
@@ -1936,6 +1905,59 @@ const sendInvoiceConfirmationEmail = async invoiceId => {
   return { success: true, message: 'Confirmation email sent' };
 };
 
+/**
+ * Send a list of invoices to Fawaterkom one by one.
+ * For each invoice: submit to Fawaterkom, save QR code, send email.
+ * @param {number[]} invoiceIds
+ * @returns {Promise<Object[]>} Per-invoice results
+ */
+const sendInvoicesToFawaterkom = async invoiceIds => {
+  const results = [];
+  for (const invoiceId of invoiceIds) {
+    try {
+      const invoice = await Invoice.findByPk(invoiceId);
+      if (!invoice) {
+        results.push({ invoiceId, success: false, error: 'Invoice not found' });
+        continue;
+      }
+      const paidAmount = parseFloat(invoice.paidAmount) || parseFloat(invoice.totalValueJD) || 0;
+      const paidCurrency = invoice.paidCurrency || 'JOD';
+      const result = await submitToFawaterkom(invoiceId, paidAmount, paidCurrency);
+      results.push({ invoiceId, success: true, fawaterkomResult: result.fawaterkomResult });
+    } catch (err) {
+      results.push({ invoiceId, success: false, error: err.message });
+    }
+  }
+  return results;
+};
+
+/**
+ * Reverse a list of invoices in Fawaterkom one by one.
+ * @param {number[]} invoiceIds
+ * @returns {Promise<Object[]>} Per-invoice results
+ */
+const reverseInvoicesFromFawaterkom = async invoiceIds => {
+  const results = [];
+  for (const invoiceId of invoiceIds) {
+    try {
+      const invoice = await Invoice.findByPk(invoiceId);
+      if (!invoice) {
+        results.push({ invoiceId, success: false, error: 'Invoice not found' });
+        continue;
+      }
+      if (!invoice.fawaterkomInvoiceId) {
+        results.push({ invoiceId, success: false, error: 'Invoice not submitted to Fawaterkom yet' });
+        continue;
+      }
+      const result = await reverseFawaterkomInvoice(invoiceId);
+      results.push({ invoiceId, success: true, result });
+    } catch (err) {
+      results.push({ invoiceId, success: false, error: err.message });
+    }
+  }
+  return results;
+};
+
 module.exports = {
   INVOICE_CONFIG,
   calculateFees,
@@ -1948,6 +1970,8 @@ module.exports = {
   generateInvoicePDF,
   generatePaymentReceiptPDF,
   submitToFawaterkom,
+  sendInvoicesToFawaterkom,
+  reverseInvoicesFromFawaterkom,
   // Admin functions
   getInvoiceList,
   getInvoiceById,

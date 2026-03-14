@@ -209,6 +209,17 @@ const createCompanyInvoice = async (data, userId) => {
         totalUSD: item.totalUSD,
       })),
     );
+
+    // Flag all linked registration invoices as part of a company invoice
+    const invoiceIdsToFlag = registrationItems
+      .map(item => item.invoiceId)
+      .filter(Boolean);
+    if (invoiceIdsToFlag.length > 0) {
+      await Invoice.update(
+        { isCompanyInvoice: true },
+        { where: { id: { [Op.in]: invoiceIdsToFlag } } },
+      );
+    }
   }
 
   return invoice;
@@ -621,12 +632,32 @@ const updateCompanyInvoiceRegistrations = async (
 
   // Remove junction records for removed registrations
   if (toRemove.length > 0) {
+    // Get the invoice IDs before destroying so we can reset the flag
+    const removedItems = await CompanyInvoiceRegistration.findAll({
+      where: {
+        companyInvoiceId: invoiceId,
+        registrationId: { [Op.in]: toRemove },
+      },
+      attributes: ['invoiceId'],
+    });
+
     await CompanyInvoiceRegistration.destroy({
       where: {
         companyInvoiceId: invoiceId,
         registrationId: { [Op.in]: toRemove },
       },
     });
+
+    // Reset isCompanyInvoice flag for removed invoices
+    const removedInvoiceIds = removedItems
+      .map(item => item.invoiceId)
+      .filter(Boolean);
+    if (removedInvoiceIds.length > 0) {
+      await Invoice.update(
+        { isCompanyInvoice: false },
+        { where: { id: { [Op.in]: removedInvoiceIds } } },
+      );
+    }
   }
 
   // Add junction records for new registrations
@@ -655,6 +686,15 @@ const updateCompanyInvoiceRegistrations = async (
         totalUSD: parseFloat(newInvoices[idx]?.totalValueUSD) || 0,
       })),
     );
+
+    // Flag newly added registration invoices as part of a company invoice
+    const newInvoiceIds = newInvoices.map(inv => inv?.id).filter(Boolean);
+    if (newInvoiceIds.length > 0) {
+      await Invoice.update(
+        { isCompanyInvoice: true },
+        { where: { id: { [Op.in]: newInvoiceIds } } },
+      );
+    }
   }
 
   // Recalculate totals from all current junction records

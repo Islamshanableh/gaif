@@ -254,6 +254,26 @@ const resendConfirmationEmail = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+/**
+ * Send a list of invoices to Fawaterkom
+ * POST /api/v1/invoice/send-to-fawaterkom
+ */
+const sendToFawaterkom = catchAsync(async (req, res) => {
+  const { invoiceIds } = req.body;
+  const results = await invoiceService.sendInvoicesToFawaterkom(invoiceIds);
+  res.status(httpStatus.OK).send({ results });
+});
+
+/**
+ * Reverse a list of invoices in Fawaterkom
+ * POST /api/v1/invoice/reverse-fawaterkom
+ */
+const reverseFromFawaterkom = catchAsync(async (req, res) => {
+  const { invoiceIds } = req.body;
+  const results = await invoiceService.reverseInvoicesFromFawaterkom(invoiceIds);
+  res.status(httpStatus.OK).send({ results });
+});
+
 module.exports = {
   getInvoiceList,
   getInvoiceById,
@@ -261,4 +281,6 @@ module.exports = {
   downloadInvoicePDF,
   downloadReceiptPDF,
   resendConfirmationEmail,
+  sendToFawaterkom,
+  reverseFromFawaterkom,
 };

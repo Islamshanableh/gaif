@@ -820,7 +820,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"countryIds\": [1, 2, 3],\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true\n}"
+              "raw": "{\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"countryIds\": [1, 2, 3],\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"discount\": 50,\n  \"discountValidDate\": \"2026-06-30\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type",
@@ -838,7 +838,7 @@
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": 1,\n  \"title\": \"VIP Delegate\",\n  \"price\": 500,\n  \"spousePrice\": 300,\n  \"specialPrice\": 450,\n  \"currency\": \"JD\",\n  \"allowForRegister\": true,\n  \"allowCreateCompany\": true,\n  \"requireConfirmationFromCompany\": false,\n  \"fees\": true,\n  \"spouse\": true,\n  \"petra\": true,\n  \"petraSpouse\": true,\n  \"accommodationAqaba\": true,\n  \"accommodationAmman\": true,\n  \"discount\": 50,\n  \"discountValidDate\": \"2026-06-30T00:00:00.000Z\",\n  \"isActive\": true,\n  \"createdAt\": \"2024-01-15T10:00:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:00:00.000Z\"\n}"
             }
           ]
         },
@@ -894,7 +894,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"spousePrice\": 350,\n  \"specialPrice\": 500,\n  \"currency\": \"USD\",\n  \"countryIds\": [1, 2, 3, 4]\n}"
+              "raw": "{\n  \"title\": \"VIP Delegate Updated\",\n  \"price\": 600,\n  \"spousePrice\": 350,\n  \"specialPrice\": 500,\n  \"currency\": \"USD\",\n  \"countryIds\": [1, 2, 3, 4],\n  \"discount\": 75,\n  \"discountValidDate\": \"2026-07-31\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/participation-type?id=1",
@@ -3908,7 +3908,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/invoice/list?page=1&limit=20&balanceFilter=hasBalance",
+              "raw": "{{baseUrl}}/invoice/list?page=1&limit=20&balanceFilter=hasBalance&sortOrder=DESC",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -3971,10 +3971,15 @@
                   "key": "balanceFilter",
                   "value": "hasBalance",
                   "description": "all | zero | hasBalance"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "DESC",
+                  "description": "ASC | DESC - Sort invoices by ID (default: DESC)"
                 }
               ]
             },
-            "description": "Get paginated list of invoices with filters. Returns the latest invoice per registration."
+            "description": "Get paginated list of invoices with filters. Returns the latest invoice per registration. Use sortOrder=ASC/DESC to control sort direction by invoice ID."
           },
           "response": [
             {
@@ -4143,6 +4148,110 @@
               "status": "Bad Request",
               "code": 400,
               "body": "{\n  \"message\": \"Invoice has not been paid yet\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Invoice Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/1/resend-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "1", "resend-email"]
+            },
+            "description": "Resend the confirmation/receipt email for a specific invoice by ID."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Email resent successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Send Invoices to Fawaterkom",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceIds\": [1, 2, 3]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoice/send-to-fawaterkom",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "send-to-fawaterkom"]
+            },
+            "description": "Admin manually sends a list of invoices to the Fawaterkom (Jordan e-invoice) system one by one. Updates fawaterkomStatus, saves QR code, and sends payment receipt email for each invoice."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"invoiceId\": 1,\n      \"success\": true,\n      \"fawaterkomInvoiceId\": \"FW-2026-00001\",\n      \"fawaterkomStatus\": \"SENT\"\n    },\n    {\n      \"invoiceId\": 2,\n      \"success\": true,\n      \"fawaterkomInvoiceId\": \"FW-2026-00002\",\n      \"fawaterkomStatus\": \"SENT\"\n    },\n    {\n      \"invoiceId\": 3,\n      \"success\": false,\n      \"error\": \"Invoice already sent to Fawaterkom\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reverse Invoices from Fawaterkom",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoice/reverse-fawaterkom",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", "reverse-fawaterkom"]
+            },
+            "description": "Admin manually reverses (issues credit notes for) a list of invoices in the Fawaterkom system. Updates fawaterkomStatus to REVERSED."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"invoiceId\": 1,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    },\n    {\n      \"invoiceId\": 2,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    }\n  ]\n}"
             }
           ]
         }
@@ -4533,21 +4642,59 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/company-invoices/{{companyInvoiceId}}/registrations",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "company-invoices",
-                "{{companyInvoiceId}}",
-                "registrations"
-              ]
+              "raw": "{{baseUrl}}/company-invoice/{{companyInvoiceId}}/registrations",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "{{companyInvoiceId}}", "registrations"]
             },
             "description": "Get all registration items (with individual invoice amounts) linked to a company invoice."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "[\n  {\n    \"id\": 1,\n    \"companyInvoiceId\": 1,\n    \"registrationId\": 10,\n    \"invoiceId\": 5,\n    \"totalJD\": 450.00,\n    \"totalUSD\": 634.69,\n    \"registration\": {\n      \"id\": 10,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"profileId\": 1001\n    },\n    \"invoice\": {\n      \"id\": 5,\n      \"serialNumber\": \"G260005\",\n      \"totalValueJD\": 450.00,\n      \"isCompanyInvoice\": true\n    }\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Update Company Invoice Registrations",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationIds\": [10, 11, 15]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/{{companyInvoiceId}}/registrations",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "{{companyInvoiceId}}", "registrations"]
+            },
+            "description": "Update the list of registrations linked to a company invoice. Pass the full updated list of registrationIds — registrations not in the list will be removed (and their isCompanyInvoice flag reset to false), new ones will be added (and flagged as isCompanyInvoice: true). The company invoice totals are recalculated automatically."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"serialNumber\": \"C260001\",\n  \"totalAmount\": 1350,\n  \"netAmount\": 1350,\n  \"currency\": \"JD\",\n  \"totalValueJD\": 1350,\n  \"totalValueUSD\": 1904.09,\n  \"status\": \"PENDING\",\n  \"registrationItems\": [\n    {\n      \"registrationId\": 10,\n      \"invoiceId\": 5,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    },\n    {\n      \"registrationId\": 11,\n      \"invoiceId\": 6,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    },\n    {\n      \"registrationId\": 15,\n      \"invoiceId\": 9,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     },
@@ -5495,6 +5642,84 @@
             "description": "Admin only. Permanently delete a meeting room invoice."
           },
           "response": []
+        },
+        {
+          "name": "Send Meeting Room Invoices to Fawaterkom",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceIds\": [1, 2, 3]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meeting-room-invoice/send-to-fawaterkom",
+              "host": ["{{baseUrl}}"],
+              "path": ["meeting-room-invoice", "send-to-fawaterkom"]
+            },
+            "description": "Admin manually sends a list of meeting room invoices to the Fawaterkom (Jordan e-invoice) system one by one. Builds the e-invoice payload, calls Fawaterkom API, saves fawaterkomInvoiceId, fawaterkomStatus, and QR code, then sends the receipt email with the QR code embedded."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"invoiceId\": 1,\n      \"success\": true,\n      \"fawaterkomInvoiceId\": \"FW-MR-2026-00001\",\n      \"fawaterkomStatus\": \"SENT\"\n    },\n    {\n      \"invoiceId\": 2,\n      \"success\": true,\n      \"fawaterkomInvoiceId\": \"FW-MR-2026-00002\",\n      \"fawaterkomStatus\": \"SENT\"\n    },\n    {\n      \"invoiceId\": 3,\n      \"success\": false,\n      \"error\": \"Invoice already sent to Fawaterkom\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reverse Meeting Room Invoices from Fawaterkom",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceIds\": [1, 2]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/meeting-room-invoice/reverse-fawaterkom",
+              "host": ["{{baseUrl}}"],
+              "path": ["meeting-room-invoice", "reverse-fawaterkom"]
+            },
+            "description": "Admin manually reverses (issues credit notes for) a list of meeting room invoices in Fawaterkom. Updates fawaterkomStatus to REVERSED."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"results\": [\n    {\n      \"invoiceId\": 1,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    },\n    {\n      \"invoiceId\": 2,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    }\n  ]\n}"
+            }
+          ]
         }
       ]
     }

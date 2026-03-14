@@ -47,4 +47,16 @@ router.post(
   meetingRoomInvoiceController.resendMeetingRoomInvoiceEmail,
 );
 
+router.post(
+  '/send-to-fawaterkom',
+  auth(routePermissions.ADMINISTRATOR.update),
+  meetingRoomInvoiceController.sendToFawaterkom,
+);
+
+router.post(
+  '/reverse-fawaterkom',
+  auth(routePermissions.ADMINISTRATOR.update),
+  meetingRoomInvoiceController.reverseFromFawaterkom,
+);
+
 module.exports = router;

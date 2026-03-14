@@ -1309,6 +1309,7 @@ const Invoice = sequelize.define(
     fawaterkomStatus: {
       type: DataTypes.STRING(50),
       allowNull: true,
+      defaultValue: 'PENDING',
     },
     // Payment receipt PDF file reference
     paymentReceiptFileId: {
@@ -1442,6 +1443,12 @@ const Invoice = sequelize.define(
       validate: {
         isIn: [['ACTIVE', 'CANCELLED', 'REVERSED']],
       },
+    },
+    // Flag to indicate this invoice is part of a company invoice
+    isCompanyInvoice: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
     },
   },
   {
@@ -2151,6 +2158,19 @@ const MeetingRoomInvoice = sequelize.define(
     },
     emailSentAt: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    fawaterkomInvoiceId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    fawaterkomStatus: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      defaultValue: 'PENDING',
+    },
+    qrCode: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

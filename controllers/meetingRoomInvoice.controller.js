@@ -67,3 +67,15 @@ exports.deleteMeetingRoomInvoice = catchAsync(async (req, res) => {
   });
   res.status(httpStatus.OK).send({ result });
 });
+
+exports.sendToFawaterkom = catchAsync(async (req, res) => {
+  const { invoiceIds } = req.body;
+  const results = await meetingRoomInvoiceService.sendMeetingRoomInvoicesToFawaterkom(invoiceIds);
+  res.status(httpStatus.OK).send({ results });
+});
+
+exports.reverseFromFawaterkom = catchAsync(async (req, res) => {
+  const { invoiceIds } = req.body;
+  const results = await meetingRoomInvoiceService.reverseMeetingRoomInvoicesFromFawaterkom(invoiceIds);
+  res.status(httpStatus.OK).send({ results });
+});

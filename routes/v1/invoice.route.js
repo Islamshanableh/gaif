@@ -68,4 +68,20 @@ router
     invoiceController.resendConfirmationEmail,
   );
 
+// Send list of invoices to Fawaterkom (admin manually triggers)
+router
+  .route('/send-to-fawaterkom')
+  .post(
+    auth(routePermissions.ADMINISTRATOR.update),
+    invoiceController.sendToFawaterkom,
+  );
+
+// Reverse list of invoices in Fawaterkom (admin manually triggers)
+router
+  .route('/reverse-fawaterkom')
+  .post(
+    auth(routePermissions.ADMINISTRATOR.update),
+    invoiceController.reverseFromFawaterkom,
+  );
+
 module.exports = router;
