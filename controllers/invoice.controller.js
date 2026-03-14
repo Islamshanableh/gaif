@@ -144,7 +144,7 @@ const getInvoiceById = catchAsync(async (req, res) => {
     paymentStatus: reg?.paymentStatus,
     // Invoice status
     invoiceStatus: invoice.invoiceStatus,
-    fawaterkomStatus: invoice.fawaterkomStatus,
+    fawaterkomStatus: invoice.fawaterkomStatus || 'PENDING',
     qrCode: invoice.qrCode,
     // Dates
     createdAt: invoice.createdAt,

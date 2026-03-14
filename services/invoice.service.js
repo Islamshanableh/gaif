@@ -1440,7 +1440,8 @@ const getInvoiceList = async (filters = {}) => {
       paymentStatus: reg?.paymentStatus,
       // Invoice status
       invoiceStatus: invoice.invoiceStatus,
-      fawaterkomStatus: invoice.fawaterkomStatus,
+      fawaterkomStatus: invoice.fawaterkomStatus || 'PENDING',
+      isCompanyInvoice: invoice.isCompanyInvoice || false,
       // Dates
       createdAt: invoice.createdAt,
       updatedAt: invoice.updatedAt,
@@ -1836,6 +1837,7 @@ const reverseFawaterkomInvoice = async invoiceId => {
     TransactionDate: new Date().toISOString().split('T')[0],
     TransactionType: '2', // Credit note
     PaymentMethod: '022',
+    OriginalInvoiceNumber: invoice.serialNumber,
     OriginalInvoiceUUID: invoice.fawaterkomInvoiceId,
 
     TaxNumber: fawaterkomConfig.taxNumber,
@@ -1937,10 +1939,22 @@ const sendInvoicesToFawaterkom = async invoiceIds => {
  * @returns {Promise<Object[]>} Per-invoice results
  */
 const reverseInvoicesFromFawaterkom = async invoiceIds => {
+  const {
+    reverseInvoiceToFawaterkom,
+    getFawaterkomConfig,
+  } = require('./jordanEinvoise.service');
+
   const results = [];
   for (const invoiceId of invoiceIds) {
     try {
-      const invoice = await Invoice.findByPk(invoiceId);
+      const invoice = await Invoice.findByPk(invoiceId, {
+        include: [
+          {
+            model: Registration,
+            as: 'registration',
+          },
+        ],
+      });
       if (!invoice) {
         results.push({ invoiceId, success: false, error: 'Invoice not found' });
         continue;
@@ -1949,8 +1963,64 @@ const reverseInvoicesFromFawaterkom = async invoiceIds => {
         results.push({ invoiceId, success: false, error: 'Invoice not submitted to Fawaterkom yet' });
         continue;
       }
-      const result = await reverseFawaterkomInvoice(invoiceId);
-      results.push({ invoiceId, success: true, result });
+
+      const fawaterkomConfig = getFawaterkomConfig();
+      const taxRatePercent = parseFloat(invoice.feesTaxPercentage) || 16;
+      const taxRate = taxRatePercent / 100;
+      const total = parseFloat(invoice.totalValueJD) || 0;
+      const discountInclTax = parseFloat(invoice.totalDiscount) || 0;
+
+      const round = v => Number(Number(v).toFixed(9));
+      const totalExcAfterDiscount = round(total / (1 + taxRate));
+      const discountExc = round(discountInclTax / (1 + taxRate));
+      const itemPriceExc = round(totalExcAfterDiscount + discountExc);
+      const fawaterkomTax = round(totalExcAfterDiscount * taxRate);
+
+      const buyerName =
+        `${invoice.registration?.firstName || ''} ${invoice.registration?.lastName || ''}`.trim() || 'N/A';
+
+      const reverseData = {
+        TransactionNumber: `CN-${invoice.serialNumber}`,
+        UUID: uuidv4().toUpperCase(),
+        TransactionDate: new Date().toISOString().split('T')[0],
+        TransactionType: '2',
+        PaymentMethod: '022',
+        OriginalInvoiceNumber: invoice.serialNumber,
+        OriginalInvoiceUUID: invoice.fawaterkomInvoiceId,
+        TaxNumber: fawaterkomConfig.taxNumber,
+        ActivityNumber: fawaterkomConfig.activityNumber,
+        ClientName: fawaterkomConfig.companyName,
+        BuyerName: buyerName,
+        Currency: 'JOD',
+        Total: totalExcAfterDiscount,
+        TotalDiscount: 0,
+        TotalTax: fawaterkomTax,
+        SpecialTax: 0,
+        Note: `Reversal - GAIF 2026 Conference Registration - ${buyerName}`,
+        Items: [
+          {
+            RowNum: 1,
+            ItemName: `GAIF 2026 Conference Registration Fees ${invoice.registration?.profileId || ''}`,
+            ItemQty: 1,
+            ItemSalePriceExc: itemPriceExc,
+            ItemDiscExc: discountExc,
+            ItemTotal: totalExcAfterDiscount,
+            ItemTax: fawaterkomTax,
+            ItemTaxRate: taxRatePercent,
+          },
+        ],
+      };
+
+      const result = await reverseInvoiceToFawaterkom(reverseData);
+
+      if (result.success) {
+        await Invoice.update(
+          { fawaterkomStatus: 'REVERSED' },
+          { where: { id: invoiceId } },
+        );
+      }
+
+      results.push({ invoiceId, success: result.success, result });
     } catch (err) {
       results.push({ invoiceId, success: false, error: err.message });
     }

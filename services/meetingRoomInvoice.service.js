@@ -273,7 +273,11 @@ exports.getMeetingRoomInvoiceList = async ({
   });
 
   return {
-    data: rows.map(r => r.toJSON()),
+    data: rows.map(r => {
+      const inv = r.toJSON();
+      inv.fawaterkomStatus = inv.fawaterkomStatus || 'PENDING';
+      return inv;
+    }),
     pagination: {
       page,
       limit,
@@ -288,7 +292,9 @@ exports.getMeetingRoomInvoiceById = async id => {
   if (!invoice) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Meeting room invoice not found');
   }
-  return invoice.toJSON();
+  const inv = invoice.toJSON();
+  inv.fawaterkomStatus = inv.fawaterkomStatus || 'PENDING';
+  return inv;
 };
 
 exports.downloadMeetingRoomInvoicePDF = async id => {
@@ -488,6 +494,7 @@ const reverseMeetingRoomFawaterkom = async invoiceId => {
     TransactionDate: new Date().toISOString().split('T')[0],
     TransactionType: '2',
     PaymentMethod: '022',
+    OriginalInvoiceNumber: inv.serialNumber,
     OriginalInvoiceUUID: inv.fawaterkomInvoiceId,
     TaxNumber: fawaterkomConfig.taxNumber,
     ActivityNumber: fawaterkomConfig.activityNumber,
