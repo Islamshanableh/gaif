@@ -54,6 +54,23 @@ exports.resendMeetingRoomInvoiceEmail = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send({ result });
 });
 
+exports.updateMeetingRoomInvoice = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await meetingRoomInvoiceService.updateMeetingRoomInvoice(
+    id,
+    req.body,
+  );
+  await auditService.logUpdate({
+    userId: req.user.sub.id,
+    entityType: 'MeetingRoomInvoice',
+    entityId: parseInt(id, 10),
+    entityName: result.serialNumber,
+    newData: result,
+    req,
+  });
+  res.status(httpStatus.OK).send({ result });
+});
+
 exports.deleteMeetingRoomInvoice = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await meetingRoomInvoiceService.deleteMeetingRoomInvoice(id);

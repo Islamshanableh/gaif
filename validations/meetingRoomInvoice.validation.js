@@ -46,3 +46,20 @@ exports.deleteMeetingRoomInvoice = {
     id: Joi.number().required(),
   }),
 };
+
+exports.updateMeetingRoomInvoice = {
+  params: Joi.object().keys({
+    id: Joi.number().required(),
+  }),
+  body: Joi.object().keys({
+    country: Joi.string().optional(),
+    company: Joi.string().optional(),
+    contactPerson: Joi.string().optional(),
+    email: Joi.string().email().optional(),
+    mobile: Joi.string().optional(),
+    amountJD: Joi.number().min(0).optional(),
+    discount: Joi.number().min(0).optional(),
+    description: Joi.string().allow(null, '').optional(),
+    status: Joi.string().valid(...STATUSES).optional(),
+  }),
+};

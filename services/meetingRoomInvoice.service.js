@@ -255,6 +255,39 @@ exports.createMeetingRoomInvoice = async (data, userId) => {
   return invoiceData;
 };
 
+exports.updateMeetingRoomInvoice = async (id, data) => {
+  const invoice = await MeetingRoomInvoice.findByPk(id);
+  if (!invoice) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Meeting room invoice not found');
+  }
+
+  const updateData = { ...data };
+
+  // Recalculate totals if amount or discount changed
+  const amountJD = parseFloat(data.amountJD ?? invoice.amountJD);
+  const discount = parseFloat(data.discount ?? invoice.discount ?? 0);
+  const netAmountJD = Math.round((amountJD - discount) * 100) / 100;
+  const totalValueJD = netAmountJD;
+  const totalValueUSD = Math.round((netAmountJD / EXCHANGE_RATE) * 100) / 100;
+
+  updateData.amountJD = amountJD;
+  updateData.discount = discount;
+  updateData.netAmountJD = netAmountJD;
+  updateData.totalValueJD = totalValueJD;
+  updateData.totalValueUSD = totalValueUSD;
+
+  await MeetingRoomInvoice.update(updateData, { where: { id } });
+
+  const updated = await MeetingRoomInvoice.findByPk(id);
+  const inv = updated.toJSON();
+  inv.fawaterkomStatus = inv.fawaterkomStatus || 'PENDING';
+
+  // Resend invoice email with updated values
+  await sendMeetingRoomInvoiceEmail(inv);
+
+  return inv;
+};
+
 exports.getMeetingRoomInvoiceList = async ({
   page = 1,
   limit = 20,

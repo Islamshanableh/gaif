@@ -27,6 +27,11 @@ router
     validate(meetingRoomInvoiceValidation.getMeetingRoomInvoiceById),
     meetingRoomInvoiceController.getMeetingRoomInvoiceById,
   )
+  .put(
+    auth(routePermissions.ADMINISTRATOR.update),
+    validate(meetingRoomInvoiceValidation.updateMeetingRoomInvoice),
+    meetingRoomInvoiceController.updateMeetingRoomInvoice,
+  )
   .delete(
     auth(routePermissions.ADMINISTRATOR.update),
     validate(meetingRoomInvoiceValidation.deleteMeetingRoomInvoice),
