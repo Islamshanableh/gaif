@@ -196,7 +196,6 @@ const verifyAndUpdatePayment = async (registrationId, invoiceId) => {
       { paymentSource: 'ONLINE' },
       { where: { id: invoiceId } },
     );
-
   }
 
   return {
@@ -217,7 +216,9 @@ const createCompanyCheckoutSession = async companyInvoiceId => {
       {
         model: Company,
         as: 'company',
-        include: [{ model: Country, as: 'country', attributes: ['id', 'name'] }],
+        include: [
+          { model: Country, as: 'country', attributes: ['id', 'name'] },
+        ],
       },
     ],
   });
@@ -302,7 +303,9 @@ const verifyAndUpdateCompanyPayment = async companyInvoiceId => {
       {
         model: Company,
         as: 'company',
-        include: [{ model: Country, as: 'country', attributes: ['id', 'name'] }],
+        include: [
+          { model: Country, as: 'country', attributes: ['id', 'name'] },
+        ],
       },
       {
         model: CompanyInvoiceRegistration,
@@ -504,7 +507,9 @@ const createMeetingRoomCheckoutSession = async meetingRoomInvoiceId => {
   if (parsed.result !== 'SUCCESS') {
     console.error('MEPS meeting room session creation failed:', parsed);
     throw new Error(
-      `Failed to create checkout session: ${parsed['error.explanation'] || parsed.result}`,
+      `Failed to create checkout session: ${
+        parsed['error.explanation'] || parsed.result
+      }`,
     );
   }
 
@@ -567,10 +572,17 @@ const verifyAndUpdateMeetingRoomPayment = async meetingRoomInvoiceId => {
   // Send receipt email after payment success
   try {
     const meetingRoomInvoiceService = require('./meetingRoomInvoice.service');
-    const updatedInvoice = await MeetingRoomInvoice.findByPk(meetingRoomInvoiceId);
-    await meetingRoomInvoiceService.sendMeetingRoomReceiptEmail(updatedInvoice.toJSON());
+    const updatedInvoice = await MeetingRoomInvoice.findByPk(
+      meetingRoomInvoiceId,
+    );
+    await meetingRoomInvoiceService.sendMeetingRoomReceiptEmail(
+      updatedInvoice.toJSON(),
+    );
   } catch (emailErr) {
-    console.error('Error sending meeting room receipt email:', emailErr.message);
+    console.error(
+      'Error sending meeting room receipt email:',
+      emailErr.message,
+    );
   }
 
   return {
