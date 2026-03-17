@@ -222,6 +222,7 @@ exports.createMeetingRoomInvoice = async (data, userId) => {
     mobile,
     amountJD,
     discount = 0,
+    discountDisclosure = null,
     description,
   } = data;
 
@@ -243,6 +244,7 @@ exports.createMeetingRoomInvoice = async (data, userId) => {
     mobile,
     amountJD: amountUSD,
     discount: discountUSD,
+    discountDisclosure,
     netAmountJD: netAmountUSD,
     totalValueJD,
     totalValueUSD,
@@ -278,14 +280,38 @@ exports.updateMeetingRoomInvoice = async (id, data) => {
   updateData.totalValueJD = totalValueJD;
   updateData.totalValueUSD = totalValueUSD;
 
+  // Handle discountDisclosure
+  if (data.discountDisclosure !== undefined) {
+    updateData.discountDisclosure = data.discountDisclosure;
+  }
+
+  // Handle paid status
+  const isMarkingPaid = data.markAsPaid && !invoice.paidAt;
+  if (data.markAsPaid) {
+    updateData.status = 'paid';
+    updateData.paidAmount = data.paidAmount ?? totalValueUSD;
+    updateData.paidCurrency = 'USD';
+    updateData.paymentSource = 'SYSTEM';
+    if (!invoice.paidAt) {
+      updateData.paidAt = new Date();
+    }
+  }
+
+  // Remove helper field before saving
+  delete updateData.markAsPaid;
+
   await MeetingRoomInvoice.update(updateData, { where: { id } });
 
   const updated = await MeetingRoomInvoice.findByPk(id);
   const inv = updated.toJSON();
   inv.fawaterkomStatus = inv.fawaterkomStatus || 'PENDING';
 
-  // Resend invoice email with updated values
-  await sendMeetingRoomInvoiceEmail(inv);
+  // Send receipt email if newly marked as paid, otherwise resend invoice email
+  if (isMarkingPaid) {
+    await sendMeetingRoomPaymentEmail(inv);
+  } else {
+    await sendMeetingRoomInvoiceEmail(inv);
+  }
 
   return inv;
 };

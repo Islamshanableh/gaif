@@ -2124,6 +2124,10 @@ const MeetingRoomInvoice = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
     },
+    discountDisclosure: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
     netAmountJD: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -2154,6 +2158,10 @@ const MeetingRoomInvoice = sequelize.define(
     },
     paidAt: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    paymentSource: {
+      type: DataTypes.STRING(20),
       allowNull: true,
     },
     emailSentAt: {

@@ -29,6 +29,14 @@ const alterations = [
     description: 'MeetingRoomInvoices.qrCode',
     sql: `ALTER TABLE "MeetingRoomInvoices" ADD ("qrCode" CLOB)`,
   },
+  {
+    description: 'MeetingRoomInvoices.discountDisclosure',
+    sql: `ALTER TABLE "MeetingRoomInvoices" ADD ("discountDisclosure" VARCHAR2(500))`,
+  },
+  {
+    description: 'MeetingRoomInvoices.paymentSource',
+    sql: `ALTER TABLE "MeetingRoomInvoices" ADD ("paymentSource" VARCHAR2(20))`,
+  },
 
   // ── Invoices ────────────────────────────────────────────────────────────────
   {

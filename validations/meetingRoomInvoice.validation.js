@@ -11,6 +11,7 @@ exports.createMeetingRoomInvoice = {
     mobile: Joi.string().required(),
     amountJD: Joi.number().min(0).required(),
     discount: Joi.number().min(0).default(0),
+    discountDisclosure: Joi.string().max(500).allow(null, '').optional(),
     description: Joi.string().allow(null, '').optional(),
   }),
 };
@@ -59,7 +60,11 @@ exports.updateMeetingRoomInvoice = {
     mobile: Joi.string().optional(),
     amountJD: Joi.number().min(0).optional(),
     discount: Joi.number().min(0).optional(),
+    discountDisclosure: Joi.string().max(500).allow(null, '').optional(),
     description: Joi.string().allow(null, '').optional(),
     status: Joi.string().valid(...STATUSES).optional(),
+    // Paid
+    markAsPaid: Joi.boolean().default(false),
+    paidAmount: Joi.number().min(0).optional(),
   }),
 };

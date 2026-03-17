@@ -1031,10 +1031,18 @@ const getCompanyInvoiceReport = async ({
 
     delete regData.invoices;
 
+    const ciRecord = companyInvoiceMap[reg.id] || null;
+
     return {
       ...regData,
       latestInvoice,
-      companyInvoice: companyInvoiceMap[reg.id] || null,
+      companyInvoice: ciRecord,
+      invoicePdfUrl: latestInvoice
+        ? `${config.urls.api}/api/v1/invoice/${latestInvoice.id}/pdf`
+        : null,
+      companyInvoicePdfUrl: ciRecord
+        ? `${config.urls.api}/api/v1/company-invoice/${ciRecord.id}/pdf`
+        : null,
     };
   });
 

@@ -563,6 +563,7 @@ const verifyAndUpdateMeetingRoomPayment = async meetingRoomInvoiceId => {
       paidAmount,
       paidCurrency: 'USD',
       paidAt: new Date(),
+      paymentSource: 'ONLINE',
     },
     { where: { id: meetingRoomInvoiceId } },
   );
