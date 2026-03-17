@@ -2,16 +2,20 @@ const httpStatus = require('http-status');
 const { MeetingRoom, MeetingRoomReservation } = require('./db.service');
 const ApiError = require('../utils/ApiError');
 
-exports.getAvailableRooms = async ({ type, floor, page = 1, limit = 20 }) => {
+exports.getAvailableRooms = async ({
+  type,
+  floor,
+  page = 1,
+  limit = 20,
+  all = false,
+}) => {
   const { Op } = require('sequelize');
 
   const where = { isActive: true, status: 'active' };
   if (type) where.type = type;
   if (floor) where.floor = { [Op.like]: `%${floor}%` };
 
-  const offset = (page - 1) * limit;
-
-  const { count: total, rows } = await MeetingRoom.findAndCountAll({
+  const queryOptions = {
     where,
     include: [
       {
@@ -21,10 +25,18 @@ exports.getAvailableRooms = async ({ type, floor, page = 1, limit = 20 }) => {
       },
     ],
     order: [['createdAt', 'DESC']],
-    offset,
-    limit,
-  });
+  };
 
+  if (all) {
+    const rows = await MeetingRoom.findAll(queryOptions);
+    const data = rows.filter(r => !r.reservation).map(r => r.toJSON());
+    return { data };
+  }
+
+  queryOptions.offset = (page - 1) * limit;
+  queryOptions.limit = limit;
+
+  const { count: total, rows } = await MeetingRoom.findAndCountAll(queryOptions);
   const data = rows.filter(r => !r.reservation).map(r => r.toJSON());
 
   return {
