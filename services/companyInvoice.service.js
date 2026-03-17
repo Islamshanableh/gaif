@@ -876,6 +876,7 @@ const getRegistrationItemsByInvoice = async companyInvoiceId => {
 const getCompanyInvoiceReport = async ({
   companyId,
   countryId,
+  companyInvoiceId,
   page = 1,
   limit = 20,
   all = false,
@@ -883,6 +884,7 @@ const getCompanyInvoiceReport = async ({
   // Step 1: find junction records (filtered by company invoice / country)
   const companyInvoiceWhere = {};
   if (companyId) companyInvoiceWhere.companyId = companyId;
+  if (companyInvoiceId) companyInvoiceWhere.id = companyInvoiceId;
 
   const companyWhere = {};
   if (countryId) companyWhere.countryId = countryId;

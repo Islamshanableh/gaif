@@ -84,6 +84,7 @@ exports.getCompanyInvoiceReport = {
   query: Joi.object().keys({
     companyId: Joi.number().optional(),
     countryId: Joi.number().optional(),
+    companyInvoiceId: Joi.number().optional(),
     page: Joi.number().min(1).default(1),
     limit: Joi.number().min(1).max(100).default(20),
     all: Joi.boolean().optional(),

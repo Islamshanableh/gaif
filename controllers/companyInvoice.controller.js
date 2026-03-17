@@ -216,6 +216,9 @@ const getCompanyInvoiceReport = catchAsync(async (req, res) => {
     countryId: req.query.countryId
       ? parseInt(req.query.countryId, 10)
       : undefined,
+    companyInvoiceId: req.query.companyInvoiceId
+      ? parseInt(req.query.companyInvoiceId, 10)
+      : undefined,
     page: parseInt(req.query.page, 10) || 1,
     limit: parseInt(req.query.limit, 10) || 20,
     all: req.query.all,
