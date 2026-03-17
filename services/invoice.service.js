@@ -56,6 +56,7 @@ const calculateFees = registration => {
   const fees = {
     participationFees: 0,
     participationDiscount: 0,
+    participationDisclosure: null,
     spouseFees: 0,
     tripFees: 0,
     spouseTripFees: 0,
@@ -106,6 +107,7 @@ const calculateFees = registration => {
       validUntil.setHours(23, 59, 59, 999);
       if (today <= validUntil) {
         fees.participationDiscount = applyTax(parseFloat(participation.discount) || 0);
+        fees.participationDisclosure = 'Early Bird discount';
         fees.totalDiscount += fees.participationDiscount;
       }
     }
@@ -358,6 +360,7 @@ const createInvoice = async registration => {
     taxNumber: config.taxNumber,
     participationFees: fees.participationFees,
     participationDiscount: fees.participationDiscount,
+    participationDisclosure: fees.participationDisclosure,
     spouseFees: fees.spouseFees,
     tripFees: fees.tripFees,
     spouseTripFees: fees.spouseTripFees,
@@ -416,6 +419,7 @@ const createVersionedInvoice = async registration => {
     taxNumber: config.taxNumber,
     participationFees: fees.participationFees,
     participationDiscount: fees.participationDiscount,
+    participationDisclosure: fees.participationDisclosure,
     spouseFees: fees.spouseFees,
     tripFees: fees.tripFees,
     spouseTripFees: fees.spouseTripFees,
