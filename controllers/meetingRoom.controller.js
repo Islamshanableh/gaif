@@ -28,6 +28,7 @@ exports.getMeetingRoomList = catchAsync(async (req, res) => {
     status: req.query.status,
     page: req.query.page ? parseInt(req.query.page, 10) : 1,
     limit: req.query.limit ? parseInt(req.query.limit, 10) : 20,
+    all: req.query.all,
   });
   res.status(httpStatus.OK).send(result);
 });

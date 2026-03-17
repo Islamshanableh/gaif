@@ -9,7 +9,10 @@ exports.createMeetingRoom = async payload => {
     return result.toJSON();
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Meeting room code already exists');
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Meeting room code already exists',
+      );
     }
     throw error;
   }
@@ -23,12 +26,27 @@ exports.getMeetingRoomById = async id => {
   return result.toJSON();
 };
 
-exports.getMeetingRoomList = async ({ type, floor, status, page = 1, limit = 20 }) => {
+exports.getMeetingRoomList = async ({
+  type,
+  floor,
+  status,
+  page = 1,
+  limit = 20,
+  all = false,
+}) => {
   const where = { isActive: true };
 
   if (type) where.type = type;
   if (floor) where.floor = { [Op.like]: `%${floor}%` };
   if (status) where.status = status;
+
+  if (all) {
+    const rows = await MeetingRoom.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
+    });
+    return { data: rows.map(r => r.toJSON()) };
+  }
 
   const offset = (page - 1) * limit;
 
@@ -60,7 +78,10 @@ exports.updateMeetingRoom = async (id, payload) => {
     await MeetingRoom.update(payload, { where: { id } });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Meeting room code already exists');
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Meeting room code already exists',
+      );
     }
     throw error;
   }
