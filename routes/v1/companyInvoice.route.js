@@ -26,6 +26,15 @@ router
     companyInvoiceController.getCompanyInvoiceList,
   );
 
+// Company invoice report — registrations with invoice + QR code + company invoice info
+router
+  .route('/report')
+  .get(
+    auth(routePermissions.ADMINISTRATOR.read),
+    validate(companyInvoiceValidation.getCompanyInvoiceReport),
+    companyInvoiceController.getCompanyInvoiceReport,
+  );
+
 // Get invoices for a specific company (admin only)
 router
   .route('/company/:companyId')

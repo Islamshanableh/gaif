@@ -1429,8 +1429,24 @@ const getInvoiceList = async (filters = {}) => {
           currency: invoice.deadSeaCurrency || 'USD',
         },
       },
-      // Totals
-      totalFees: parseFloat(invoice.totalValueUSD) || 0,
+      // Totals — sum individual fees in USD (convert JD fields if needed)
+      totalFees: (() => {
+        const rate = INVOICE_CONFIG.exchangeRate;
+        const toUSD = (amount, currency) => {
+          const val = parseFloat(amount) || 0;
+          return currency === 'JD' || currency === 'JOD'
+            ? Math.round((val / rate) * 100) / 100
+            : val;
+        };
+        return (
+          toUSD(invoice.participationFees, invoice.participationCurrency) +
+          toUSD(invoice.spouseFees, invoice.spouseCurrency) +
+          toUSD(invoice.tripFees, invoice.tripCurrency) +
+          toUSD(invoice.spouseTripFees, invoice.spouseTripCurrency) +
+          toUSD(invoice.ammanTotal, invoice.ammanCurrency) +
+          toUSD(invoice.deadSeaTotal, invoice.deadSeaCurrency)
+        );
+      })(),
       totalDiscount: parseFloat(invoice.totalDiscount) || 0,
       totalPayment:
         (parseFloat(invoice.totalValueUSD) || 0) -
@@ -1609,13 +1625,14 @@ const adminSaveInvoice = async (invoiceId, data) => {
     (ammanPaid ? ammanAmount : 0) +
     (deadSeaPaid ? deadSeaAmount : 0);
 
-  // Calculate new total after discount
-  const newTotalJD = Math.max(0, totalFees - totalDiscountAmount);
-  const newTotalUSD =
-    Math.round((newTotalJD / INVOICE_CONFIG.exchangeRate) * 100) / 100;
+  // All individual fees are stored in USD — calculate new total in USD first
+  const newTotalUSD = Math.max(0, totalFees - totalDiscountAmount);
+  // Derive JD from USD (USD is primary, JD is always derived)
+  const newTotalJD =
+    Math.round(newTotalUSD * INVOICE_CONFIG.exchangeRate * 100) / 100;
 
-  // Calculate balance (total after discount - paid amount)
-  const balance = newTotalJD - paidAmount;
+  // Calculate balance in USD (paidAmount is also in USD)
+  const balance = Math.round((newTotalUSD - paidAmount) * 100) / 100;
 
   // Check if all items are paid
   const allItemsPaid =
@@ -1710,7 +1727,8 @@ const adminSaveInvoice = async (invoiceId, data) => {
     summary: {
       totalFees,
       totalDiscount: totalDiscountAmount,
-      totalAfterDiscount: newTotalJD,
+      totalAfterDiscountUSD: newTotalUSD,
+      totalAfterDiscountJD: newTotalJD,
       paidAmount,
       balance,
       allItemsPaid,
@@ -1755,6 +1773,43 @@ const adminSaveInvoice = async (invoiceId, data) => {
     },
     emailResult,
   };
+};
+
+/**
+ * Refund invoice — zeros the balance by setting paidAmount = totalValueJD.
+ * Only works when paidAmount > 0 AND balance > 0.
+ */
+const refundInvoice = async invoiceId => {
+  const invoice = await Invoice.findByPk(invoiceId, {
+    include: [{ model: Registration, as: 'registration' }],
+  });
+  if (!invoice) throw new Error('Invoice not found');
+
+  const paidAmount = parseFloat(invoice.paidAmount) || 0;
+  const balance = parseFloat(invoice.balance) || 0;
+
+  if (paidAmount <= 0 || balance <= 0) {
+    throw new Error(
+      'Refund not applicable: invoice must have a paid amount and an outstanding balance',
+    );
+  }
+
+  // Zero out the balance by setting paidAmount = totalValueUSD (USD is primary)
+  const totalValueUSD = parseFloat(invoice.totalValueUSD) || 0;
+  await Invoice.update(
+    { paidAmount: totalValueUSD, balance: 0 },
+    { where: { id: invoiceId } },
+  );
+
+  // Update registration payment status to PAID
+  if (invoice.registration) {
+    await Registration.update(
+      { paymentStatus: 'PAID' },
+      { where: { id: invoice.registration.id } },
+    );
+  }
+
+  return getInvoiceById(invoiceId);
 };
 
 /**
@@ -2050,6 +2105,7 @@ module.exports = {
   getInvoiceList,
   getInvoiceById,
   adminSaveInvoice,
+  refundInvoice,
   processInvoicePayment,
   reverseFawaterkomInvoice,
   sendInvoiceConfirmationEmail,

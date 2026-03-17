@@ -43,6 +43,16 @@ const getInvoiceById = catchAsync(async (req, res) => {
 
   // Format invoice for response
   const reg = invoice.registration;
+
+  // Helper: convert a fee to USD based on its stored currency
+  const EXCHANGE_RATE = 0.709;
+  const toUSD = (amount, currency) => {
+    const val = parseFloat(amount) || 0;
+    return currency === 'JD' || currency === 'JOD'
+      ? Math.round((val / EXCHANGE_RATE) * 100) / 100
+      : val;
+  };
+
   const formattedInvoice = {
     invoiceId: invoice.id,
     serialNumber: invoice.serialNumber,
@@ -125,14 +135,14 @@ const getInvoiceById = catchAsync(async (req, res) => {
         currency: invoice.deadSeaCurrency || 'USD',
       },
     },
-    // Totals
+    // Totals — all fees converted to USD before summing
     totalFees:
-      (parseFloat(invoice.participationFees) || 0) +
-      (parseFloat(invoice.spouseFees) || 0) +
-      (parseFloat(invoice.tripFees) || 0) +
-      (parseFloat(invoice.spouseTripFees) || 0) +
-      (parseFloat(invoice.ammanTotal) || 0) +
-      (parseFloat(invoice.deadSeaTotal) || 0),
+      toUSD(invoice.participationFees, invoice.participationCurrency) +
+      toUSD(invoice.spouseFees, invoice.spouseCurrency) +
+      toUSD(invoice.tripFees, invoice.tripCurrency) +
+      toUSD(invoice.spouseTripFees, invoice.spouseTripCurrency) +
+      toUSD(invoice.ammanTotal, invoice.ammanCurrency) +
+      toUSD(invoice.deadSeaTotal, invoice.deadSeaCurrency),
     totalDiscount: parseFloat(invoice.totalDiscount) || 0,
     totalPayment: parseFloat(invoice.totalValueJD) || 0,
     paidAmount: parseFloat(invoice.paidAmount) || 0,
@@ -274,6 +284,12 @@ const reverseFromFawaterkom = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send({ results });
 });
 
+const refundInvoice = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await invoiceService.refundInvoice(parseInt(id, 10));
+  res.status(httpStatus.OK).send({ result });
+});
+
 module.exports = {
   getInvoiceList,
   getInvoiceById,
@@ -283,4 +299,5 @@ module.exports = {
   resendConfirmationEmail,
   sendToFawaterkom,
   reverseFromFawaterkom,
+  refundInvoice,
 };

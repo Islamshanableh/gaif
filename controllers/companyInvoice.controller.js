@@ -208,6 +208,21 @@ const updateCompanyInvoiceRegistrations = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send({ result });
 });
 
+const getCompanyInvoiceReport = catchAsync(async (req, res) => {
+  const result = await companyInvoiceService.getCompanyInvoiceReport({
+    companyId: req.query.companyId
+      ? parseInt(req.query.companyId, 10)
+      : undefined,
+    countryId: req.query.countryId
+      ? parseInt(req.query.countryId, 10)
+      : undefined,
+    page: parseInt(req.query.page, 10) || 1,
+    limit: parseInt(req.query.limit, 10) || 20,
+    all: req.query.all,
+  });
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   createCompanyInvoice,
   getCompanyInvoiceById,
@@ -219,4 +234,5 @@ module.exports = {
   markCompanyInvoiceAsPaid,
   adminSaveCompanyInvoice,
   updateCompanyInvoiceRegistrations,
+  getCompanyInvoiceReport,
 };

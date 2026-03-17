@@ -470,8 +470,8 @@ const createMeetingRoomCheckoutSession = async meetingRoomInvoiceId => {
     throw new Error('This invoice has already been paid');
   }
 
-  const amount = parseFloat(invoice.totalValueJD) || 0;
-  const currency = 'JOD';
+  const amount = parseFloat(invoice.totalValueUSD) || 0;
+  const currency = 'USD';
 
   if (amount <= 0) {
     throw new Error('Invoice amount must be greater than zero');
@@ -554,14 +554,14 @@ const verifyAndUpdateMeetingRoomPayment = async meetingRoomInvoiceId => {
 
   const paidAmount =
     parseFloat(orderData['order.amount']) ||
-    parseFloat(invoice.totalValueJD) ||
+    parseFloat(invoice.totalValueUSD) ||
     0;
 
   await MeetingRoomInvoice.update(
     {
       status: 'paid',
       paidAmount,
-      paidCurrency: 'JOD',
+      paidCurrency: 'USD',
       paidAt: new Date(),
     },
     { where: { id: meetingRoomInvoiceId } },

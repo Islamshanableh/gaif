@@ -23,6 +23,12 @@ exports.getById = {
   }),
 };
 
+exports.refundInvoice = {
+  params: Joi.object().keys({
+    id: Joi.number().required(),
+  }),
+};
+
 exports.adminSaveInvoice = {
   params: Joi.object().keys({
     id: Joi.number().required(),

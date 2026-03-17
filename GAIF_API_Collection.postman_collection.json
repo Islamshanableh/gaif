@@ -4254,6 +4254,38 @@
               "body": "{\n  \"results\": [\n    {\n      \"invoiceId\": 1,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    },\n    {\n      \"invoiceId\": 2,\n      \"success\": true,\n      \"fawaterkomStatus\": \"REVERSED\"\n    }\n  ]\n}"
             }
           ]
+        },
+        {
+          "name": "Refund Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoice/:id/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoice", ":id", "refund"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Zeros the invoice balance. Works only when paidAmount > 0 AND balance > 0. Sets paidAmount = totalValueUSD and balance = 0."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"result\": {\n    \"invoiceId\": 1,\n    \"serialNumber\": \"GAIF26-0001\",\n    \"totalValueUSD\": 850.00,\n    \"totalValueJD\": 602.65,\n    \"paidAmount\": 850.00,\n    \"balance\": 0\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -4693,6 +4725,60 @@
               "status": "OK",
               "code": 200,
               "body": "{\n  \"id\": 1,\n  \"serialNumber\": \"C260001\",\n  \"totalAmount\": 1350,\n  \"netAmount\": 1350,\n  \"currency\": \"JD\",\n  \"totalValueJD\": 1350,\n  \"totalValueUSD\": 1904.09,\n  \"status\": \"PENDING\",\n  \"registrationItems\": [\n    {\n      \"registrationId\": 10,\n      \"invoiceId\": 5,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    },\n    {\n      \"registrationId\": 11,\n      \"invoiceId\": 6,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    },\n    {\n      \"registrationId\": 15,\n      \"invoiceId\": 9,\n      \"totalJD\": 450.00,\n      \"totalUSD\": 634.69\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Company Invoice Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/company-invoice/report?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["company-invoice", "report"],
+              "query": [
+                {
+                  "key": "companyId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by company ID (optional)"
+                },
+                {
+                  "key": "countryId",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Filter by country ID (optional)"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "all",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Set to true to skip pagination and return all results"
+                }
+              ]
+            },
+            "description": "Report of all registrations linked to company invoices. Each record includes full registration info, latestInvoice (with qrCode and fawaterkomStatus), and companyInvoice info. Filter by companyId and/or countryId. Use all=true to skip pagination."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"profileId\": 1001,\n      \"email\": \"john.doe@example.com\",\n      \"company\": { \"id\": 5, \"name\": \"ACME Corp\", \"country\": { \"name\": \"Jordan\" } },\n      \"participation\": { \"id\": 2, \"title\": \"Standard\" },\n      \"latestInvoice\": {\n        \"id\": 10,\n        \"serialNumber\": \"GAIF26-0010\",\n        \"totalValueUSD\": 850.00,\n        \"totalValueJD\": 602.65,\n        \"paidAmount\": 0,\n        \"balance\": 850.00,\n        \"fawaterkomStatus\": \"PENDING\",\n        \"qrCode\": null,\n        \"isCompanyInvoice\": true\n      },\n      \"companyInvoice\": {\n        \"id\": 3,\n        \"serialNumber\": \"C260001\",\n        \"status\": \"PENDING\",\n        \"totalValueUSD\": 2550.00,\n        \"totalValueJD\": 1807.95\n      }\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
             }
           ]
         }
@@ -5175,10 +5261,16 @@
                   "key": "limit",
                   "value": "20",
                   "disabled": false
+                },
+                {
+                  "key": "all",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Use all=true to get all rooms without pagination"
                 }
               ]
             },
-            "description": "Get paginated list of meeting rooms. Optional filters: type, floor, status, page, limit."
+            "description": "Get paginated list of meeting rooms. Optional filters: type, floor, status, page, limit. Use all=true to get all rooms without pagination."
           },
           "response": []
         },
@@ -5321,10 +5413,16 @@
                   "key": "limit",
                   "value": "20",
                   "disabled": false
+                },
+                {
+                  "key": "all",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Use all=true to get all available rooms without pagination"
                 }
               ]
             },
-            "description": "Public. List available (unreserved) meeting rooms. Optional filters: type, floor, page, limit."
+            "description": "Public. List available (unreserved) meeting rooms. Optional filters: type, floor, page, limit. Use all=true to get all available rooms without pagination."
           },
           "response": []
         },
@@ -5479,6 +5577,51 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Update Meeting Room Invoice",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/meeting-room-invoice/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["meeting-room-invoice", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Update a meeting room invoice. Recalculates totals (admin sends amount and discount in USD — amount saved in amountJD field). Automatically resends the invoice email with updated values.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"Updated Company Name\",\n  \"contactPerson\": \"Jane Smith\",\n  \"email\": \"jane@example.com\",\n  \"mobile\": \"+962799000000\",\n  \"amountJD\": 1500,\n  \"discount\": 100,\n  \"description\": \"Updated meeting room description\",\n  \"country\": \"Jordan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"result\": {\n    \"id\": 1,\n    \"serialNumber\": \"GAIF26CM0001\",\n    \"company\": \"Updated Company Name\",\n    \"amountJD\": 1500,\n    \"discount\": 100,\n    \"netAmountJD\": 1400,\n    \"totalValueUSD\": 1400.00,\n    \"totalValueJD\": 992.60,\n    \"fawaterkomStatus\": \"PENDING\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "Get Meeting Room Invoice List",

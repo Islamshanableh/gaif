@@ -13,6 +13,11 @@ const {
   Registration,
   Invoice,
   ParticipationType,
+  Spouse,
+  RegistrationTrip,
+  Trip,
+  Accommodation,
+  HotelRoom,
   sequelize,
 } = require('./db.service');
 const { sendEmailWithAttachment } = require('./common/email.service');
@@ -47,12 +52,12 @@ const getNextSerialNumber = async () => {
 
   let nextNum = 1;
   if (results && results.length > 0 && results[0].maxSerial) {
-    // Parse the numeric part from C26XXXX
-    const numericPart = results[0].maxSerial.substring(3);
+    // Parse the numeric part from G26CPXXXX
+    const numericPart = results[0].maxSerial.substring(5);
     nextNum = parseInt(numericPart, 10) + 1;
   }
 
-  return `C26${String(nextNum).padStart(4, '0')}`;
+  return `G26CP${String(nextNum).padStart(4, '0')}`;
 };
 
 /**
@@ -864,6 +869,188 @@ const getRegistrationItemsByInvoice = async companyInvoiceId => {
   });
 };
 
+/**
+ * Company Invoice Report — all registrations linked to company invoices
+ * Supports filter by companyId / countryId and `all` flag to skip pagination
+ */
+const getCompanyInvoiceReport = async ({
+  companyId,
+  countryId,
+  page = 1,
+  limit = 20,
+  all = false,
+}) => {
+  // Step 1: find junction records (filtered by company invoice / country)
+  const companyInvoiceWhere = {};
+  if (companyId) companyInvoiceWhere.companyId = companyId;
+
+  const companyWhere = {};
+  if (countryId) companyWhere.countryId = countryId;
+
+  const junctionItems = await CompanyInvoiceRegistration.findAll({
+    include: [
+      {
+        model: CompanyInvoice,
+        as: 'companyInvoice',
+        ...(Object.keys(companyInvoiceWhere).length > 0
+          ? { where: companyInvoiceWhere, required: true }
+          : { required: true }),
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            ...(Object.keys(companyWhere).length > 0
+              ? { where: companyWhere, required: true }
+              : {}),
+            include: [{ model: Country, as: 'country' }],
+          },
+        ],
+      },
+    ],
+    order: [['id', 'ASC']],
+  });
+
+  if (junctionItems.length === 0) {
+    return {
+      data: [],
+      ...(all ? {} : { pagination: { page, limit, total: 0, totalPages: 0 } }),
+    };
+  }
+
+  // Map: registrationId → companyInvoice JSON (keep last if duplicates)
+  const companyInvoiceMap = {};
+  junctionItems.forEach(j => {
+    const jData = j.toJSON();
+    companyInvoiceMap[j.registrationId] = jData.companyInvoice;
+  });
+
+  const registrationIds = [...new Set(junctionItems.map(j => j.registrationId))];
+
+  // Step 2: fetch full registrations for those IDs
+  const includes = [
+    {
+      model: Company,
+      as: 'company',
+      include: [
+        { model: Country, as: 'country' },
+        { model: ParticipationType, as: 'participation' },
+      ],
+    },
+    { model: ParticipationType, as: 'participation' },
+    { model: Country, as: 'nationality' },
+    {
+      model: Spouse,
+      as: 'spouse',
+      include: [{ model: Country, as: 'nationality' }],
+      required: false,
+    },
+    {
+      model: RegistrationTrip,
+      as: 'trips',
+      include: [{ model: Trip, as: 'trip' }],
+      required: false,
+    },
+    { model: Accommodation, as: 'ammanHotel', required: false },
+    { model: HotelRoom, as: 'ammanRoom', required: false },
+    { model: Accommodation, as: 'deadSeaHotel', required: false },
+    { model: HotelRoom, as: 'deadSeaRoom', required: false },
+    {
+      model: Invoice,
+      as: 'invoices',
+      required: false,
+      separate: true,
+      order: [['createdAt', 'DESC']],
+    },
+  ];
+
+  const queryOptions = {
+    where: { id: { [Op.in]: registrationIds } },
+    include: includes,
+    order: [['createdAt', 'DESC']],
+    distinct: true,
+  };
+
+  if (!all) {
+    queryOptions.offset = (page - 1) * limit;
+    queryOptions.limit = limit;
+  }
+
+  const { count: total, rows: registrations } =
+    await Registration.findAndCountAll(queryOptions);
+
+  const data = registrations.map(reg => {
+    const regData = reg.toJSON();
+
+    // Build latestInvoice with qrCode and fawaterkomStatus
+    let latestInvoice = null;
+    if (regData.invoices && regData.invoices.length > 0) {
+      const inv = regData.invoices[0];
+      latestInvoice = {
+        id: inv.id,
+        serialNumber: inv.serialNumber,
+        participationFees: parseFloat(inv.participationFees) || 0,
+        participationCurrency: inv.participationCurrency || 'USD',
+        participationDiscount: parseFloat(inv.participationDiscount) || 0,
+        participationPaid: inv.participationPaid || false,
+        spouseFees: parseFloat(inv.spouseFees) || 0,
+        spouseCurrency: inv.spouseCurrency || 'USD',
+        spouseDiscount: parseFloat(inv.spouseDiscount) || 0,
+        spousePaid: inv.spousePaid || false,
+        tripFees: parseFloat(inv.tripFees) || 0,
+        tripCurrency: inv.tripCurrency || 'USD',
+        tripDiscount: parseFloat(inv.tripDiscount) || 0,
+        tripPaid: inv.tripPaid || false,
+        spouseTripFees: parseFloat(inv.spouseTripFees) || 0,
+        spouseTripCurrency: inv.spouseTripCurrency || 'USD',
+        spouseTripDiscount: parseFloat(inv.spouseTripDiscount) || 0,
+        spouseTripPaid: inv.spouseTripPaid || false,
+        ammanTotal: parseFloat(inv.ammanTotal) || 0,
+        ammanCurrency: inv.ammanCurrency || 'USD',
+        ammanDiscount: parseFloat(inv.ammanDiscount) || 0,
+        ammanPaid: inv.ammanPaid || false,
+        deadSeaTotal: parseFloat(inv.deadSeaTotal) || 0,
+        deadSeaCurrency: inv.deadSeaCurrency || 'USD',
+        deadSeaDiscount: parseFloat(inv.deadSeaDiscount) || 0,
+        deadSeaPaid: inv.deadSeaPaid || false,
+        totalDiscount: parseFloat(inv.totalDiscount) || 0,
+        totalValueJD: parseFloat(inv.totalValueJD) || 0,
+        totalValueUSD: parseFloat(inv.totalValueUSD) || 0,
+        paidAmount: parseFloat(inv.paidAmount) || 0,
+        balance: parseFloat(inv.balance) || 0,
+        isCompanyInvoice: inv.isCompanyInvoice || false,
+        invoiceStatus: inv.invoiceStatus,
+        fawaterkomStatus: inv.fawaterkomStatus || 'PENDING',
+        qrCode: inv.qrCode || null,
+        paidAt: inv.paidAt,
+        paymentSource: inv.paymentSource,
+        createdAt: inv.createdAt,
+      };
+    }
+
+    delete regData.invoices;
+
+    return {
+      ...regData,
+      latestInvoice,
+      companyInvoice: companyInvoiceMap[reg.id] || null,
+    };
+  });
+
+  return {
+    data,
+    ...(all
+      ? {}
+      : {
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        }),
+  };
+};
+
 module.exports = {
   getNextSerialNumber,
   createCompanyInvoice,
@@ -877,4 +1064,5 @@ module.exports = {
   adminSaveCompanyInvoice,
   updateCompanyInvoiceRegistrations,
   getRegistrationItemsByInvoice,
+  getCompanyInvoiceReport,
 };

@@ -41,11 +41,11 @@ const getNextSerialNumber = async () => {
 
   let nextNum = 1;
   if (results && results.length > 0 && results[0].maxSerial) {
-    const numericPart = results[0].maxSerial.substring(8); // strip "GAIF26CM"
+    const numericPart = results[0].maxSerial.substring(5); // strip "G26CM"
     nextNum = parseInt(numericPart, 10) + 1;
   }
 
-  return `GAIF26CM${String(nextNum).padStart(4, '0')}`;
+  return `G26CM${String(nextNum).padStart(4, '0')}`;
 };
 
 const generateMeetingRoomInvoicePDF = async invoice => {
@@ -74,7 +74,7 @@ const generateMeetingRoomInvoicePDF = async invoice => {
     .replace('{{COUNTRY_NAME}}', invoice.country || '')
     .replace('{{INVOICE_DATE}}', invoiceDate)
     .replace('{{DESCRIPTION}}', invoice.description || '')
-    .replace('{{DISCOUNT_JD}}', `${discount.toFixed(2)} JD`)
+    .replace('{{DISCOUNT_JD}}', `${discount.toFixed(2)} USD`)
     .replace('{{TOTAL_USD}}', `${totalUSD.toFixed(2)} USD`)
     .replace('{{TOTAL_JD}}', `${netJD.toFixed(2)} JD`);
 
@@ -134,7 +134,7 @@ const generateMeetingRoomReceiptPDF = async (invoice, qrCode) => {
     .replace('{{COUNTRY_NAME}}', invoice.country || '')
     .replace('{{INVOICE_DATE}}', invoiceDate)
     .replace('{{DESCRIPTION}}', invoice.description || '')
-    .replace('{{DISCOUNT_JD}}', `${discount.toFixed(2)} JD`)
+    .replace('{{DISCOUNT_JD}}', `${discount.toFixed(2)} USD`)
     .replace('{{TOTAL_USD}}', `${totalUSD.toFixed(2)} USD`)
     .replace('{{TOTAL_JD}}', `${netJD.toFixed(2)} JD`)
     .replace('{{QR_SECTION}}', qrSection);
@@ -227,10 +227,12 @@ exports.createMeetingRoomInvoice = async (data, userId) => {
 
   const serialNumber = await getNextSerialNumber();
 
-  const netAmountJD =
-    Math.round((parseFloat(amountJD) - parseFloat(discount)) * 100) / 100;
-  const totalValueJD = netAmountJD;
-  const totalValueUSD = Math.round((netAmountJD / EXCHANGE_RATE) * 100) / 100;
+  // Admin sends amount and discount in USD — USD is primary, JD is derived
+  const amountUSD = parseFloat(amountJD); // field named amountJD but contains USD value
+  const discountUSD = parseFloat(discount);
+  const netAmountUSD = Math.round((amountUSD - discountUSD) * 100) / 100;
+  const totalValueUSD = netAmountUSD;
+  const totalValueJD = Math.round(netAmountUSD * EXCHANGE_RATE * 100) / 100;
 
   const invoice = await MeetingRoomInvoice.create({
     serialNumber,
@@ -239,9 +241,9 @@ exports.createMeetingRoomInvoice = async (data, userId) => {
     contactPerson,
     email,
     mobile,
-    amountJD: parseFloat(amountJD),
-    discount: parseFloat(discount),
-    netAmountJD,
+    amountJD: amountUSD,
+    discount: discountUSD,
+    netAmountJD: netAmountUSD,
     totalValueJD,
     totalValueUSD,
     description,
@@ -263,16 +265,16 @@ exports.updateMeetingRoomInvoice = async (id, data) => {
 
   const updateData = { ...data };
 
-  // Recalculate totals if amount or discount changed
-  const amountJD = parseFloat(data.amountJD ?? invoice.amountJD);
-  const discount = parseFloat(data.discount ?? invoice.discount ?? 0);
-  const netAmountJD = Math.round((amountJD - discount) * 100) / 100;
-  const totalValueJD = netAmountJD;
-  const totalValueUSD = Math.round((netAmountJD / EXCHANGE_RATE) * 100) / 100;
+  // Admin sends amount and discount in USD — USD is primary, JD is derived
+  const amountUSD = parseFloat(data.amountJD ?? invoice.amountJD);
+  const discountUSD = parseFloat(data.discount ?? invoice.discount ?? 0);
+  const netAmountUSD = Math.round((amountUSD - discountUSD) * 100) / 100;
+  const totalValueUSD = netAmountUSD;
+  const totalValueJD = Math.round(netAmountUSD * EXCHANGE_RATE * 100) / 100;
 
-  updateData.amountJD = amountJD;
-  updateData.discount = discount;
-  updateData.netAmountJD = netAmountJD;
+  updateData.amountJD = amountUSD;
+  updateData.discount = discountUSD;
+  updateData.netAmountJD = netAmountUSD;
   updateData.totalValueJD = totalValueJD;
   updateData.totalValueUSD = totalValueUSD;
 

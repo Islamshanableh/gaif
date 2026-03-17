@@ -84,4 +84,13 @@ router
     invoiceController.reverseFromFawaterkom,
   );
 
+// Refund invoice - zeros the balance
+router
+  .route('/:id/refund')
+  .post(
+    auth(routePermissions.ADMINISTRATOR.update),
+    validate(invoiceValidation.refundInvoice),
+    invoiceController.refundInvoice,
+  );
+
 module.exports = router;
