@@ -8,6 +8,14 @@ const { routePermissions } = require('../../constants');
 
 const router = express.Router();
 
+// View company invoice PDF via secure token (no auth required)
+router
+  .route('/view')
+  .get(
+    validate(companyInvoiceValidation.viewCompanyInvoice),
+    companyInvoiceController.viewCompanyInvoicePDF,
+  );
+
 // Create company invoice (admin only)
 router
   .route('/')

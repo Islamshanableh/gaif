@@ -7,6 +7,7 @@ const TOKEN_TYPES = {
   COMPANY_DECLINE: 'COMPANY_DECLINE',
   VIEW_REGISTRATION: 'VIEW_REGISTRATION',
   VIEW_INVOICE: 'VIEW_INVOICE',
+  VIEW_COMPANY_INVOICE: 'VIEW_COMPANY_INVOICE',
   UPDATE_REGISTRATION: 'UPDATE_REGISTRATION',
 };
 
@@ -107,6 +108,7 @@ const verifyToken = async (token, expectedType, options = {}) => {
   return {
     registrationId: tokenRecord.registrationId,
     companyId: tokenRecord.companyId,
+    companyInvoiceId: tokenRecord.companyInvoiceId,
     tokenType: tokenRecord.tokenType,
     registration: tokenRecord.registration,
     company: tokenRecord.company,
@@ -234,6 +236,37 @@ const verifyUpdateRegistrationToken = async token => {
   return verifyToken(token, TOKEN_TYPES.UPDATE_REGISTRATION);
 };
 
+/**
+ * Generate view company invoice token
+ * @param {number} registrationId - Registration ID
+ * @param {number} companyInvoiceId - Company Invoice ID
+ * @returns {Promise<string>} Token
+ */
+const generateViewCompanyInvoiceToken = async (
+  registrationId,
+  companyInvoiceId,
+) => {
+  const token = generateSecureToken();
+  await RegistrationToken.create({
+    token,
+    registrationId,
+    tokenType: TOKEN_TYPES.VIEW_COMPANY_INVOICE,
+    companyInvoiceId,
+    used: false,
+    isActive: true,
+  });
+  return token;
+};
+
+/**
+ * Verify view company invoice token
+ * @param {string} token - Token to verify
+ * @returns {Promise<Object>} Decoded payload with registrationId and companyInvoiceId
+ */
+const verifyViewCompanyInvoiceToken = async token => {
+  return verifyToken(token, TOKEN_TYPES.VIEW_COMPANY_INVOICE);
+};
+
 module.exports = {
   TOKEN_TYPES,
   createToken,
@@ -243,10 +276,12 @@ module.exports = {
   generateCompanyDeclineToken,
   generateViewRegistrationToken,
   generateViewInvoiceToken,
+  generateViewCompanyInvoiceToken,
   generateUpdateRegistrationToken,
   verifyCompanyConfirmToken,
   verifyCompanyDeclineToken,
   verifyViewRegistrationToken,
   verifyViewInvoiceToken,
+  verifyViewCompanyInvoiceToken,
   verifyUpdateRegistrationToken,
 };

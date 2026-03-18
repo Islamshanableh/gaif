@@ -11,8 +11,8 @@ class ApiError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.validation = validation || undefined;
+    this.isOperational = isOperational;
     if (config.env === 'development' || config.env === 'staging') {
-      this.isOperational = isOperational;
       this.stack = stack || Error.captureStackTrace(this, this.constructor);
       this.stack = this.stack?.split(' ').join('');
     }

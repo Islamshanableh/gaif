@@ -80,6 +80,13 @@ exports.updateCompanyInvoiceRegistrations = {
   }),
 };
 
+exports.viewCompanyInvoice = {
+  query: Joi.object().keys({
+    token: Joi.string().required(),
+    download: Joi.string().valid('true', 'false').optional(),
+  }),
+};
+
 exports.getCompanyInvoiceReport = {
   query: Joi.object().keys({
     companyId: Joi.number().optional(),

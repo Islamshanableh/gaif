@@ -1,6 +1,8 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
+const ApiError = require('../utils/ApiError');
 const companyInvoiceService = require('../services/companyInvoice.service');
+const registrationTokenService = require('../services/registrationToken.service');
 
 /**
  * Create a company invoice
@@ -226,6 +228,49 @@ const getCompanyInvoiceReport = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+/**
+ * View company invoice PDF via secure token (no auth required)
+ * GET /api/v1/company-invoice/view?token=xxx
+ */
+const viewCompanyInvoicePDF = catchAsync(async (req, res) => {
+  const { token, download } = req.query;
+
+  if (!token) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Token is required');
+  }
+
+  let decoded;
+  try {
+    decoded = await registrationTokenService.verifyViewCompanyInvoiceToken(
+      token,
+    );
+  } catch (error) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, error.message);
+  }
+
+  const invoice = await companyInvoiceService.getCompanyInvoiceById(
+    decoded.companyInvoiceId,
+  );
+
+  if (!invoice) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Invoice not found');
+  }
+
+  const pdfBuffer =
+    await companyInvoiceService.generateCompanyInvoicePDF(invoice);
+
+  const filename = `GAIF_Company_Invoice_${invoice.serialNumber}.pdf`;
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition':
+      download === 'true'
+        ? `attachment; filename="${filename}"`
+        : `inline; filename="${filename}"`,
+    'Content-Length': pdfBuffer.length,
+  });
+  return res.send(pdfBuffer);
+});
+
 module.exports = {
   createCompanyInvoice,
   getCompanyInvoiceById,
@@ -233,6 +278,7 @@ module.exports = {
   getCompanyInvoiceList,
   updateCompanyInvoice,
   downloadCompanyInvoicePDF,
+  viewCompanyInvoicePDF,
   resendCompanyInvoiceEmail,
   markCompanyInvoiceAsPaid,
   adminSaveCompanyInvoice,

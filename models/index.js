@@ -1463,6 +1463,7 @@ const TOKEN_TYPES = [
   'COMPANY_DECLINE',
   'VIEW_REGISTRATION',
   'VIEW_INVOICE',
+  'VIEW_COMPANY_INVOICE',
   'UPDATE_REGISTRATION',
 ];
 
@@ -1502,6 +1503,10 @@ const RegistrationToken = sequelize.define(
         model: 'Companies',
         key: 'id',
       },
+    },
+    companyInvoiceId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
     used: {
       type: DataTypes.BOOLEAN,

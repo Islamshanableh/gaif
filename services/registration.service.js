@@ -1052,7 +1052,7 @@ exports.adminUpdateRegistration = async (id, payload) => {
     if (existingWhatsapp) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        'This WhatsApp number is already registered. Please use a different number.',
+        `This WhatsApp number is already used by registration #${existingWhatsapp.id}.`,
       );
     }
   }

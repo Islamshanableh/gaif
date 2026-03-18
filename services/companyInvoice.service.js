@@ -18,9 +18,11 @@ const {
   Trip,
   Accommodation,
   HotelRoom,
+  RegistrationToken,
   sequelize,
 } = require('./db.service');
 const { sendEmailWithAttachment } = require('./common/email.service');
+const registrationTokenService = require('./registrationToken.service');
 
 // Exchange rate configuration (same as invoice.service.js)
 const EXCHANGE_RATE = 0.709; // USD 1 = JD 0.70
@@ -963,6 +965,13 @@ const getCompanyInvoiceReport = async ({
       separate: true,
       order: [['createdAt', 'DESC']],
     },
+    {
+      model: RegistrationToken,
+      as: 'tokens',
+      attributes: ['id', 'token', 'tokenType', 'used', 'expiresAt'],
+      required: false,
+      separate: true,
+    },
   ];
 
   const queryOptions = {
@@ -980,71 +989,96 @@ const getCompanyInvoiceReport = async ({
   const { count: total, rows: registrations } =
     await Registration.findAndCountAll(queryOptions);
 
-  const data = registrations.map(reg => {
-    const regData = reg.toJSON();
+  const data = await Promise.all(
+    registrations.map(async reg => {
+      const regData = reg.toJSON();
 
-    // Build latestInvoice with qrCode and fawaterkomStatus
-    let latestInvoice = null;
-    if (regData.invoices && regData.invoices.length > 0) {
-      const inv = regData.invoices[0];
-      latestInvoice = {
-        id: inv.id,
-        serialNumber: inv.serialNumber,
-        participationFees: parseFloat(inv.participationFees) || 0,
-        participationCurrency: inv.participationCurrency || 'USD',
-        participationDiscount: parseFloat(inv.participationDiscount) || 0,
-        participationPaid: inv.participationPaid || false,
-        spouseFees: parseFloat(inv.spouseFees) || 0,
-        spouseCurrency: inv.spouseCurrency || 'USD',
-        spouseDiscount: parseFloat(inv.spouseDiscount) || 0,
-        spousePaid: inv.spousePaid || false,
-        tripFees: parseFloat(inv.tripFees) || 0,
-        tripCurrency: inv.tripCurrency || 'USD',
-        tripDiscount: parseFloat(inv.tripDiscount) || 0,
-        tripPaid: inv.tripPaid || false,
-        spouseTripFees: parseFloat(inv.spouseTripFees) || 0,
-        spouseTripCurrency: inv.spouseTripCurrency || 'USD',
-        spouseTripDiscount: parseFloat(inv.spouseTripDiscount) || 0,
-        spouseTripPaid: inv.spouseTripPaid || false,
-        ammanTotal: parseFloat(inv.ammanTotal) || 0,
-        ammanCurrency: inv.ammanCurrency || 'USD',
-        ammanDiscount: parseFloat(inv.ammanDiscount) || 0,
-        ammanPaid: inv.ammanPaid || false,
-        deadSeaTotal: parseFloat(inv.deadSeaTotal) || 0,
-        deadSeaCurrency: inv.deadSeaCurrency || 'USD',
-        deadSeaDiscount: parseFloat(inv.deadSeaDiscount) || 0,
-        deadSeaPaid: inv.deadSeaPaid || false,
-        totalDiscount: parseFloat(inv.totalDiscount) || 0,
-        totalValueJD: parseFloat(inv.totalValueJD) || 0,
-        totalValueUSD: parseFloat(inv.totalValueUSD) || 0,
-        paidAmount: parseFloat(inv.paidAmount) || 0,
-        balance: parseFloat(inv.balance) || 0,
-        isCompanyInvoice: inv.isCompanyInvoice || false,
-        invoiceStatus: inv.invoiceStatus,
-        fawaterkomStatus: inv.fawaterkomStatus || 'PENDING',
-        qrCode: inv.qrCode || null,
-        paidAt: inv.paidAt,
-        paymentSource: inv.paymentSource,
-        createdAt: inv.createdAt,
+      // Build latestInvoice with qrCode and fawaterkomStatus
+      let latestInvoice = null;
+      if (regData.invoices && regData.invoices.length > 0) {
+        const inv = regData.invoices[0];
+        latestInvoice = {
+          id: inv.id,
+          serialNumber: inv.serialNumber,
+          participationFees: parseFloat(inv.participationFees) || 0,
+          participationCurrency: inv.participationCurrency || 'USD',
+          participationDiscount: parseFloat(inv.participationDiscount) || 0,
+          participationPaid: inv.participationPaid || false,
+          spouseFees: parseFloat(inv.spouseFees) || 0,
+          spouseCurrency: inv.spouseCurrency || 'USD',
+          spouseDiscount: parseFloat(inv.spouseDiscount) || 0,
+          spousePaid: inv.spousePaid || false,
+          tripFees: parseFloat(inv.tripFees) || 0,
+          tripCurrency: inv.tripCurrency || 'USD',
+          tripDiscount: parseFloat(inv.tripDiscount) || 0,
+          tripPaid: inv.tripPaid || false,
+          spouseTripFees: parseFloat(inv.spouseTripFees) || 0,
+          spouseTripCurrency: inv.spouseTripCurrency || 'USD',
+          spouseTripDiscount: parseFloat(inv.spouseTripDiscount) || 0,
+          spouseTripPaid: inv.spouseTripPaid || false,
+          ammanTotal: parseFloat(inv.ammanTotal) || 0,
+          ammanCurrency: inv.ammanCurrency || 'USD',
+          ammanDiscount: parseFloat(inv.ammanDiscount) || 0,
+          ammanPaid: inv.ammanPaid || false,
+          deadSeaTotal: parseFloat(inv.deadSeaTotal) || 0,
+          deadSeaCurrency: inv.deadSeaCurrency || 'USD',
+          deadSeaDiscount: parseFloat(inv.deadSeaDiscount) || 0,
+          deadSeaPaid: inv.deadSeaPaid || false,
+          totalDiscount: parseFloat(inv.totalDiscount) || 0,
+          totalValueJD: parseFloat(inv.totalValueJD) || 0,
+          totalValueUSD: parseFloat(inv.totalValueUSD) || 0,
+          paidAmount: parseFloat(inv.paidAmount) || 0,
+          balance: parseFloat(inv.balance) || 0,
+          isCompanyInvoice: inv.isCompanyInvoice || false,
+          invoiceStatus: inv.invoiceStatus,
+          fawaterkomStatus: inv.fawaterkomStatus || 'PENDING',
+          qrCode: inv.qrCode || null,
+          paidAt: inv.paidAt,
+          paymentSource: inv.paymentSource,
+          createdAt: inv.createdAt,
+        };
+      }
+
+      // Find existing VIEW_INVOICE token for this registration
+      const existingInvoiceToken =
+        regData.tokens &&
+        regData.tokens.find(t => t.tokenType === 'VIEW_INVOICE');
+      let invoiceViewToken = existingInvoiceToken
+        ? existingInvoiceToken.token
+        : null;
+      if (!invoiceViewToken && latestInvoice) {
+        invoiceViewToken =
+          await registrationTokenService.generateViewInvoiceToken(reg.id);
+      }
+
+      delete regData.invoices;
+      delete regData.tokens;
+
+      const ciRecord = companyInvoiceMap[reg.id] || null;
+
+      // Generate VIEW_COMPANY_INVOICE token for the company invoice
+      let companyInvoiceViewToken = null;
+      if (ciRecord) {
+        companyInvoiceViewToken =
+          await registrationTokenService.generateViewCompanyInvoiceToken(
+            reg.id,
+            ciRecord.id,
+          );
+      }
+
+      return {
+        ...regData,
+        latestInvoice,
+        companyInvoice: ciRecord,
+        invoiceViewUrl: invoiceViewToken
+          ? `${config.urls.api}/api/v1/registration/invoice?token=${invoiceViewToken}`
+          : null,
+        companyInvoiceViewUrl: companyInvoiceViewToken
+          ? `${config.urls.api}/api/v1/company-invoice/view?token=${companyInvoiceViewToken}`
+          : null,
       };
-    }
-
-    delete regData.invoices;
-
-    const ciRecord = companyInvoiceMap[reg.id] || null;
-
-    return {
-      ...regData,
-      latestInvoice,
-      companyInvoice: ciRecord,
-      invoicePdfUrl: latestInvoice
-        ? `${config.urls.api}/api/v1/invoice/${latestInvoice.id}/pdf`
-        : null,
-      companyInvoicePdfUrl: ciRecord
-        ? `${config.urls.api}/api/v1/company-invoice/${ciRecord.id}/pdf`
-        : null,
-    };
-  });
+    }),
+  );
 
   return {
     data,

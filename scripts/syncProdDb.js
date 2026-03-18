@@ -38,6 +38,12 @@ const alterations = [
     sql: `ALTER TABLE "MeetingRoomInvoices" ADD ("paymentSource" VARCHAR2(20))`,
   },
 
+  // ── RegistrationTokens ──────────────────────────────────────────────────────
+  {
+    description: 'RegistrationTokens.companyInvoiceId',
+    sql: `ALTER TABLE "RegistrationTokens" ADD ("companyInvoiceId" NUMBER(10))`,
+  },
+
   // ── Invoices ────────────────────────────────────────────────────────────────
   {
     description: 'Invoices.isCompanyInvoice (default 0)',
