@@ -113,8 +113,9 @@ const downloadCompanyInvoicePDF = catchAsync(async (req, res) => {
       .json({ message: 'Invoice not found' });
   }
 
-  const pdfBuffer =
+  const rawPdf =
     await companyInvoiceService.generateCompanyInvoicePDF(invoice);
+  const pdfBuffer = Buffer.isBuffer(rawPdf) ? rawPdf : Buffer.from(rawPdf);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
@@ -256,8 +257,9 @@ const viewCompanyInvoicePDF = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Invoice not found');
   }
 
-  const pdfBuffer =
+  const rawPdf =
     await companyInvoiceService.generateCompanyInvoicePDF(invoice);
+  const pdfBuffer = Buffer.isBuffer(rawPdf) ? rawPdf : Buffer.from(rawPdf);
 
   const filename = `GAIF_Company_Invoice_${invoice.serialNumber}.pdf`;
   res.setHeader('Content-Type', 'application/pdf');
