@@ -260,14 +260,13 @@ const viewCompanyInvoicePDF = catchAsync(async (req, res) => {
     await companyInvoiceService.generateCompanyInvoicePDF(invoice);
 
   const filename = `GAIF_Company_Invoice_${invoice.serialNumber}.pdf`;
-  res.set({
-    'Content-Type': 'application/pdf',
-    'Content-Disposition':
-      download === 'true'
-        ? `attachment; filename="${filename}"`
-        : `inline; filename="${filename}"`,
-    'Content-Length': pdfBuffer.length,
-  });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader(
+    'Content-Disposition',
+    download === 'true'
+      ? `attachment; filename="${filename}"`
+      : `inline; filename="${filename}"`,
+  );
   return res.send(pdfBuffer);
 });
 
