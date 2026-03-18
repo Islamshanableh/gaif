@@ -968,7 +968,7 @@ const getCompanyInvoiceReport = async ({
     {
       model: RegistrationToken,
       as: 'tokens',
-      attributes: ['id', 'token', 'tokenType', 'used', 'expiresAt'],
+      attributes: ['id', 'token', 'tokenType', 'companyInvoiceId', 'used', 'expiresAt'],
       required: false,
       separate: true,
     },
@@ -1056,14 +1056,25 @@ const getCompanyInvoiceReport = async ({
 
       const ciRecord = companyInvoiceMap[reg.id] || null;
 
-      // Generate VIEW_COMPANY_INVOICE token for the company invoice
+      // Find or generate VIEW_COMPANY_INVOICE token
       let companyInvoiceViewToken = null;
       if (ciRecord) {
-        companyInvoiceViewToken =
-          await registrationTokenService.generateViewCompanyInvoiceToken(
-            reg.id,
-            ciRecord.id,
+        const existingCompanyInvoiceToken =
+          regData.tokens &&
+          regData.tokens.find(
+            t =>
+              t.tokenType === 'VIEW_COMPANY_INVOICE' &&
+              t.companyInvoiceId === ciRecord.id,
           );
+        if (existingCompanyInvoiceToken) {
+          companyInvoiceViewToken = existingCompanyInvoiceToken.token;
+        } else {
+          companyInvoiceViewToken =
+            await registrationTokenService.generateViewCompanyInvoiceToken(
+              reg.id,
+              ciRecord.id,
+            );
+        }
       }
 
       return {
