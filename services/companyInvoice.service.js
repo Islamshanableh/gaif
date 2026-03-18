@@ -1082,10 +1082,10 @@ const getCompanyInvoiceReport = async ({
         latestInvoice,
         companyInvoice: ciRecord,
         invoiceViewUrl: invoiceViewToken
-          ? `${config.urls.api}/api/v1/registration/invoice?token=${invoiceViewToken}`
+          ? `${config.urls.api}/registration/invoice?token=${invoiceViewToken}`
           : null,
         companyInvoiceViewUrl: companyInvoiceViewToken
-          ? `${config.urls.api}/api/v1/company-invoice/view?token=${companyInvoiceViewToken}`
+          ? `${config.urls.api}/company-invoice/view?token=${companyInvoiceViewToken}`
           : null,
       };
     }),
